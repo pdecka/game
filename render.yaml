@@ -19,3 +19,5 @@ services:
         value: https://lucky-games-777.vercel.app
       - key: JWT_EXPIRES_IN
         value: 7d
+      - key: SUPERADMIN_PASSWORD
+        sync: false

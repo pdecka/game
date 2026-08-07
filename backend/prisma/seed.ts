@@ -40,28 +40,35 @@ const VIP_TIERS = [
 ];
 
 async function main() {
+  const existingSuperAdmin = await prisma.user.findUnique({
+    where: { username: 'superadmin' },
+  });
+
   const passwordPlain =
     process.env.SUPERADMIN_PASSWORD ||
     `Sa!${crypto.randomBytes(9).toString('base64url')}#${crypto.randomInt(10, 99)}`;
   const passwordHash = await bcrypt.hash(passwordPlain, 12);
 
-  const superAdmin = await prisma.user.upsert({
-    where: { username: 'superadmin' },
-    update: {
-      role: UserRole.super_admin,
-      status: 'active',
-      password: passwordHash,
-      email: 'superadmin@platform.local',
-    },
-    create: {
-      email: 'superadmin@platform.local',
-      username: 'superadmin',
-      password: passwordHash,
-      role: UserRole.super_admin,
-      status: 'active',
-      kycStatus: 'verified',
-    },
-  });
+  const superAdmin = existingSuperAdmin
+    ? await prisma.user.update({
+        where: { username: 'superadmin' },
+        data: {
+          role: UserRole.super_admin,
+          status: 'active',
+          email: 'superadmin@platform.local',
+          ...(process.env.SUPERADMIN_PASSWORD ? { password: passwordHash } : {}),
+        },
+      })
+    : await prisma.user.create({
+        data: {
+          email: 'superadmin@platform.local',
+          username: 'superadmin',
+          password: passwordHash,
+          role: UserRole.super_admin,
+          status: 'active',
+          kycStatus: 'verified',
+        },
+      });
 
   const existingWallet = await prisma.wallet.findFirst({ where: { userId: superAdmin.id } });
   if (!existingWallet) {
@@ -134,26 +141,32 @@ async function main() {
     }
   }
 
-  const credsPath = path.join(__dirname, '.seed-superadmin.local.json');
-  fs.writeFileSync(
-    credsPath,
-    JSON.stringify(
-      {
-        username: 'superadmin',
-        email: 'superadmin@platform.local',
-        password: passwordPlain,
-        role: 'super_admin',
-        note: 'Local seed credentials — do not commit',
-      },
-      null,
-      2,
-    ),
-  );
-
   console.log('Seed complete.');
   console.log('SUPERADMIN_USERNAME=superadmin');
-  console.log(`SUPERADMIN_PASSWORD=${passwordPlain}`);
-  console.log(`Credentials also written to ${credsPath} (gitignored).`);
+  if (!existingSuperAdmin) {
+    const credsPath = path.join(__dirname, '.seed-superadmin.local.json');
+    fs.writeFileSync(
+      credsPath,
+      JSON.stringify(
+        {
+          username: 'superadmin',
+          email: 'superadmin@platform.local',
+          password: passwordPlain,
+          role: 'super_admin',
+          note: 'Local seed credentials — do not commit',
+        },
+        null,
+        2,
+      ),
+    );
+    console.log(`SUPERADMIN_PASSWORD=${passwordPlain}`);
+    console.log(`Credentials also written to ${credsPath} (gitignored).`);
+    console.log('Tip: set SUPERADMIN_PASSWORD on Render to use a fixed password.');
+  } else if (process.env.SUPERADMIN_PASSWORD) {
+    console.log('Super admin password updated from SUPERADMIN_PASSWORD env.');
+  } else {
+    console.log('Super admin already exists — password unchanged.');
+  }
 }
 
 main()
