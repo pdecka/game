@@ -1,4 +1,79 @@
-## Deploy backend (Render) + frontend (Vercel) + view DB tables
+## Deploy backend (Render) + frontend (Vercel) + Postgres (Supabase)
+
+**Live frontend:** `https://lucky-games-777.vercel.app`  
+**Repo:** `github.com/pdecka/game`
+
+This repo uses **NestJS + Prisma + PostgreSQL** (SQLite/TypeORM removed). `DATABASE_URL` is required.
+
+Layout:
+- `backend/` = NestJS API (global prefix `/api`)
+- `frontend/` = Next.js (Vercel, root directory `frontend`)
+- `shared/` = shared types/utils
+
+| Layer | Host |
+|-------|------|
+| Frontend | Vercel → `lucky-games-777.vercel.app` |
+| Backend | Render Web Service |
+| Database | Supabase Postgres (or Render Postgres) |
+
+Optional: deploy backend via [Render Blueprint](https://render.com/docs/infrastructure-as-code) using root `render.yaml`.
+
+--------------------------------------------
+## Quick deploy checklist
+
+### 1) Supabase Postgres
+1. Create a project at [supabase.com](https://supabase.com).
+2. **Settings → Database → Connection string → URI** (direct connection, port `5432`).
+3. Use this as `DATABASE_URL` on Render. For Prisma migrations, prefer the **direct** URL (not the transaction pooler on port 6543).
+
+### 2) Render Web Service
+1. **New → Web Service** → connect `pdecka/game`.
+2. **Root directory:** leave empty (repo root).
+3. **Build command:**
+   ```bash
+   npm run install:all && npm run build:shared && npm --prefix backend run build
+   ```
+4. **Start command:**
+   ```bash
+   npm --prefix backend run start:prod
+   ```
+   (`start:prod` runs `prisma migrate deploy` then starts the API.)
+
+5. **Environment variables:**
+
+| Variable | Value |
+|----------|--------|
+| `NODE_ENV` | `production` |
+| `DATABASE_URL` | Supabase Postgres URI |
+| `JWT_SECRET` | long random string |
+| `JWT_REFRESH_SECRET` | long random string |
+| `JWT_EXPIRES_IN` | `7d` |
+| `CORS_ORIGIN` | `https://lucky-games-777.vercel.app` |
+| `ODDS_API_KEY` | optional (sports odds) |
+| `ADMIN_SIGNUP_CODE` | optional |
+
+Render sets `PORT` automatically — do not hardcode it.
+
+6. After first deploy succeeds, **seed production once** (Render Shell or local with prod `DATABASE_URL`):
+   ```bash
+   npm --prefix backend run prisma:seed
+   ```
+   Creates super admin, 20 games, and defaults. Credentials are printed in the shell output only.
+
+### 3) Wire Vercel to Render
+1. Vercel project → **Settings → Environment Variables**
+2. Set `NEXT_PUBLIC_API_URL` = `https://YOUR-SERVICE.onrender.com/api` (include `/api`)
+3. Redeploy frontend.
+
+### 4) Smoke test
+- Open `https://lucky-games-777.vercel.app`
+- Register / login
+- Open wallet, play one game
+- Admin: `/admin` with seeded super admin
+
+--------------------------------------------
+
+## Legacy notes (older TypeORM/SQLite doc below)
 
 This guide is for this repo layout:
 - `backend/` = NestJS API (served under `/api`)
