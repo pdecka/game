@@ -14,9 +14,9 @@ import {
 import { createCard, type Card, type Rank, type Suit } from '@/utils/andarBaharDeck'
 import { parseServerCard } from '@/utils/serverCards'
 
-function serverCardToCard(code: string, index: number = 0): Card {
+function serverCardToCard(code: string, _index: number = 0): Card {
   const { rank, suit } = parseServerCard(code)
-  return createCard(suit as Suit, rank as Rank, index)
+  return createCard(suit as Suit, rank as Rank)
 }
 
 // Interleave the server's andar/bahar piles back into a single dealing order,
