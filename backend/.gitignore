@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.env
+*.sqlite
+dev.sqlite
+uploads/
+coverage/
+tsconfig.tsbuildinfo
+tsc-errors.txt
+prisma/.seed-superadmin.local.json

@@ -1,0 +1,752 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  user
+  admin
+  support
+  finance
+  risk_manager
+  super_admin
+}
+
+enum UserStatus {
+  active
+  suspended
+  kyc_pending
+  withdraw_locked
+  banned
+}
+
+enum KYCStatus {
+  pending
+  verified
+  rejected
+  expired
+}
+
+enum Currency {
+  INR
+  USDT
+  BTC
+}
+
+enum TransactionType {
+  deposit
+  withdrawal
+  withdrawal_hold
+  withdrawal_payout
+  bet
+  win
+  loss
+  bonus
+  refund
+  commission
+  fee
+}
+
+enum TransactionStatus {
+  pending
+  completed
+  failed
+  cancelled
+  processing
+}
+
+enum PaymentMethod {
+  razorpay
+  cashfree
+  payu
+  bank_transfer
+  usdt
+  btc
+}
+
+enum PaymentStatus {
+  pending
+  processing
+  completed
+  failed
+  cancelled
+  refunded
+}
+
+enum PaymentPurpose {
+  deposit
+  withdrawal
+}
+
+enum WithdrawalAccountType {
+  bank
+  upi
+  crypto
+}
+
+enum BankAccountStatus {
+  active
+  inactive
+}
+
+enum GameType {
+  dice
+  crash
+  mines
+  plinko
+  roulette
+  blackjack
+  baccarat
+  slots
+  wheel
+  tower
+  limbo
+  coinflip
+  keno
+  scratch
+  dragon_tiger
+  andar_bahar
+  video_poker
+  color_prediction
+  hilo
+  number_hilo
+  poker
+  tic_tac_toe
+  sports
+}
+
+enum GameStatus {
+  pending
+  active
+  completed
+  cancelled
+}
+
+enum BonusType {
+  welcome
+  deposit
+  cashback
+  free_spins
+  reload
+  vip
+}
+
+enum BonusStatus {
+  active
+  used
+  expired
+  cancelled
+}
+
+enum AdminAction {
+  user_suspend
+  user_unsuspend
+  wallet_credit
+  wallet_debit
+  withdrawal_approve
+  withdrawal_reject
+  kyc_approve
+  kyc_reject
+  bonus_create
+  bonus_cancel
+  game_rtp_update
+}
+
+enum BlogPostStatus {
+  draft
+  published
+}
+
+enum SportsMatchStatus {
+  upcoming
+  live
+  finished
+  cancelled
+}
+
+enum SportsBetType {
+  match_winner
+  toss_winner
+  total_runs_over_under
+  over_under
+  first_goal
+}
+
+enum SportsBetStatus {
+  pending
+  won
+  lost
+  void
+}
+
+enum NotificationStatus {
+  unread
+  read
+  archived
+}
+
+enum SupportTicketStatus {
+  open
+  in_progress
+  resolved
+  closed
+}
+
+enum FraudFlagStatus {
+  open
+  reviewing
+  resolved
+  dismissed
+}
+
+// ─── Core models (existing) ──────────────────────────────────────────────────
+
+model User {
+  id                    String     @id @default(uuid())
+  email                 String     @unique
+  username              String     @unique
+  password              String
+  phone                 String?
+  role                  UserRole   @default(user)
+  status                UserStatus @default(active)
+  kycStatus             KYCStatus  @default(pending)
+  twoFactorEnabled      Boolean    @default(false)
+  twoFactorSecret       String?
+  firstName             String?
+  lastName              String?
+  dateOfBirth           DateTime?  @db.Date
+  address               String?
+  country               String?
+  city                  String?
+  postalCode            String?
+  ipAddress             String?
+  deviceFingerprint     String?
+  lastLoginAt           DateTime?
+  referralCode          String?    @unique
+  referredByUserId      String?
+  affiliateRateOverride Decimal?   @db.Decimal(8, 6)
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+
+  wallets Wallet[]
+
+  @@map("users")
+}
+
+model Wallet {
+  id                 String   @id @default(uuid())
+  userId             String
+  inrBalance         Decimal  @default(0) @db.Decimal(18, 8)
+  usdtBalance        Decimal  @default(0) @db.Decimal(18, 8)
+  btcBalance         Decimal  @default(0) @db.Decimal(18, 8)
+  inrLocked          Decimal  @default(0) @db.Decimal(18, 8)
+  usdtLocked         Decimal  @default(0) @db.Decimal(18, 8)
+  btcLocked          Decimal  @default(0) @db.Decimal(18, 8)
+  totalDepositedINR  Decimal  @default(0) @db.Decimal(18, 8)
+  totalDepositedUSDT Decimal  @default(0) @db.Decimal(18, 8)
+  totalDepositedBTC  Decimal  @default(0) @db.Decimal(18, 8)
+  totalWithdrawnINR  Decimal  @default(0) @db.Decimal(18, 8)
+  totalWithdrawnUSDT Decimal  @default(0) @db.Decimal(18, 8)
+  totalWithdrawnBTC  Decimal  @default(0) @db.Decimal(18, 8)
+  totalWageredINR    Decimal  @default(0) @db.Decimal(18, 8)
+  totalWageredUSDT   Decimal  @default(0) @db.Decimal(18, 8)
+  totalWageredBTC    Decimal  @default(0) @db.Decimal(18, 8)
+  totalWonINR        Decimal  @default(0) @db.Decimal(18, 8)
+  totalWonUSDT       Decimal  @default(0) @db.Decimal(18, 8)
+  totalWonBTC        Decimal  @default(0) @db.Decimal(18, 8)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  user    User          @relation(fields: [userId], references: [id])
+  entries LedgerEntry[]
+
+  @@index([userId])
+  @@map("wallets")
+}
+
+model LedgerEntry {
+  id            String            @id @default(uuid())
+  userId        String
+  walletId      String
+  currency      Currency
+  amount        Decimal           @db.Decimal(18, 8)
+  type          TransactionType
+  status        TransactionStatus @default(pending)
+  referenceId   String?
+  gameId        String?
+  bonusId       String?
+  description   String?           @db.Text
+  metadata      Json?
+  balanceBefore Decimal?          @db.Decimal(18, 8)
+  balanceAfter  Decimal?          @db.Decimal(18, 8)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  wallet Wallet @relation(fields: [walletId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([referenceId])
+  @@map("ledger_entries")
+}
+
+model Payment {
+  id              String          @id @default(uuid())
+  userId          String
+  amount          Decimal         @db.Decimal(18, 8)
+  currency        String
+  method          PaymentMethod
+  status          PaymentStatus   @default(pending)
+  purpose         PaymentPurpose?
+  transactionId   String?
+  clientReference String?
+  gatewayResponse Json?
+  metadata        Json?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([userId, status])
+  @@index([purpose, status, createdAt])
+  @@index([transactionId])
+  @@map("payments")
+}
+
+model PaymentMethodSetting {
+  id             String   @id @default(uuid())
+  purpose        String
+  method         String
+  currency       String
+  network        String?
+  displayName    String?
+  depositAddress String?
+  upiId          String?
+  qrImageUrl     String?
+  enabled        Boolean  @default(true)
+  metadata       Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([purpose, enabled])
+  @@index([method, currency])
+  @@map("payment_method_settings")
+}
+
+model WithdrawalAccount {
+  id        String                @id @default(uuid())
+  userId    String
+  type      WithdrawalAccountType
+  label     String
+  details   Json
+  isDefault Boolean               @default(false)
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+
+  @@index([userId, createdAt])
+  @@map("withdrawal_accounts")
+}
+
+model Game {
+  id        String   @id @default(uuid())
+  gameType  GameType @unique
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("games")
+}
+
+model GameSession {
+  id            String     @id @default(uuid())
+  userId        String
+  gameType      GameType
+  status        GameStatus @default(pending)
+  betAmount     Decimal    @db.Decimal(18, 8)
+  currency      String
+  winAmount     Decimal?   @db.Decimal(18, 8)
+  result        Json?
+  serverSeed    String?
+  clientSeed    String?
+  nonce         Int?
+  hash          String?
+  ledgerEntryId String?
+  createdAt     DateTime   @default(now())
+  completedAt   DateTime?
+  updatedAt     DateTime   @updatedAt
+
+  @@index([userId, createdAt])
+  @@map("game_sessions")
+}
+
+model GameSetting {
+  id             String   @id @default(uuid())
+  gameType       GameType @unique
+  enabled        Boolean  @default(true)
+  rtp            Decimal  @default(0.95) @db.Decimal(6, 4)
+  houseEdge      Decimal  @default(0.05) @db.Decimal(6, 4)
+  currency       Currency @default(INR)
+  minBet         Decimal  @default(1) @db.Decimal(18, 8)
+  maxBet         Decimal  @default(100000) @db.Decimal(18, 8)
+  maxWin         Decimal  @default(1000000) @db.Decimal(18, 8)
+  manualOverride Boolean  @default(false)
+  forceWin       Boolean?
+  winChance      Decimal? @db.Decimal(6, 4)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("game_settings")
+}
+
+model KycDocument {
+  id              String    @id @default(uuid())
+  userId          String
+  status          KYCStatus @default(pending)
+  documentType    String?
+  documentNumber  String?
+  frontImageUrl   String?
+  backImageUrl    String?
+  selfieImageUrl  String?
+  metadata        Json?
+  verifiedBy      String?
+  verifiedAt      DateTime?
+  rejectionReason String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("kyc_documents")
+}
+
+model AdminLog {
+  id           String      @id @default(uuid())
+  adminId      String
+  action       AdminAction
+  targetUserId String?
+  details      Json
+  ipAddress    String
+  createdAt    DateTime    @default(now())
+
+  @@index([adminId, createdAt])
+  @@map("admin_logs")
+}
+
+model BankAccount {
+  id            String            @id @default(uuid())
+  bankName      String
+  accountHolder String
+  accountNumber String
+  ifsc          String
+  upiId         String?
+  qrImageUrl    String?
+  status        BankAccountStatus @default(active)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@map("bank_accounts")
+}
+
+model AffiliateEarning {
+  id               String   @id @default(uuid())
+  referrerUserId   String
+  referredUserId   String
+  betAmount        Decimal  @db.Decimal(18, 8)
+  commissionAmount Decimal  @db.Decimal(18, 8)
+  currency         String
+  referenceId      String?
+  createdAt        DateTime @default(now())
+
+  @@unique([referrerUserId, referredUserId, referenceId])
+  @@index([referrerUserId, createdAt])
+  @@map("affiliate_earnings")
+}
+
+model AffiliateGlobal {
+  id             String  @id
+  commissionRate Decimal @default(0.005) @db.Decimal(12, 8)
+
+  @@map("affiliate_global")
+}
+
+model BlogPost {
+  id        String         @id @default(uuid())
+  title     String
+  slug      String         @unique
+  content   String         @db.Text
+  imageUrl  String?
+  status    BlogPostStatus @default(draft)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@map("blog_posts")
+}
+
+model Bonus {
+  id                  String      @id @default(uuid())
+  userId              String
+  type                BonusType
+  amount              Decimal     @db.Decimal(18, 8)
+  currency            String
+  wageringRequirement Decimal     @db.Decimal(18, 8)
+  wageredAmount       Decimal     @default(0) @db.Decimal(18, 8)
+  maxWithdrawal       Decimal?    @db.Decimal(18, 8)
+  status              BonusStatus @default(active)
+  expiresAt           DateTime
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+
+  @@index([userId, status])
+  @@map("bonuses")
+}
+
+model Promotion {
+  id                  String    @id @default(uuid())
+  name                String
+  description         String    @db.Text
+  type                BonusType
+  minDeposit          Decimal?  @db.Decimal(18, 8)
+  bonusAmount         Decimal?  @db.Decimal(18, 8)
+  bonusPercentage     Decimal?  @db.Decimal(18, 8)
+  wageringRequirement Decimal   @db.Decimal(18, 8)
+  maxBonus            Decimal?  @db.Decimal(18, 8)
+  active              Boolean   @default(true)
+  startDate           DateTime
+  endDate             DateTime
+  createdAt           DateTime  @default(now())
+
+  @@map("promotions")
+}
+
+model SportsBet {
+  id             String          @id @default(uuid())
+  userId         String
+  sport          String
+  matchId        String
+  externalMatchId String
+  betType        SportsBetType
+  selection      String
+  line           Decimal?        @db.Decimal(10, 2)
+  stake          Decimal         @db.Decimal(18, 8)
+  odds           Decimal         @db.Decimal(10, 4)
+  payoutAmount   Decimal         @default(0) @db.Decimal(18, 8)
+  currency       String          @default("INR")
+  status         SportsBetStatus @default(pending)
+  meta           Json?
+  settledAt      DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([userId, status])
+  @@index([matchId, status])
+  @@map("sports_bets")
+}
+
+model SportsMatch {
+  id            String            @id @default(uuid())
+  sport         String
+  externalId    String
+  league        String
+  teamA         String
+  teamB         String
+  teamAShort    String?
+  teamBShort    String?
+  startTime     DateTime?
+  status        SportsMatchStatus @default(upcoming)
+  score         Json?
+  result        Json?
+  lastFetchedAt DateTime?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@unique([sport, externalId])
+  @@index([sport, status])
+  @@index([startTime])
+  @@map("sports_matches")
+}
+
+model SportsSetting {
+  id        String   @id @default(uuid())
+  sport     String   @unique
+  houseEdge Decimal  @default(0.05) @db.Decimal(6, 4)
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("sports_settings")
+}
+
+// ─── Future-ready tables ─────────────────────────────────────────────────────
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([tokenHash])
+  @@map("refresh_tokens")
+}
+
+model OtpCode {
+  id        String    @id @default(uuid())
+  userId    String?
+  target    String
+  channel   String
+  codeHash  String
+  purpose   String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([target, purpose])
+  @@index([userId])
+  @@map("otp_codes")
+}
+
+model VipTier {
+  id           String   @id @default(uuid())
+  name         String   @unique
+  level        Int      @unique
+  minWagered   Decimal  @default(0) @db.Decimal(18, 8)
+  cashbackRate Decimal  @default(0) @db.Decimal(6, 4)
+  perks        Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("vip_tiers")
+}
+
+model UserVip {
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  tierId       String?
+  totalWagered Decimal  @default(0) @db.Decimal(18, 8)
+  progressPct  Decimal  @default(0) @db.Decimal(6, 2)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("user_vip")
+}
+
+model ResponsibleGamblingLimit {
+  id              String    @id @default(uuid())
+  userId          String
+  dailyDeposit    Decimal?  @db.Decimal(18, 8)
+  weeklyDeposit   Decimal?  @db.Decimal(18, 8)
+  monthlyDeposit  Decimal?  @db.Decimal(18, 8)
+  dailyLoss       Decimal?  @db.Decimal(18, 8)
+  sessionMinutes  Int?
+  selfExcludedUntil DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([userId])
+  @@map("responsible_gambling_limits")
+}
+
+model FairnessRecord {
+  id          String   @id @default(uuid())
+  userId      String
+  sessionId   String
+  gameType    GameType
+  serverSeed  String
+  clientSeed  String
+  nonce       Int
+  hash        String
+  result      Json?
+  revealedAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([sessionId])
+  @@map("fairness_records")
+}
+
+model Notification {
+  id        String             @id @default(uuid())
+  userId    String
+  title     String
+  body      String             @db.Text
+  status    NotificationStatus @default(unread)
+  metadata  Json?
+  createdAt DateTime           @default(now())
+  readAt    DateTime?
+
+  @@index([userId, status])
+  @@map("notifications")
+}
+
+model SupportTicket {
+  id        String              @id @default(uuid())
+  userId    String
+  subject   String
+  body      String              @db.Text
+  status    SupportTicketStatus @default(open)
+  assigneeId String?
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  @@index([userId, status])
+  @@map("support_tickets")
+}
+
+model FraudFlag {
+  id        String          @id @default(uuid())
+  userId    String?
+  ipAddress String?
+  reason    String
+  status    FraudFlagStatus @default(open)
+  metadata  Json?
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@map("fraud_flags")
+}
+
+model IpBlock {
+  id        String    @id @default(uuid())
+  ipAddress String    @unique
+  reason    String?
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@map("ip_blocks")
+}
+
+model CurrencyRate {
+  id        String   @id @default(uuid())
+  base      String
+  quote     String
+  rate      Decimal  @db.Decimal(18, 8)
+  source    String?
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  @@unique([base, quote])
+  @@map("currency_rates")
+}
+
+model GameCatalogMeta {
+  id          String   @id @default(uuid())
+  gameType    GameType @unique
+  title       String
+  description String?  @db.Text
+  thumbnailUrl String?
+  tags        String[]
+  sortOrder   Int      @default(0)
+  featured    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("game_catalog_meta")
+}
