@@ -23,6 +23,7 @@ export class AuthController {
       email: registerDto?.email,
       username: registerDto?.username,
       phone: registerDto?.phone,
+      countryCode: (registerDto as any)?.countryCode,
       referralCode: (registerDto as any)?.referralCode,
     });
     try {
@@ -31,6 +32,7 @@ export class AuthController {
         registerDto.username,
         registerDto.password,
         registerDto.phone,
+        (registerDto as any)?.countryCode,
         (registerDto as any)?.referralCode,
       );
       console.log('[auth/register] OK:', { userId: res?.id, status: res?.status, role: res?.role });

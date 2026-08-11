@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
-import SportsLayout from '@/components/sports/SportsLayout'
+import { GameLayout } from '@/components/layout/GameLayout'
 import SportsSidebar from '@/components/sports/SportsSidebar'
 import SportsHeader from '@/components/sports/SportsHeader'
 import MatchList from '@/components/sports/MatchList'
@@ -195,42 +195,48 @@ export default function SportsPage() {
 
   return (
     <ErrorBoundary>
-      <SportsLayout
-        sidebar={
-          <SportsSidebar
-            categories={categories}
-            selectedCategory={selectedCategory}
-            onCategorySelect={handleCategorySelect}
-          />
-        }
-        header={
-          <SportsHeader
-            selectedCategory={selectedCategory}
-            onRefresh={handleRefresh}
-            loading={loading}
-            lastUpdated={lastUpdated}
-          />
-        }
-      >
-        <div className="p-3 sm:p-6">
-          {error ? (
-            <ErrorState error={error} onRetry={handleRefresh} />
-          ) : (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-xl font-semibold text-white mb-4">
-                  {selectedCategory ? `${selectedCategory} Matches` : 'All Sports'}
-                </h2>
-                <MatchList
-                  matches={matches}
-                  selectedMatchId={selectedMatch?.id}
-                  onMatchSelect={handleMatchSelect}
-                  onOddsClick={handleOddsClick}
-                  loading={loading}
-                />
-              </div>
+      <GameLayout>
+        <div className="flex flex-1 overflow-hidden">
+          {/* Sports Sidebar */}
+          <div className="hidden lg:block w-64 bg-[#0f212e] border-r border-white/10 p-4">
+            <SportsSidebar
+              categories={categories}
+              selectedCategory={selectedCategory}
+              onCategorySelect={handleCategorySelect}
+            />
+          </div>
+
+          {/* Main Content */}
+          <div className="flex-1 overflow-y-auto">
+            <div className="p-3 sm:p-6">
+              {/* Sports Header */}
+              <SportsHeader
+                selectedCategory={selectedCategory}
+                onRefresh={handleRefresh}
+                loading={loading}
+                lastUpdated={lastUpdated}
+              />
+
+              {error ? (
+                <ErrorState error={error} onRetry={handleRefresh} />
+              ) : (
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-xl font-semibold text-white mb-4">
+                      {selectedCategory ? `${selectedCategory} Matches` : 'All Sports'}
+                    </h2>
+                    <MatchList
+                      matches={matches}
+                      selectedMatchId={selectedMatch?.id}
+                      onMatchSelect={handleMatchSelect}
+                      onOddsClick={handleOddsClick}
+                      loading={loading}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
         
         {/* Bet Slip */}
@@ -244,7 +250,7 @@ export default function SportsPage() {
           isPlacing={isPlacingBets}
           balance={userBalance}
         />
-      </SportsLayout>
+      </GameLayout>
     </ErrorBoundary>
   )
 }

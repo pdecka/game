@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
+import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input'
+import 'react-phone-number-input/style.css'
 
 function RegisterForm() {
   const router = useRouter()
@@ -17,41 +19,62 @@ function RegisterForm() {
     username: '',
     password: '',
     phone: '',
+    countryCode: '',
   })
   const [loading, setLoading] = useState(false)
+  const [devOtp, setDevOtp] = useState<string | null>(null)
+  const [showOtpPopup, setShowOtpPopup] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
 
     try {
-      const cleanedPhone = formData.phone.trim()
-      if (!cleanedPhone) {
+      if (!formData.phone) {
         toast.error('Mobile number is required')
+        setLoading(false)
         return
       }
 
-      const digitsOnly = cleanedPhone.replace(/\D/g, '')
-      if (digitsOnly.length < 10) {
+      if (!isValidPhoneNumber(formData.phone)) {
         toast.error('Please enter a valid mobile number')
+        setLoading(false)
         return
       }
+
+      // Extract country code from phone number
+      const match = formData.phone.match(/^\+(\d+)/)
+      const countryCode = match ? match[1] : ''
+      const phoneNumber = formData.phone.replace(/^\+\d+/, '')
 
       // Backend currently requires an email field; we derive a synthetic email from the phone.
-      const otpEmail = `${digitsOnly}@otp.local`
+      const otpEmail = `${phoneNumber}@otp.local`
 
       const res: any = await authService.register(
         otpEmail,
         formData.username,
         formData.password,
-        cleanedPhone,
+        phoneNumber,
+        countryCode,
         refFromUrl,
       )
+      
       if (res?.devOtp) {
-        toast.success(`OTP sent to ${cleanedPhone}: ${res.devOtp}`)
+        setDevOtp(res.devOtp)
+        setShowOtpPopup(true)
+        // Store OTP in localStorage for verify-otp page
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('devOtp', res.devOtp)
+        }
+        // Auto-redirect after 5 seconds
+        setTimeout(() => {
+          setShowOtpPopup(false)
+          router.push(`/auth/verify-otp?phone=${encodeURIComponent(phoneNumber)}&countryCode=${encodeURIComponent(countryCode)}`)
+        }, 5000)
+      } else {
+        toast.success('Registration successful! Please verify your OTP.')
+        router.push(`/auth/verify-otp?phone=${encodeURIComponent(phoneNumber)}&countryCode=${encodeURIComponent(countryCode)}`)
       }
-      toast.success('Registration successful! Please verify your OTP.')
-      router.push(`/auth/verify-otp?phone=${encodeURIComponent(cleanedPhone)}`)
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Registration failed')
     } finally {
@@ -84,10 +107,12 @@ function RegisterForm() {
           </div>
           <div>
             <label className="block text-sm font-medium mb-2">Mobile Number</label>
-            <Input
-              type="tel"
+            <PhoneInput
+              international
+              countryCallingCodeEditable={false}
               value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              onChange={(phone) => setFormData({ ...formData, phone: phone || '' })}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               required
             />
           </div>
@@ -106,6 +131,30 @@ function RegisterForm() {
           </Link>
         </p>
       </div>
+
+      {/* OTP Popup for Local Development */}
+      {showOtpPopup && devOtp && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-[#fef3c7] border-2 border-[#f59e0b] rounded-lg p-4 shadow-lg z-50 max-w-sm">
+          <div className="flex items-start justify-between">
+            <div>
+              <h3 className="font-bold text-[#92400e] mb-1">Development OTP</h3>
+              <p className="text-[#b45309] text-sm mb-2">Your OTP code:</p>
+              <p className="text-2xl font-mono font-bold text-[#92400e] bg-[#fffbeb] p-2 rounded border border-[#fcd34d]">
+                {devOtp}
+              </p>
+            </div>
+            <button
+              onClick={() => setShowOtpPopup(false)}
+              className="text-[#92400e] hover:text-[#78350f] ml-4"
+            >
+              ✕
+            </button>
+          </div>
+          <p className="text-xs text-[#b45309] mt-2">
+            This is for development only. In production, OTP will be sent via SMS.
+          </p>
+        </div>
+      )}
     </div>
   )
 }

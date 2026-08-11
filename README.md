@@ -27,7 +27,11 @@ npm run dev
 ```
 
 - Frontend: http://localhost:3000  
-- Backend: http://localhost:3001/api  
+- Backend: http://localhost:3001/api
+
+**Default admin credentials (local):**
+- Email: admin@games.com
+- Password: 12345678  
 
 ## Production env
 

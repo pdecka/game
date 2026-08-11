@@ -21,6 +21,7 @@ export const authService = {
     username: string,
     password: string,
     phone?: string,
+    countryCode?: string,
     referralCode?: string,
   ) {
     const response = await api.post('/auth/register', {
@@ -28,6 +29,7 @@ export const authService = {
       username,
       password,
       phone,
+      countryCode,
       referralCode,
     })
     return response.data

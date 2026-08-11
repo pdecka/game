@@ -14,6 +14,7 @@ export class UsersService {
         username: userData.username!,
         password: userData.password!,
         phone: userData.phone ?? null,
+        countryCode: userData.countryCode ?? null,
         role: (userData.role as UserRole) ?? UserRole.user,
         status: (userData.status as UserStatus) ?? UserStatus.active,
         kycStatus: (userData.kycStatus as KYCStatus) ?? KYCStatus.pending,

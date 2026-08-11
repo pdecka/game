@@ -138,6 +138,12 @@ export class AdminController {
     return this.adminService.upsertBankAccount({ ...dto, id });
   }
 
+  // Add GET endpoint for bank accounts at root level
+  @Get('bank')
+  async listBankAccountsRoot() {
+    return this.adminService.listBankAccounts();
+  }
+
   @Get('payments/method-settings')
   async listMethodSettings() {
     return this.adminService.listPaymentMethodSettings();
@@ -165,6 +171,28 @@ export class AdminController {
   @Get('payments/deposits')
   async getDepositRequests(
     @Request() req,
+    @Query('status') status?: PaymentStatus,
+    @Query('userId') userId?: string,
+    @Query('username') username?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+  ) {
+    return this.adminService.getDepositRequests({
+      status: status ?? undefined,
+      userId: userId ?? undefined,
+      username: username ?? undefined,
+      from,
+      to,
+      limit: limit ? parseInt(limit, 10) : undefined,
+      offset: offset ? parseInt(offset, 10) : undefined,
+    });
+  }
+
+  // Backward-compatible endpoint without /payments prefix
+  @Get('deposits')
+  async getDepositRequestsLegacy(
     @Query('status') status?: PaymentStatus,
     @Query('userId') userId?: string,
     @Query('username') username?: string,
@@ -265,6 +293,28 @@ export class AdminController {
     });
   }
 
+  // Backward-compatible endpoint without /payments prefix
+  @Get('withdrawals')
+  async getWithdrawalRequestsLegacy(
+    @Query('status') status?: PaymentStatus,
+    @Query('userId') userId?: string,
+    @Query('username') username?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+  ) {
+    return this.adminService.getWithdrawalRequests({
+      status: status ?? undefined,
+      userId: userId ?? undefined,
+      username: username ?? undefined,
+      from,
+      to,
+      limit: limit ? parseInt(limit, 10) : undefined,
+      offset: offset ? parseInt(offset, 10) : undefined,
+    });
+  }
+
   @Patch('payments/withdrawals/:paymentId/reject')
   async rejectWithdrawal(
     @Request() req,
@@ -299,8 +349,18 @@ export class AdminController {
     return this.adminService.updateSportsSetting(sport, body)
   }
 
-  @Post('withdrawals/:paymentId/approve')
+  @Patch('payments/withdrawals/:paymentId/approve')
   async approveWithdrawal(
+    @Request() req,
+    @Param('paymentId') paymentId: string,
+    @Body() body: { payoutReference?: string; payoutScreenshotUrl?: string },
+  ) {
+    return this.adminService.approveWithdrawal(req.user.id, paymentId, req.ip || 'unknown', body);
+  }
+
+  // Backward-compatible POST endpoint
+  @Post('withdrawals/:paymentId/approve')
+  async approveWithdrawalPost(
     @Request() req,
     @Param('paymentId') paymentId: string,
     @Body() body: { payoutReference?: string; payoutScreenshotUrl?: string },

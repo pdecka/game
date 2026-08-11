@@ -16,6 +16,10 @@ export class RegisterDto {
   @IsString()
   phone?: string;
 
+  @IsOptional()
+  @IsString()
+  countryCode?: string;
+
   /** Optional affiliate / referral code (normalized server-side). */
   @IsOptional()
   @IsString()

@@ -156,7 +156,7 @@ export const adminAuthService = {
   isAdminRole() {
     const user = this.getCurrentAdmin()
     if (!user) return false
-    return ['admin', 'finance', 'risk_manager'].includes(user.role)
+    return ['super_admin', 'admin', 'finance', 'risk_manager'].includes(user.role)
   },
 
   logout() {

@@ -213,6 +213,7 @@ model User {
   username              String     @unique
   password              String
   phone                 String?
+  countryCode           String?
   role                  UserRole   @default(user)
   status                UserStatus @default(active)
   kycStatus             KYCStatus  @default(pending)

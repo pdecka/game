@@ -60,7 +60,7 @@ export class AuthService {
     };
   }
 
-  async register(email: string, username: string, password: string, phone?: string, referralCode?: string) {
+  async register(email: string, username: string, password: string, phone?: string, countryCode?: string, referralCode?: string) {
     try {
       const existingUser = await this.usersService.findByEmail(email);
       if (existingUser) {
@@ -86,19 +86,20 @@ export class AuthService {
         username,
         password: hashedPassword,
         phone: phone || undefined,
+        countryCode: countryCode || undefined,
         referredByUserId,
         // Require OTP verification before the account becomes active.
         status: UserStatus.KYC_PENDING,
       });
 
       // Send OTP for verification (OTP_EXPIRES_IN is enforced inside otp.service.ts)
-      const otp = await this.otpService.sendOtp(user.email, user.phone);
+      const otpResult = await this.otpService.sendOtp(user.email, user.phone, user.countryCode);
 
       const { password: _, ...result } = user;
       // Dev-only: expose OTP so it can be received without an SMS gateway.
       // This keeps the signup -> verifyOtp -> login flow working in local environments.
-      if (phone && process.env.NODE_ENV !== 'production') {
-        return { ...result, devOtp: otp };
+      if (process.env.NODE_ENV !== 'production') {
+        return { ...result, devOtp: otpResult.otp, expiresAt: otpResult.expiresAt };
       }
 
       return result;

@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { GameLayout } from '@/components/layout/GameLayout'
 
 const GAMES: { name: string; href: string; desc: string; image?: string }[] = [
   { name: 'Crash', href: '/games/crash', desc: 'Real-time style multiplier cashout.', image: '/games/crash-thumb.jpeg' },
@@ -28,50 +29,52 @@ const GAMES: { name: string; href: string; desc: string; image?: string }[] = [
 
 export default function CasinoPage() {
   return (
-    <div className="min-h-screen overflow-x-hidden bg-gradient-to-br from-black via-gray-900 to-black p-3 sm:p-6">
-      <div className="mx-auto max-w-6xl">
-        <div className="mb-4 sm:mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold text-white">Casino</h1>
-          <p className="mt-1 text-sm text-[#64748b]">All games — fully playable with wallet + history.</p>
-        </div>
+    <GameLayout>
+      <div className="p-3 sm:p-6">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-4 sm:mb-6">
+            <h1 className="text-2xl sm:text-3xl font-bold text-white">Casino</h1>
+            <p className="mt-1 text-sm text-[#64748b]">All games — fully playable with wallet + history.</p>
+          </div>
 
-        <div className="mx-auto grid max-w-7xl grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5">
-          {GAMES.map((g) => (
-            <Link
-              key={g.href}
-              href={g.href}
-              className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-gray-900 to-black shadow-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl"
-            >
-              <div className="relative h-36 overflow-hidden sm:h-48">
-                {g.image ? (
-                  <img
-                    src={g.image}
-                    alt={g.name}
-                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-emerald-500/20 to-sky-500/20">
-                    <span className="text-2xl font-bold text-white/50">{g.name.charAt(0)}</span>
-                  </div>
-                )}
+          <div className="mx-auto grid max-w-7xl grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5">
+            {GAMES.map((g) => (
+              <Link
+                key={g.href}
+                href={g.href}
+                className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-gray-900 to-black shadow-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl"
+              >
+                <div className="relative h-36 overflow-hidden sm:h-48">
+                  {g.image ? (
+                    <img
+                      src={g.image}
+                      alt={g.name}
+                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-emerald-500/20 to-sky-500/20">
+                      <span className="text-2xl font-bold text-white/50">{g.name.charAt(0)}</span>
+                    </div>
+                  )}
 
-                {/* Always visible on touch; hover-reveal on desktop */}
-                <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-100 transition-opacity duration-300 md:bg-transparent md:opacity-0 md:group-hover:bg-black/20 md:group-hover:opacity-100">
-                  <div className="rounded-lg bg-emerald-500 px-3 py-2 text-xs font-semibold text-white shadow-lg sm:px-6 sm:py-3 sm:text-sm">
-                    Play Now
+                  {/* Always visible on touch; hover-reveal on desktop */}
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-100 transition-opacity duration-300 md:bg-transparent md:opacity-0 md:group-hover:bg-black/20 md:group-hover:opacity-100">
+                    <div className="rounded-lg bg-emerald-500 px-3 py-2 text-xs font-semibold text-white shadow-lg sm:px-6 sm:py-3 sm:text-sm">
+                      Play Now
+                    </div>
                   </div>
                 </div>
-              </div>
-              
-              <div className="p-3 sm:p-4">
-                <h3 className="text-sm font-bold text-white">{g.name}</h3>
-                <p className="mt-1 line-clamp-2 text-xs text-gray-400">{g.desc}</p>
-              </div>
-            </Link>
-          ))}
+                
+                <div className="p-3 sm:p-4">
+                  <h3 className="text-sm font-bold text-white">{g.name}</h3>
+                  <p className="mt-1 line-clamp-2 text-xs text-gray-400">{g.desc}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
-    </div>
+    </GameLayout>
   )
 }
 

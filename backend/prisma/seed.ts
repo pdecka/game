@@ -44,31 +44,61 @@ async function main() {
     where: { username: 'superadmin' },
   });
 
+  const existingAdmin = await prisma.user.findUnique({
+    where: { username: 'admin' },
+  });
+
   const passwordPlain =
-    process.env.SUPERADMIN_PASSWORD ||
-    `Sa!${crypto.randomBytes(9).toString('base64url')}#${crypto.randomInt(10, 99)}`;
+    process.env.SUPERADMIN_PASSWORD || '12345678';
   const passwordHash = await bcrypt.hash(passwordPlain, 12);
 
-  const superAdmin = existingSuperAdmin
-    ? await prisma.user.update({
-        where: { username: 'superadmin' },
-        data: {
-          role: UserRole.super_admin,
-          status: 'active',
-          email: 'superadmin@platform.local',
-          ...(process.env.SUPERADMIN_PASSWORD ? { password: passwordHash } : {}),
-        },
-      })
-    : await prisma.user.create({
-        data: {
-          email: 'superadmin@platform.local',
-          username: 'superadmin',
-          password: passwordHash,
-          role: UserRole.super_admin,
-          status: 'active',
-          kycStatus: 'verified',
-        },
-      });
+  let superAdmin;
+  if (existingSuperAdmin) {
+    // Update old superadmin to new credentials
+    superAdmin = await prisma.user.update({
+      where: { username: 'superadmin' },
+      data: {
+        username: 'admin',
+        email: 'admin@games.com',
+        role: UserRole.super_admin,
+        status: 'active',
+        password: passwordHash,
+      },
+    });
+  } else if (existingAdmin) {
+    // Update existing admin to superadmin
+    superAdmin = await prisma.user.update({
+      where: { username: 'admin' },
+      data: {
+        role: UserRole.super_admin,
+        status: 'active',
+        email: 'admin@games.com',
+        password: passwordHash,
+      },
+    });
+  } else {
+    // Create new superadmin
+    superAdmin = await prisma.user.create({
+      data: {
+        email: 'admin@games.com',
+        username: 'admin',
+        password: passwordHash,
+        role: UserRole.super_admin,
+        status: 'active',
+        kycStatus: 'verified',
+      },
+    });
+  }
+
+  // Always update password for local environment (when SUPERADMIN_PASSWORD is not set)
+  if (!process.env.SUPERADMIN_PASSWORD) {
+    superAdmin = await prisma.user.update({
+      where: { username: 'admin' },
+      data: {
+        password: passwordHash,
+      },
+    });
+  }
 
   const existingWallet = await prisma.wallet.findFirst({ where: { userId: superAdmin.id } });
   if (!existingWallet) {
@@ -142,15 +172,15 @@ async function main() {
   }
 
   console.log('Seed complete.');
-  console.log('SUPERADMIN_USERNAME=superadmin');
-  if (!existingSuperAdmin) {
+  console.log('SUPERADMIN_USERNAME=admin');
+  if (!existingSuperAdmin && !existingAdmin) {
     const credsPath = path.join(__dirname, '.seed-superadmin.local.json');
     fs.writeFileSync(
       credsPath,
       JSON.stringify(
         {
-          username: 'superadmin',
-          email: 'superadmin@platform.local',
+          username: 'admin',
+          email: 'admin@games.com',
           password: passwordPlain,
           role: 'super_admin',
           note: 'Local seed credentials — do not commit',
@@ -165,7 +195,7 @@ async function main() {
   } else if (process.env.SUPERADMIN_PASSWORD) {
     console.log('Super admin password updated from SUPERADMIN_PASSWORD env.');
   } else {
-    console.log('Super admin already exists — password unchanged.');
+    console.log('Super admin password updated to local default (12345678).');
   }
 }
 

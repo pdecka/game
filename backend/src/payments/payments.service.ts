@@ -527,9 +527,11 @@ export class PaymentsService implements OnModuleInit {
       to?: string;
     },
   ): Promise<Prisma.PaymentWhereInput | null> {
-    const where: Prisma.PaymentWhereInput = {
-      purpose: purpose as any,
-    };
+    const where: Prisma.PaymentWhereInput = {};
+
+    // Handle legacy payments without purpose field
+    const purposeCondition = purpose ? { purpose: purpose as any } : {};
+    Object.assign(where, purposeCondition);
 
     if (filters.status) where.status = filters.status as any;
     if (filters.from || filters.to) {
@@ -757,7 +759,7 @@ export class PaymentsService implements OnModuleInit {
             metadata: {
               ...((payment.metadata as any) ?? {}),
               walletTransactionFailed: true,
-              walletError: walletError.message,
+              walletError: walletError instanceof Error ? walletError.message : String(walletError),
               requiresManualIntervention: true,
             } as any,
           },
@@ -785,7 +787,9 @@ export class PaymentsService implements OnModuleInit {
     } catch (error) {
       console.error('=== APPROVE DEPOSIT ERROR ===');
       console.error('Error:', error);
-      console.error('Stack:', error.stack);
+      if (error instanceof Error) {
+        console.error('Stack:', error.stack);
+      }
       throw error;
     }
   }
@@ -805,6 +809,7 @@ export class PaymentsService implements OnModuleInit {
     if (!payment) throw new BadRequestException('Payment not found');
     if (payment.status === PaymentStatus.COMPLETED) return payment;
 
+    // Handle withdrawals with hold system (newer flow)
     if (
       (payment.metadata as any)?.withdrawalHold === true &&
       payment.status !== PaymentStatus.FAILED &&
@@ -814,20 +819,51 @@ export class PaymentsService implements OnModuleInit {
         where: { referenceId: paymentId, type: TransactionType.REFUND as any },
       });
       if (!refunded) {
+        // Refund the held amount back to user's available balance
         await this.walletService.createTransaction(
           payment.userId,
           payment.currency as Currency,
           Number(payment.amount),
           TransactionType.REFUND,
           payment.id,
-          { withdrawalRejected: true },
+          { withdrawalRejected: true, reason: _reason },
         );
+      }
+    } else {
+      // Handle legacy withdrawals without hold system
+      // Check if there's a withdrawal_hold transaction
+      const holdTransaction = await this.prisma.ledgerEntry.findFirst({
+        where: { referenceId: paymentId, type: TransactionType.WITHDRAWAL_HOLD as any },
+      });
+      
+      if (holdTransaction) {
+        // Refund the held amount
+        const refunded = await this.prisma.ledgerEntry.findFirst({
+          where: { referenceId: paymentId, type: TransactionType.REFUND as any },
+        });
+        if (!refunded) {
+          await this.walletService.createTransaction(
+            payment.userId,
+            payment.currency as Currency,
+            Number(payment.amount),
+            TransactionType.REFUND,
+            payment.id,
+            { withdrawalRejected: true, reason: _reason },
+          );
+        }
       }
     }
 
     return this.prisma.payment.update({
       where: { id: payment.id },
-      data: { status: PaymentStatus.FAILED as any },
+      data: { 
+        status: PaymentStatus.FAILED as any,
+        metadata: {
+          ...((payment.metadata as any) ?? {}),
+          rejectionReason: _reason,
+          rejectedAt: new Date().toISOString(),
+        } as any,
+      },
     });
   }
 }

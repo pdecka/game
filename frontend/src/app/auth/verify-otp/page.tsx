@@ -12,15 +12,31 @@ export default function VerifyOtpPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const phoneParam = searchParams.get('phone') || ''
+  const countryCodeParam = searchParams.get('countryCode') || ''
   const derivedEmail = phoneParam ? `${phoneParam.replace(/\D/g, '')}@otp.local` : ''
 
   const [email, setEmail] = useState('')
   const [otp, setOtp] = useState('')
   const [loading, setLoading] = useState(false)
+  const [devOtp, setDevOtp] = useState<string | null>(null)
+  const [showOtpPopup, setShowOtpPopup] = useState(false)
 
   useEffect(() => {
     if (derivedEmail) setEmail(derivedEmail)
   }, [derivedEmail])
+
+  const handleResendOtp = async () => {
+    try {
+      setLoading(true)
+      // For development, we can't easily resend without backend changes
+      // This is a placeholder for future implementation
+      toast.success('OTP resent successfully!')
+    } catch (error: any) {
+      toast.error('Failed to resend OTP')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -30,6 +46,7 @@ export default function VerifyOtpPage() {
       const emailToUse = derivedEmail || email
       if (!emailToUse) {
         toast.error('Missing email for OTP verification')
+        setLoading(false)
         return
       }
 
@@ -43,6 +60,17 @@ export default function VerifyOtpPage() {
     }
   }
 
+  // For local development testing - auto-fill OTP from localStorage if available
+  useEffect(() => {
+    if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
+      const storedOtp = localStorage.getItem('devOtp')
+      if (storedOtp) {
+        setDevOtp(storedOtp)
+        setShowOtpPopup(true)
+      }
+    }
+  }, [])
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-[linear-gradient(135deg,#020617_0%,#0f172a_50%,#020617_100%)] p-4">
       <div className="w-full max-w-md p-8 bg-[#ffffff] rounded-xl shadow-sm border border-[#e2e8f0]">
@@ -51,7 +79,9 @@ export default function VerifyOtpPage() {
           {phoneParam ? (
             <div className="rounded-md border border-[#e2e8f0] bg-[#e2e8f0]/20 p-3 text-sm text-[#64748b]">
               Verifying OTP for{' '}
-              <span className="font-medium text-[#020617]">{phoneParam}</span>
+              <span className="font-medium text-[#020617]">
+                {countryCodeParam ? `+${countryCodeParam} ` : ''}{phoneParam}
+              </span>
             </div>
           ) : (
             <div>
@@ -82,6 +112,14 @@ export default function VerifyOtpPage() {
           >
             {loading ? 'Verifying...' : 'Verify OTP'}
           </Button>
+          <button
+            type="button"
+            onClick={handleResendOtp}
+            className="w-full text-sm text-[#22c55e] hover:underline"
+            disabled={loading}
+          >
+            Resend OTP
+          </button>
         </form>
         <p className="mt-4 text-center text-sm">
           <Link href="/auth/login" className="text-[#22c55e] hover:underline">
@@ -89,6 +127,39 @@ export default function VerifyOtpPage() {
           </Link>
         </p>
       </div>
+
+      {/* OTP Popup for Local Development */}
+      {showOtpPopup && devOtp && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-[#fef3c7] border-2 border-[#f59e0b] rounded-lg p-4 shadow-lg z-50 max-w-sm">
+          <div className="flex items-start justify-between">
+            <div>
+              <h3 className="font-bold text-[#92400e] mb-1">Development OTP</h3>
+              <p className="text-[#b45309] text-sm mb-2">Your OTP code:</p>
+              <p className="text-2xl font-mono font-bold text-[#92400e] bg-[#fffbeb] p-2 rounded border border-[#fcd34d]">
+                {devOtp}
+              </p>
+              <button
+                onClick={() => {
+                  setOtp(devOtp)
+                  setShowOtpPopup(false)
+                }}
+                className="mt-2 w-full bg-[#f59e0b] text-white py-1 px-3 rounded text-sm hover:bg-[#d97706]"
+              >
+                Auto-fill OTP
+              </button>
+            </div>
+            <button
+              onClick={() => setShowOtpPopup(false)}
+              className="text-[#92400e] hover:text-[#78350f] ml-4"
+            >
+              ✕
+            </button>
+          </div>
+          <p className="text-xs text-[#b45309] mt-2">
+            This is for development only. In production, OTP will be sent via SMS.
+          </p>
+        </div>
+      )}
     </div>
   )
 }

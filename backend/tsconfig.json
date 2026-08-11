@@ -2,7 +2,7 @@
   "compilerOptions": {
     "module": "commonjs",
     "declaration": true,
-    "removeComments": true,
+    "removeComments": false,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
@@ -11,7 +11,7 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "baseUrl": "./",
-    "incremental": true,
+    "incremental": false,
     "skipLibCheck": true,
     "strictNullChecks": false,
     "noImplicitAny": false,
@@ -23,5 +23,8 @@
     }
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "prisma", "scripts"]
+  "exclude": ["node_modules", "dist", "prisma", "scripts"],
+  "ts-node": {
+    "require": ["tsconfig-paths/register"]
+  }
 }

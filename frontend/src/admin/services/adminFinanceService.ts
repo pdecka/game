@@ -50,27 +50,27 @@ export interface DepositListResponse {
 
 export const adminFinanceService = {
   async getDeposits(params?: { status?: string; username?: string; userId?: string; from?: string; to?: string; limit?: number; offset?: number }) {
-    const res = await adminApi.get('/admin/payments/deposits', { params })
+    const res = await adminApi.get('/admin/deposits', { params })
     return res.data as DepositListResponse
   },
 
   async approveDeposit(paymentId: string) {
-    const res = await adminApi.patch(`/admin/payments/deposits/${paymentId}/approve`)
+    const res = await adminApi.patch(`/admin/deposit/${paymentId}`, { status: 'approved' })
     return res.data
   },
 
   async rejectDeposit(paymentId: string, reason: string) {
-    const res = await adminApi.patch(`/admin/payments/deposits/${paymentId}/reject`, { reason })
+    const res = await adminApi.patch(`/admin/deposit/${paymentId}`, { status: 'rejected', reason })
     return res.data
   },
 
   async getWithdrawals(params?: { status?: string; username?: string; userId?: string; from?: string; to?: string; limit?: number; offset?: number }) {
-    const res = await adminApi.get('/admin/payments/withdrawals', { params })
+    const res = await adminApi.get('/admin/withdrawals', { params })
     return res.data as DepositListResponse
   },
 
   async approveWithdrawal(paymentId: string, payload?: { payoutReference?: string; payoutScreenshotUrl?: string }) {
-    const res = await adminApi.post(`/admin/withdrawals/${paymentId}/approve`, payload ?? {})
+    const res = await adminApi.patch(`/admin/payments/withdrawals/${paymentId}/approve`, payload ?? {})
     return res.data
   },
 

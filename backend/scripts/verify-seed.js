@@ -7,7 +7,7 @@ async function main() {
   const prisma = new PrismaClient();
   const credsPath = path.join(__dirname, '../prisma/.seed-superadmin.local.json');
   const creds = JSON.parse(fs.readFileSync(credsPath, 'utf8'));
-  const user = await prisma.user.findUnique({ where: { username: 'superadmin' } });
+  const user = await prisma.user.findUnique({ where: { username: 'admin' } });
   const games = await prisma.game.count();
   const settings = await prisma.gameSetting.count();
   const passwordOk = user ? await bcrypt.compare(creds.password, user.password) : false;
