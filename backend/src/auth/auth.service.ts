@@ -60,16 +60,26 @@ export class AuthService {
     };
   }
 
-  async register(email: string, username: string, password: string, phone?: string, countryCode?: string, referralCode?: string) {
+  async register(email: string | undefined, username: string, password: string, phone: string, countryCode: string, referralCode?: string) {
     try {
-      const existingUser = await this.usersService.findByEmail(email);
-      if (existingUser) {
-        throw new BadRequestException('User already exists');
-      }
-
+      // Check if username already exists
       const existingByUsername = await this.usersService.findByUsername(username);
       if (existingByUsername) {
         throw new BadRequestException('Username already exists');
+      }
+
+      // Check if phone number already exists
+      const existingByPhone = await this.usersService.findByPhone(phone, countryCode);
+      if (existingByPhone) {
+        throw new BadRequestException('Phone number already registered');
+      }
+
+      // Check email uniqueness only if provided
+      if (email) {
+        const existingUser = await this.usersService.findByEmail(email);
+        if (existingUser) {
+          throw new BadRequestException('Email already registered');
+        }
       }
 
       let referredByUserId: string | undefined;
@@ -82,17 +92,17 @@ export class AuthService {
 
       const hashedPassword = await bcrypt.hash(password, 10);
       const user = await this.usersService.create({
-        email,
+        email: email || null,
         username,
         password: hashedPassword,
-        phone: phone || undefined,
-        countryCode: countryCode || undefined,
+        phone,
+        countryCode,
         referredByUserId,
         // Require OTP verification before the account becomes active.
         status: UserStatus.KYC_PENDING,
       });
 
-      // Send OTP for verification (OTP_EXPIRES_IN is enforced inside otp.service.ts)
+      // Send OTP for verification to phone number
       const otpResult = await this.otpService.sendOtp(user.email, user.phone, user.countryCode);
 
       const { password: _, ...result } = user;
@@ -112,15 +122,20 @@ export class AuthService {
     }
   }
 
-  async verifyOtp(email: string, otp: string) {
+  async verifyOtp(identifier: string, otp: string) {
     try {
-      const isValid = await this.otpService.verifyOtp(email, otp);
+      const isValid = await this.otpService.verifyOtp(identifier, otp);
       if (!isValid) {
         throw new BadRequestException('Invalid OTP');
       }
 
       // Activate user only after OTP verification.
-      const user = await this.usersService.findByEmail(email);
+      // Try to find user by email first (for backward compatibility), then by phone
+      let user = await this.usersService.findByEmail(identifier);
+      if (!user) {
+        user = await this.usersService.findByPhone(identifier, '') || await this.usersService.findByUsername(identifier);
+      }
+      
       if (!user) {
         throw new BadRequestException('User not found');
       }

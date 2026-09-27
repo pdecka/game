@@ -11,7 +11,7 @@ import Link from 'next/link'
 export default function LoginPage() {
   const router = useRouter()
   const { login } = useAuth() as any
-  const [email, setEmail] = useState('')
+  const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -20,9 +20,9 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      await login(email, password)
+      await login(identifier, password)
       toast.success('Login successful!')
-      router.push('/')
+      router.push('/dashboard')
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Login failed')
     } finally {
@@ -31,39 +31,43 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[linear-gradient(135deg,#020617_0%,#0f172a_50%,#020617_100%)] p-4">
-      <div className="w-full max-w-md p-8 bg-[#ffffff] rounded-xl shadow-sm border border-[#e2e8f0]">
-        <h1 className="text-3xl font-bold text-center mb-6 text-[#020617]">Login</h1>
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0f212e] to-[#1a2c38] p-4">
+      <div className="w-full max-w-md p-8 bg-[#1a2c38] rounded-xl shadow-2xl border border-white/10">
+        <h1 className="text-3xl font-bold text-center mb-6 text-white">Welcome Back</h1>
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium mb-2">Username</label>
+            <label className="block text-sm font-medium mb-2 text-white">Username or Email</label>
             <Input
               type="text"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
               required
+              placeholder="Enter your username or email"
+              className="bg-[#0f212e] border-white/20 text-white placeholder:text-white/40"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-2">Password</label>
+            <label className="block text-sm font-medium mb-2 text-white">Password</label>
             <Input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              placeholder="Enter your password"
+              className="bg-[#0f212e] border-white/20 text-white placeholder:text-white/40"
             />
           </div>
           <Button
             type="submit"
-            className="w-full bg-[#22c55e] hover:opacity-90 text-[#ffffff] font-medium transition-all duration-200"
+            className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-medium transition-all duration-200"
             disabled={loading}
           >
             {loading ? 'Logging in...' : 'Login'}
           </Button>
         </form>
-        <p className="mt-4 text-center text-sm">
+        <p className="mt-6 text-center text-sm text-white/60">
           Don&apos;t have an account?{' '}
-          <Link href="/auth/register" className="text-[#22c55e] hover:underline">
+          <Link href="/auth/register" className="text-emerald-400 hover:text-emerald-300 hover:underline">
             Register
           </Link>
         </p>

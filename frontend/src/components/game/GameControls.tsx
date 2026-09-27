@@ -120,7 +120,7 @@ export default function GameControls({
             disabled={gameState === 'playing' || loading}
             className="w-full bg-[#1a2c38] border border-white/20 text-white rounded-lg px-4 py-2 appearance-none cursor-pointer shadow-inner shadow-black/30 pr-10 h-10 max-h-[100px] overflow-y-auto"
           >
-            {Array.from({ length: 23 }, (_, i) => i + 1).map((num) => (
+            {Array.from({ length: 23 }, (_, i) => i + 2).map((num) => (
               <option key={num} value={num} className="bg-[#1a2c38] text-white">
                 {num} {num === 1 ? 'Mine' : 'Mines'}
               </option>

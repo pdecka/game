@@ -11,6 +11,7 @@ import GameControls from '@/components/game/GameControls'
 import HistoryTable, { dummyHistory } from '@/components/game/HistoryTable'
 import SponsorsSection from '@/components/game/SponsorsSection'
 import { useMinesGame } from '@/components/game/useMinesGame'
+import ProvablyFairModal from '@/components/game/ProvablyFairModal'
 import { Button } from '@/components/ui/button'
 import { Shield, RefreshCw, Trophy, MessageSquare, Phone, Facebook, Twitter, Instagram, Youtube, Send, Globe, ChevronUp } from 'lucide-react'
 
@@ -27,6 +28,7 @@ export default function MinesPage() {
   const [walletBalance] = useState(5000) // Dummy balance
   const [selectedLanguage, setSelectedLanguage] = useState('English')
   const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false)
+  const [showProvablyFair, setShowProvablyFair] = useState(false)
   
   const walletLabel =
     walletLoading || !wallet?.INR ? '₹0.00' : `₹${Number(wallet.INR).toFixed(2)}`
@@ -206,7 +208,9 @@ export default function MinesPage() {
                   variant="outline"
                   size="sm"
                   className="border-white/20 text-white min-w-[120px]"
+                  onClick={() => setShowProvablyFair(true)}
                 >
+                  <Shield className="h-4 w-4 mr-2" />
                   Fairness
                 </Button>
               </div>
@@ -216,6 +220,18 @@ export default function MinesPage() {
             <HistoryTable history={dummyHistory} />
           </div>
         </div>
+
+        {/* Provably Fair Modal */}
+        <ProvablyFairModal
+          isOpen={showProvablyFair}
+          onClose={() => setShowProvablyFair(false)}
+          sessionId={gameData.sessionId}
+          gameCompleted={gameState === 'lost' || gameState === 'cashed_out'}
+          serverSeedHash={gameData.serverSeedHash}
+          clientSeed={gameData.clientSeed}
+          nonce={gameData.nonce}
+          algorithmVersion={gameData.algorithmVersion}
+        />
 
         {/* Footer - From Main Page */}
         <footer className="bg-[#0f212e] border-t border-white/10">

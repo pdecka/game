@@ -14,6 +14,10 @@ interface GameData {
   currentMultiplier: number
   potentialWin: number
   sessionId?: string
+  serverSeedHash?: string
+  clientSeed?: string
+  nonce?: number
+  algorithmVersion?: string
 }
 
 const emptyGrid = () => Array(25).fill(false)
@@ -21,7 +25,7 @@ const emptyGrid = () => Array(25).fill(false)
 export function useMinesGame() {
   const [gameState, setGameState] = useState<GameState>('idle')
   const [betAmount, setBetAmount] = useState('')
-  const [minesCount, setMinesCount] = useState(3)
+  const [minesCount, setMinesCount] = useState(3) // Default 3 mines
   const [gameData, setGameData] = useState<GameData>({
     betAmount: 0,
     minesCount: 3,
@@ -30,6 +34,10 @@ export function useMinesGame() {
     revealedCount: 0,
     currentMultiplier: 1,
     potentialWin: 0,
+    serverSeedHash: undefined,
+    clientSeed: undefined,
+    nonce: undefined,
+    algorithmVersion: undefined,
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -48,6 +56,11 @@ export function useMinesGame() {
     const bet = parseFloat(betAmount)
     if (bet <= 0 || isNaN(bet)) {
       setError('Invalid bet amount')
+      return false
+    }
+
+    if (minesCount < 2 || minesCount > 24) {
+      setError('Mine count must be between 2 and 24')
       return false
     }
 
@@ -73,6 +86,10 @@ export function useMinesGame() {
         currentMultiplier: 1,
         potentialWin: bet,
         sessionId: response.data.id ?? response.data.sessionId,
+        serverSeedHash: response.data.hash,
+        clientSeed: response.data.clientSeed,
+        nonce: response.data.nonce,
+        algorithmVersion: response.data.result?.algorithmVersion,
       })
 
       setGameState('playing')

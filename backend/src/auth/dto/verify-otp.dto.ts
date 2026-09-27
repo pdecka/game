@@ -1,8 +1,13 @@
-import { IsEmail, IsString, Length } from 'class-validator';
+import { IsEmail, IsString, Length, IsOptional } from 'class-validator';
 
 export class VerifyOtpDto {
+  @IsOptional()
   @IsEmail()
-  email: string;
+  email?: string;
+
+  @IsOptional()
+  @IsString()
+  phone?: string;
 
   @IsString()
   @Length(6, 6)

@@ -2,7 +2,7 @@ import api from './api'
 
 export interface User {
   id: string
-  email: string
+  email?: string
   username: string
   role: string
   status: string
@@ -17,11 +17,11 @@ export interface LoginResponse {
 
 export const authService = {
   async register(
-    email: string,
+    email: string | undefined,
     username: string,
     password: string,
-    phone?: string,
-    countryCode?: string,
+    phone: string,
+    countryCode: string,
     referralCode?: string,
   ) {
     const response = await api.post('/auth/register', {
@@ -35,16 +35,16 @@ export const authService = {
     return response.data
   },
 
-  async login(email: string, password: string): Promise<LoginResponse> {
-    const response = await api.post('/auth/login', { email, password })
+  async login(identifier: string, password: string): Promise<LoginResponse> {
+    const response = await api.post('/auth/login', { email: identifier, password })
     const data = response.data
     localStorage.setItem('token', data.access_token)
     localStorage.setItem('user', JSON.stringify(data.user))
     return data
   },
 
-  async verifyOtp(email: string, otp: string) {
-    const response = await api.post('/auth/verify-otp', { email, otp })
+  async verifyOtp(identifier: string, otp: string) {
+    const response = await api.post('/auth/verify-otp', { email: identifier, otp })
     return response.data
   },
 

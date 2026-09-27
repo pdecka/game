@@ -10,7 +10,7 @@ export class UsersService {
   async create(userData: Partial<User>): Promise<User> {
     return this.prisma.user.create({
       data: {
-        email: userData.email!,
+        email: userData.email ?? null,
         username: userData.username!,
         password: userData.password!,
         phone: userData.phone ?? null,
@@ -54,6 +54,15 @@ export class UsersService {
 
   async findByUsername(username: string): Promise<User | null> {
     return this.prisma.user.findUnique({ where: { username } });
+  }
+
+  async findByPhone(phone: string, countryCode: string): Promise<User | null> {
+    return this.prisma.user.findFirst({ 
+      where: { 
+        phone,
+        countryCode 
+      } 
+    });
   }
 
   async findByReferralCode(code: string): Promise<User | null> {

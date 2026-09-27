@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, UseGuards, Request, Query } from '@nestjs/common';
+import { Controller, Post, Get, Body, UseGuards, Request, Query, Param } from '@nestjs/common';
 import { GamesService } from './games.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import {
@@ -84,6 +84,46 @@ export class GamesController {
   @Post('mines/cashout')
   async cashoutMines(@Request() req, @Body() cashoutDto: { sessionId: string }) {
     return this.gamesService.cashoutMines(req.user.id, cashoutDto.sessionId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('mines/verify/:sessionId')
+  async verifyMines(@Request() req, @Param('sessionId') sessionId: string) {
+    return this.gamesService.verifyMinesGame(req.user.id, sessionId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('mines/active')
+  async getActiveMines(@Request() req) {
+    return this.gamesService.getActiveMinesGame(req.user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('mines/auto/start')
+  async startAutoMines(@Request() req, @Body() autoDto: {
+    betAmount: number;
+    mines: number;
+    games: number;
+    stopOnLoss?: boolean;
+    stopOnWin?: boolean;
+    stopAtMultiplier?: number;
+    stopAtProfit?: number;
+    maxLoss?: number;
+    pickSequence?: number[];
+  }) {
+    return this.gamesService.startAutoMines(req.user.id, autoDto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('mines/auto/stop')
+  async stopAutoMines(@Request() req) {
+    return this.gamesService.stopAutoMines(req.user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('mines/auto/status')
+  async getAutoMinesStatus(@Request() req) {
+    return this.gamesService.getAutoMinesStatus(req.user.id);
   }
 
   @UseGuards(JwtAuthGuard)

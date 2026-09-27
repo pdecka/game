@@ -200,7 +200,8 @@ export class AdminService {
       return { success: true, message: 'Wallet transaction recovered successfully' };
     } catch (error) {
       console.error('Wallet recovery failed:', error);
-      throw new BadRequestException(`Wallet recovery failed: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new BadRequestException(`Wallet recovery failed: ${errorMessage}`);
     }
   }
 
@@ -270,6 +271,12 @@ export class AdminService {
 
   async upsertGameSetting(dto: UpdateGameSettingDto) {
     const existing = await this.prisma.gameSetting.findUnique({ where: { gameType: dto.gameType as any } });
+    
+    // Merge existing metadata with new metadata for game-specific settings
+    const existingMetadata = existing?.metadata as Record<string, any> || {};
+    const newMetadata = dto.metadata as Record<string, any> || {};
+    const mergedMetadata = { ...existingMetadata, ...newMetadata };
+
     if (!existing) {
       return this.prisma.gameSetting.create({
         data: {
@@ -284,6 +291,7 @@ export class AdminService {
           manualOverride: dto.manualOverride ?? false,
           forceWin: dto.forceWin ?? null,
           winChance: dto.winChance ?? null,
+          metadata: mergedMetadata,
         },
       });
     }
@@ -301,6 +309,7 @@ export class AdminService {
         manualOverride: dto.manualOverride ?? existing.manualOverride,
         forceWin: dto.forceWin ?? existing.forceWin,
         winChance: dto.winChance ?? existing.winChance,
+        metadata: mergedMetadata,
       },
     });
   }

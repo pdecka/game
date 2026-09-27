@@ -209,7 +209,7 @@ enum FraudFlagStatus {
 
 model User {
   id                    String     @id @default(uuid())
-  email                 String     @unique
+  email                 String?    @unique
   username              String     @unique
   password              String
   phone                 String?
@@ -397,6 +397,7 @@ model GameSetting {
   manualOverride Boolean  @default(false)
   forceWin       Boolean?
   winChance      Decimal? @db.Decimal(6, 4)
+  metadata       Json?    // Game-specific configuration (e.g., Mines limits, auto-play settings)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 

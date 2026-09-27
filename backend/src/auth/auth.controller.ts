@@ -68,7 +68,7 @@ export class AuthController {
   async verifyOtp(@Body() verifyOtpDto: VerifyOtpDto) {
     console.log('[auth/verify-otp] REQ BODY:', { email: verifyOtpDto?.email, otpProvided: Boolean(verifyOtpDto?.otp) });
     try {
-      const res = await this.authService.verifyOtp(verifyOtpDto.email, verifyOtpDto.otp);
+      const res = await this.authService.verifyOtp(verifyOtpDto.email || verifyOtpDto.phone, verifyOtpDto.otp);
       console.log('[auth/verify-otp] OK:', res);
       return res;
     } catch (error) {

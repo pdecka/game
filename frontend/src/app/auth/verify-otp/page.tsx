@@ -13,17 +13,11 @@ export default function VerifyOtpPage() {
   const searchParams = useSearchParams()
   const phoneParam = searchParams.get('phone') || ''
   const countryCodeParam = searchParams.get('countryCode') || ''
-  const derivedEmail = phoneParam ? `${phoneParam.replace(/\D/g, '')}@otp.local` : ''
 
-  const [email, setEmail] = useState('')
   const [otp, setOtp] = useState('')
   const [loading, setLoading] = useState(false)
   const [devOtp, setDevOtp] = useState<string | null>(null)
   const [showOtpPopup, setShowOtpPopup] = useState(false)
-
-  useEffect(() => {
-    if (derivedEmail) setEmail(derivedEmail)
-  }, [derivedEmail])
 
   const handleResendOtp = async () => {
     try {
@@ -43,16 +37,24 @@ export default function VerifyOtpPage() {
     setLoading(true)
 
     try {
-      const emailToUse = derivedEmail || email
-      if (!emailToUse) {
-        toast.error('Missing email for OTP verification')
+      // Use phone number as identifier for OTP verification
+      const identifier = phoneParam || (localStorage.getItem('phone') || '')
+      if (!identifier) {
+        toast.error('Missing phone number for OTP verification')
         setLoading(false)
         return
       }
 
-      await authService.verifyOtp(emailToUse, otp)
+      await authService.verifyOtp(identifier, otp)
       toast.success('OTP verified successfully!')
-      router.push('/auth/login')
+      
+      // Clear localStorage after successful verification
+      localStorage.removeItem('devOtp')
+      localStorage.removeItem('phone')
+      localStorage.removeItem('countryCode')
+      
+      // Redirect to dashboard after successful verification
+      router.push('/dashboard')
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'OTP verification failed')
     } finally {
@@ -72,30 +74,24 @@ export default function VerifyOtpPage() {
   }, [])
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[linear-gradient(135deg,#020617_0%,#0f172a_50%,#020617_100%)] p-4">
-      <div className="w-full max-w-md p-8 bg-[#ffffff] rounded-xl shadow-sm border border-[#e2e8f0]">
-        <h1 className="text-3xl font-bold text-center mb-6 text-[#020617]">Verify OTP</h1>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {phoneParam ? (
-            <div className="rounded-md border border-[#e2e8f0] bg-[#e2e8f0]/20 p-3 text-sm text-[#64748b]">
-              Verifying OTP for{' '}
-              <span className="font-medium text-[#020617]">
-                {countryCodeParam ? `+${countryCodeParam} ` : ''}{phoneParam}
-              </span>
-            </div>
-          ) : (
-            <div>
-              <label className="block text-sm font-medium mb-2">Email</label>
-              <Input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-          )}
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0f212e] to-[#1a2c38] p-4">
+      <div className="w-full max-w-md p-8 bg-[#1a2c38] rounded-xl shadow-2xl border border-white/10">
+        <h1 className="text-3xl font-bold text-center mb-6 text-white">Verify OTP</h1>
+        
+        {phoneParam && (
+          <div className="rounded-md border border-white/20 bg-[#0f212e]/20 p-4 text-sm text-white/70 mb-6">
+            <p className="text-center">
+              Enter the OTP sent to your mobile number
+            </p>
+            <p className="text-center font-medium text-white mt-1">
+              {countryCodeParam ? `${countryCodeParam} ` : ''}{phoneParam}
+            </p>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium mb-2">OTP Code</label>
+            <label className="block text-sm font-medium mb-2 text-white">OTP Code</label>
             <Input
               type="text"
               value={otp}
@@ -103,11 +99,12 @@ export default function VerifyOtpPage() {
               placeholder="Enter 6-digit OTP"
               maxLength={6}
               required
+              className="bg-[#0f212e] border-white/20 text-white placeholder:text-white/40"
             />
           </div>
           <Button
             type="submit"
-            className="w-full bg-[#22c55e] hover:opacity-90 text-[#ffffff] font-medium transition-all duration-200"
+            className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-medium transition-all duration-200"
             disabled={loading}
           >
             {loading ? 'Verifying...' : 'Verify OTP'}
@@ -115,14 +112,14 @@ export default function VerifyOtpPage() {
           <button
             type="button"
             onClick={handleResendOtp}
-            className="w-full text-sm text-[#22c55e] hover:underline"
+            className="w-full text-sm text-emerald-400 hover:text-emerald-300 hover:underline disabled:opacity-50"
             disabled={loading}
           >
             Resend OTP
           </button>
         </form>
-        <p className="mt-4 text-center text-sm">
-          <Link href="/auth/login" className="text-[#22c55e] hover:underline">
+        <p className="mt-6 text-center text-sm text-white/60">
+          <Link href="/auth/login" className="text-emerald-400 hover:text-emerald-300 hover:underline">
             Back to Login
           </Link>
         </p>

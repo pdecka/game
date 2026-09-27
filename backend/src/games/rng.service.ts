@@ -19,28 +19,54 @@ export class RngService {
     return Math.max(1.00, (100 * e - h) / (e - h) / 100);
   }
 
-  generateMines(gridSize: number, mines: number, serverSeed: string, clientSeed: string, nonce: number): number[] {
-    const hash = this.generateHash(serverSeed, clientSeed, nonce);
-    const positions: number[] = [];
-    let hashIndex = 0;
-
-    while (positions.length < mines) {
-      const byte = parseInt(hash.substring(hashIndex * 2, hashIndex * 2 + 2), 16);
-      const position = byte % gridSize;
+  /**
+   * Generate mine positions using deterministic HMAC-SHA256 and Fisher-Yates shuffle.
+   * This ensures provable fairness - the same seeds + nonce always produce the same board.
+   * Algorithm version: mines-v1
+   */
+  generateMines(gridSize: number, mines: number, serverSeed: string, clientSeed: string, nonce: number, algorithmVersion: string = 'mines-v1'): number[] {
+    // Create all board positions (0 to gridSize-1)
+    const positions = Array.from({ length: gridSize }, (_, i) => i);
+    
+    // Deterministic Fisher-Yates shuffle using HMAC-SHA256
+    for (let i = positions.length - 1; i > 0; i--) {
+      // Generate deterministic random number using HMAC-SHA256
+      const randomValue = this.generateHmacInt(serverSeed, clientSeed, nonce, algorithmVersion, i, 0, i);
+      const j = randomValue;
       
-      if (!positions.includes(position)) {
-        positions.push(position);
-      }
-      
-      hashIndex++;
-      if (hashIndex * 2 >= hash.length) {
-        // Generate new hash if needed
-        const newHash = this.generateHash(serverSeed, clientSeed, nonce + hashIndex);
-        hashIndex = 0;
-      }
+      // Swap positions[i] and positions[j]
+      const temp = positions[i];
+      positions[i] = positions[j];
+      positions[j] = temp;
     }
+    
+    // First 'mines' positions are mines, rest are safe
+    return positions.slice(0, mines);
+  }
 
-    return positions;
+  /**
+   * Generate a deterministic integer using HMAC-SHA256 for provable fairness.
+   * This is cryptographically stronger than simple hash concatenation.
+   */
+  private generateHmacInt(
+    serverSeed: string,
+    clientSeed: string,
+    nonce: number,
+    algorithmVersion: string,
+    additionalContext: number,
+    min: number,
+    max: number
+  ): number {
+    // HMAC-SHA256 for cryptographic commitment
+    const hmac = crypto.createHmac('sha256', serverSeed);
+    const data = `${algorithmVersion}:${clientSeed}:${nonce}:${additionalContext}`;
+    hmac.update(data);
+    const hash = hmac.digest('hex');
+    
+    // Convert hash to integer in range [min, max]
+    const float = this.hashToFloat(hash);
+    const span = max - min + 1;
+    return min + Math.floor(float * span);
   }
 
   generatePlinkoPath(

@@ -1,5 +1,6 @@
-import { IsBoolean, IsEnum, IsNumber, IsOptional, Max, Min } from 'class-validator';
+import { IsBoolean, IsEnum, IsNumber, IsOptional, Max, Min, IsObject } from 'class-validator';
 import { Currency, GameType } from '@gaming-platform/shared';
+import { Type } from 'class-transformer';
 
 export class UpdateGameSettingDto {
   @IsEnum(GameType)
@@ -53,5 +54,10 @@ export class UpdateGameSettingDto {
   @Min(0)
   @Max(1)
   winChance?: number | null;
+
+  @IsOptional()
+  @IsObject()
+  @Type(() => Object)
+  metadata?: Record<string, any>;
 }
 
