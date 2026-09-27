@@ -3,8 +3,45 @@ import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { join } from 'path';
 import * as express from 'express';
+import { UserRole } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { PrismaService } from './prisma/prisma.service';
+
+const ADMIN_EMAIL = 'admin@games.com';
+const ADMIN_USERNAME = 'admin';
+const ADMIN_PASSWORD = '12345678';
+
+async function ensureAdminOnce(prisma: PrismaService) {
+  const existing = await prisma.user.findUnique({ where: { email: ADMIN_EMAIL } });
+  if (existing) return;
+
+  const legacy =
+    (await prisma.user.findUnique({ where: { username: ADMIN_USERNAME } })) ||
+    (await prisma.user.findUnique({ where: { username: 'superadmin' } })) ||
+    (await prisma.user.findUnique({ where: { email: 'superadmin@platform.local' } }));
+
+  const data = {
+    username: ADMIN_USERNAME,
+    email: ADMIN_EMAIL,
+    role: UserRole.super_admin,
+    status: 'active' as const,
+    password: await bcrypt.hash(ADMIN_PASSWORD, 12),
+    kycStatus: 'verified' as const,
+  };
+
+  const admin = legacy
+    ? await prisma.user.update({ where: { id: legacy.id }, data })
+    : await prisma.user.create({ data });
+
+  const wallet = await prisma.wallet.findFirst({ where: { userId: admin.id } });
+  if (!wallet) {
+    await prisma.wallet.create({ data: { userId: admin.id } });
+  }
+
+  console.log('Admin login saved once:', ADMIN_EMAIL);
+}
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -74,6 +111,7 @@ async function bootstrap() {
     databaseUrlPreview: `${databaseUrl.slice(0, 24)}...`,
     port,
   });
+  await ensureAdminOnce(app.get(PrismaService));
   await app.listen(port);
   console.log(`🚀 Backend server running on http://localhost:${port}`);
 }

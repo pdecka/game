@@ -29,9 +29,10 @@ npm run dev
 - Frontend: http://localhost:3000  
 - Backend: http://localhost:3001/api
 
-**Default admin credentials (local):**
-- Email: admin@games.com
-- Password: 12345678  
+**Admin login** (`/admin`) — same on local and production:
+
+- Email: `admin@games.com`
+- Password: `12345678`
 
 ## Production env
 
@@ -51,9 +52,7 @@ npm run dev
 |----------|-------|
 | `NEXT_PUBLIC_API_URL` | `https://lucky-games.onrender.com/api` |
 
-**Seed:** runs automatically on every Render deploy (`migrate` → `seed` → `start`).
-
-Set `SUPERADMIN_PASSWORD` on Render **before the first deploy** so you know the admin password. After first deploy, check Render logs for `SUPERADMIN_PASSWORD=` if you did not set it.
+**Admin login** is saved once. Later deploys do not reset it.
 
 ## Build (Render)
 
