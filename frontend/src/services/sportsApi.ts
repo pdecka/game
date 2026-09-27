@@ -2,7 +2,7 @@ import { MatchData } from '@/components/sports/MatchCard'
 
 // Odds are fetched through our backend proxy so The Odds API key never
 // reaches the browser (see backend GET /api/sports/odds/upcoming).
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://game-20eg.onrender.com/api'
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://lucky-games.onrender.com/api'
 
 export interface SportCategory {
   sport_title: string

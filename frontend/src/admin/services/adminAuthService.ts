@@ -2,7 +2,7 @@
 
 import axios from 'axios'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://game-20eg.onrender.com/api'
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://lucky-games.onrender.com/api'
 const ADMIN_TOKEN_KEY = 'admin_token'
 const ADMIN_USER_KEY = 'admin_user'
 

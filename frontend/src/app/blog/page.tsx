@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'https://game-20eg.onrender.com/api'
+const API = process.env.NEXT_PUBLIC_API_URL || 'https://lucky-games.onrender.com/api'
 
 type Post = {
   id: string

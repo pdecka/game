@@ -14,32 +14,42 @@ const ADMIN_USERNAME = 'admin';
 const ADMIN_PASSWORD = '12345678';
 
 async function ensureAdminOnce(prisma: PrismaService) {
-  const existing = await prisma.user.findUnique({ where: { email: ADMIN_EMAIL } });
-  if (existing) return;
+  await prisma.$executeRawUnsafe(
+    `CREATE TABLE IF NOT EXISTS app_flags (key TEXT PRIMARY KEY, value TEXT NOT NULL)`,
+  );
+  const saved = await prisma.$queryRawUnsafe<Array<{ key: string }>>(
+    `SELECT key FROM app_flags WHERE key = 'admin_login_v1'`,
+  );
+  if (saved.length > 0) return;
 
+  const byEmail = await prisma.user.findUnique({ where: { email: ADMIN_EMAIL } });
+  const byUsername = await prisma.user.findUnique({ where: { username: ADMIN_USERNAME } });
   const legacy =
-    (await prisma.user.findUnique({ where: { username: ADMIN_USERNAME } })) ||
     (await prisma.user.findUnique({ where: { username: 'superadmin' } })) ||
     (await prisma.user.findUnique({ where: { email: 'superadmin@platform.local' } }));
+  const target = byEmail || byUsername || legacy;
 
   const data = {
-    username: ADMIN_USERNAME,
     email: ADMIN_EMAIL,
     role: UserRole.super_admin,
     status: 'active' as const,
     password: await bcrypt.hash(ADMIN_PASSWORD, 12),
     kycStatus: 'verified' as const,
+    ...(!byUsername || byUsername.id === target?.id ? { username: ADMIN_USERNAME } : {}),
   };
 
-  const admin = legacy
-    ? await prisma.user.update({ where: { id: legacy.id }, data })
-    : await prisma.user.create({ data });
+  const admin = target
+    ? await prisma.user.update({ where: { id: target.id }, data })
+    : await prisma.user.create({ data: { ...data, username: ADMIN_USERNAME } });
 
   const wallet = await prisma.wallet.findFirst({ where: { userId: admin.id } });
   if (!wallet) {
     await prisma.wallet.create({ data: { userId: admin.id } });
   }
 
+  await prisma.$executeRawUnsafe(
+    `INSERT INTO app_flags (key, value) VALUES ('admin_login_v1', 'saved') ON CONFLICT (key) DO NOTHING`,
+  );
   console.log('Admin login saved once:', ADMIN_EMAIL);
 }
 

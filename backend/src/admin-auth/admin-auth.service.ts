@@ -102,8 +102,9 @@ export class AdminAuthService {
 
   async login(email: string, password: string) {
     try {
-      console.log('[admin/auth/login] INPUT:', { email });
-      const user = await this.usersService.findByEmail(email);
+      const normalizedEmail = (email || '').trim().toLowerCase();
+      console.log('[admin/auth/login] INPUT:', { email: normalizedEmail });
+      const user = await this.usersService.findByEmail(normalizedEmail);
       if (!user) {
         throw new UnauthorizedException('Invalid credentials');
       }
