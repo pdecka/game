@@ -23,7 +23,7 @@
     }
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "prisma", "scripts"],
+  "exclude": ["node_modules", "dist", "prisma", "scripts", "**/*.spec.ts", "**/*.test.ts", "test"],
   "ts-node": {
     "require": ["tsconfig-paths/register"]
   }
