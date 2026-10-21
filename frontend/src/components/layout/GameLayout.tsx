@@ -33,7 +33,7 @@ export function GameLayout({ children }: GameLayoutProps) {
   }
 
   return (
-    <main className="flex h-screen overflow-hidden bg-gradient-to-br from-[#0f212e] to-[#1a2c38] text-slate-100">
+    <main className="flex h-screen overflow-hidden bg-bg text-ink">
       <Sidebar
         collapsed={isSidebarCollapsed}
         onToggle={() => setIsSidebarCollapsed((prev) => !prev)}

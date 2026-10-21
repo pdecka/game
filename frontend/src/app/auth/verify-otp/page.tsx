@@ -74,16 +74,16 @@ export default function VerifyOtpPage() {
   }, [])
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0f212e] to-[#1a2c38] p-4">
-      <div className="w-full max-w-md p-8 bg-[#1a2c38] rounded-xl shadow-2xl border border-white/10">
-        <h1 className="text-3xl font-bold text-center mb-6 text-white">Verify OTP</h1>
+    <div className="flex min-h-screen items-center justify-center bg-bg-2 p-4">
+      <div className="w-full max-w-md rounded-2xl border border-line bg-card p-8 shadow-panel">
+        <h1 className="mb-6 text-center text-3xl font-bold text-ink">Verify OTP</h1>
         
         {phoneParam && (
-          <div className="rounded-md border border-white/20 bg-[#0f212e]/20 p-4 text-sm text-white/70 mb-6">
+          <div className="mb-6 rounded-md border border-line bg-elevated p-4 text-sm text-ink-2">
             <p className="text-center">
               Enter the OTP sent to your mobile number
             </p>
-            <p className="text-center font-medium text-white mt-1">
+            <p className="mt-1 text-center font-medium text-ink">
               {countryCodeParam ? `${countryCodeParam} ` : ''}{phoneParam}
             </p>
           </div>
@@ -91,7 +91,7 @@ export default function VerifyOtpPage() {
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium mb-2 text-white">OTP Code</label>
+            <label className="mb-2 block text-sm font-medium text-ink">OTP Code</label>
             <Input
               type="text"
               value={otp}
@@ -99,12 +99,11 @@ export default function VerifyOtpPage() {
               placeholder="Enter 6-digit OTP"
               maxLength={6}
               required
-              className="bg-[#0f212e] border-white/20 text-white placeholder:text-white/40"
             />
           </div>
           <Button
             type="submit"
-            className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-medium transition-all duration-200"
+            className="w-full"
             disabled={loading}
           >
             {loading ? 'Verifying...' : 'Verify OTP'}
@@ -112,14 +111,14 @@ export default function VerifyOtpPage() {
           <button
             type="button"
             onClick={handleResendOtp}
-            className="w-full text-sm text-emerald-400 hover:text-emerald-300 hover:underline disabled:opacity-50"
+            className="w-full text-sm font-medium text-brand-2 hover:underline disabled:opacity-50"
             disabled={loading}
           >
             Resend OTP
           </button>
         </form>
-        <p className="mt-6 text-center text-sm text-white/60">
-          <Link href="/auth/login" className="text-emerald-400 hover:text-emerald-300 hover:underline">
+        <p className="mt-6 text-center text-sm text-ink-2">
+          <Link href="/auth/login" className="font-medium text-brand-2 hover:underline">
             Back to Login
           </Link>
         </p>

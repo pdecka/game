@@ -44,24 +44,24 @@ export default function BlogDetailPage() {
   if (!slug) return null
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-[#0b1220] to-[#111827] text-slate-100">
+    <main className="min-h-screen bg-bg-2 text-ink">
       <article className="mx-auto max-w-3xl px-4 py-12">
-        <Link href="/blog" className="text-sm text-emerald-400 hover:underline">
+        <Link href="/blog" className="text-sm text-brand-2 hover:underline">
           ← Back
         </Link>
         {loading ? (
-          <p className="mt-8 text-slate-500">Loading…</p>
+          <p className="mt-8 text-ink-3">Loading…</p>
         ) : !post ? (
-          <p className="mt-8 text-slate-500">Post not found.</p>
+          <p className="mt-8 text-ink-3">Post not found.</p>
         ) : (
           <>
-            <h1 className="mt-6 text-3xl font-bold text-white">{post.title}</h1>
-            <p className="mt-2 text-sm text-slate-500">{new Date(post.createdAt).toLocaleString()}</p>
+            <h1 className="mt-6 text-3xl font-bold text-ink">{post.title}</h1>
+            <p className="mt-2 text-sm text-ink-3">{new Date(post.createdAt).toLocaleString()}</p>
             {post.imageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={post.imageUrl} alt="" className="mt-6 w-full rounded-2xl border border-white/10" />
+              <img src={post.imageUrl} alt="" className="mt-6 w-full rounded-2xl border border-line" />
             ) : null}
-            <div className="prose prose-invert mt-8 max-w-none whitespace-pre-wrap text-slate-200">{post.content}</div>
+            <div className="prose mt-8 max-w-none whitespace-pre-wrap text-ink-2">{post.content}</div>
           </>
         )}
       </article>

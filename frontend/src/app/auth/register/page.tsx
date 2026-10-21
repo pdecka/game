@@ -88,36 +88,34 @@ function RegisterForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0f212e] to-[#1a2c38] p-4">
-      <div className="w-full max-w-md p-8 bg-[#1a2c38] rounded-xl shadow-2xl border border-white/10">
-        <h1 className="text-3xl font-bold text-center mb-6 text-white">Create Account</h1>
+    <div className="flex min-h-screen items-center justify-center bg-bg-2 p-4">
+      <div className="w-full max-w-md rounded-2xl border border-line bg-card p-8 shadow-panel">
+        <h1 className="mb-6 text-center text-3xl font-bold text-ink">Create Account</h1>
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium mb-2 text-white">Username</label>
+            <label className="mb-2 block text-sm font-medium text-ink">Username</label>
             <Input
               type="text"
               value={formData.username}
               onChange={(e) => setFormData({ ...formData, username: e.target.value })}
               required
               placeholder="Choose a username"
-              className="bg-[#0f212e] border-white/20 text-white placeholder:text-white/40"
             />
           </div>
           
           <div>
-            <label className="block text-sm font-medium mb-2 text-white">Password</label>
+            <label className="mb-2 block text-sm font-medium text-ink">Password</label>
             <Input
               type="password"
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               required
               placeholder="Create a password"
-              className="bg-[#0f212e] border-white/20 text-white placeholder:text-white/40"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2 text-white">Mobile Number</label>
+            <label className="mb-2 block text-sm font-medium text-ink">Mobile Number</label>
             <div className="flex">
               <CountryCodeSelector
                 value={formData.countryCode}
@@ -130,25 +128,25 @@ function RegisterForm() {
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 required
                 placeholder="Mobile number"
-                className="flex-1 bg-[#0f212e] border-l-0 border-white/20 text-white placeholder:text-white/40 rounded-l-none"
+                className="flex-1 rounded-l-none border-l-0"
               />
             </div>
-            <p className="text-xs text-white/40 mt-1">
+            <p className="mt-1 text-xs text-ink-3">
               We'll send you an OTP to verify your number
             </p>
           </div>
 
           <Button
             type="submit"
-            className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-medium transition-all duration-200"
+            className="w-full"
             disabled={loading}
           >
             {loading ? 'Creating Account...' : 'Create Account'}
           </Button>
         </form>
-        <p className="mt-6 text-center text-sm text-white/60">
+        <p className="mt-6 text-center text-sm text-ink-2">
           Already have an account?{' '}
-          <Link href="/auth/login" className="text-emerald-400 hover:text-emerald-300 hover:underline">
+          <Link href="/auth/login" className="font-medium text-brand-2 hover:underline">
             Login
           </Link>
         </p>
@@ -185,7 +183,7 @@ export default function RegisterPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#0f212e] to-[#1a2c38] text-slate-200">
+        <div className="flex min-h-screen items-center justify-center bg-bg-2 text-ink-2">
           Loading…
         </div>
       }

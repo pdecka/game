@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, OnModuleInit } from '@nestjs/common'
+import { BadRequestException, Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
 import { PrismaService } from '../prisma/prisma.service'
 import { WalletService } from '../wallet/wallet.service'
 import { Currency, TransactionType } from '@gaming-platform/shared'
@@ -6,20 +6,42 @@ import { SportType, SportsMatchStatus, SportsBetStatus, SportsBetType } from './
 import { OddsEngineService, SportsMarket } from './odds-engine.service'
 import { CricketProvider } from './providers/cricket.provider'
 import { SportSrcProvider } from './providers/sportsrc.provider'
+import { NormalizedEvent, OddsApiProvider, OddsBookmaker } from './providers/odds-api.provider'
+import { EspnScoreboardProvider } from './providers/espn-scoreboard.provider'
+import { gradeBookmakerBet } from './odds-grade'
 import { toNum } from '../common/utils/prisma-decimal'
 
+type PlaceBetInput = {
+  sport: string
+  matchId: string
+  betType?: SportsBetType
+  selection: string
+  line?: number
+  stake: number
+  marketKey?: string
+  bookmaker?: string
+  odds?: number
+}
+
 @Injectable()
-export class SportsService implements OnModuleInit {
+export class SportsService implements OnModuleInit, OnModuleDestroy {
   private cricketProvider = new CricketProvider()
   private sportSrcProvider = new SportSrcProvider()
+  private oddsApi = new OddsApiProvider()
+  private espn = new EspnScoreboardProvider()
 
   private fetchTimer: any
   private settleTimer: any
+  private refreshing = false
+  private bootstrapped = false
+  private ready: Promise<void> | null = null
+  private scoreFetchedAt = new Map<string, number>()
 
-  // Server-side cache of The Odds API feed so the key stays off the client
-  // and we don't burn through the request quota.
-  private oddsFeedCache: { data: any[]; fetchedAt: number } | null = null
-  private readonly oddsFeedTtlMs = 30_000
+  private oddsFeedMeta: { configured: boolean; upstreamStatus: number | null; reason: string } = {
+    configured: false,
+    upstreamStatus: null,
+    reason: 'not_loaded',
+  }
 
   constructor(
     private readonly prisma: PrismaService,
@@ -28,12 +50,15 @@ export class SportsService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    // Ensure default settings rows exist.
     await this.ensureDefaultSettings()
+    this.fetchTimer = setInterval(() => this.tickOddsFeed(3).catch(() => {}), 60_000)
+    this.settleTimer = setInterval(() => this.settleAll().catch(() => {}), 60_000)
+    void this.ensureReady().catch(() => {})
+  }
 
-    // Near-real-time: refresh cache + settle in background (no extra deps).
-    this.fetchTimer = setInterval(() => this.refreshAllSports().catch(() => {}), 15_000)
-    this.settleTimer = setInterval(() => this.settleFinishedMatches().catch(() => {}), 10_000)
+  onModuleDestroy() {
+    clearInterval(this.fetchTimer)
+    clearInterval(this.settleTimer)
   }
 
   private async ensureDefaultSettings() {
@@ -56,117 +81,254 @@ export class SportsService implements OnModuleInit {
     return this.prisma.sportsSetting.findMany({ orderBy: { sport: 'asc' } })
   }
 
-  /** Proxy for The Odds API upcoming h2h odds (key kept server-side). */
+  /** Bookmaker odds for every in-season fixture currently cached. The key stays on the server. */
   async getUpcomingOddsFeed(): Promise<any[]> {
-    const now = Date.now()
-    if (this.oddsFeedCache && now - this.oddsFeedCache.fetchedAt < this.oddsFeedTtlMs) {
-      return this.oddsFeedCache.data
-    }
+    await this.ensureReady()
+    return this.oddsApi.toOddsApiShape()
+  }
 
-    const apiKey = (process.env.ODDS_API_KEY || '').trim()
-    if (!apiKey) {
-      // Return mock data when API key is not configured
-      console.log('ODDS_API_KEY not configured, returning mock data')
-      const mockData = this.getMockOddsData()
-      this.oddsFeedCache = { data: mockData, fetchedAt: now }
-      return mockData
-    }
-
-    try {
-      const url = `https://api.the-odds-api.com/v4/sports/upcoming/odds/?regions=uk&markets=h2h&apiKey=${apiKey}`
-      const res = await fetch(url)
-      if (!res.ok) {
-        // Serve stale data on upstream failure rather than erroring the UI.
-        if (this.oddsFeedCache) return this.oddsFeedCache.data
-        // Return mock data if no cache
-        console.log(`Odds feed unavailable (upstream ${res.status}), returning mock data`)
-        const mockData = this.getMockOddsData()
-        this.oddsFeedCache = { data: mockData, fetchedAt: now }
-        return mockData
-      }
-
-      const data = (await res.json()) as any[]
-      this.oddsFeedCache = { data, fetchedAt: now }
-      return data
-    } catch (error) {
-      console.error('Error fetching odds feed:', error)
-      // Return mock data on error
-      if (this.oddsFeedCache) return this.oddsFeedCache.data
-      const mockData = this.getMockOddsData()
-      this.oddsFeedCache = { data: mockData, fetchedAt: now }
-      return mockData
+  async getBoard() {
+    await this.ensureReady()
+    const since = new Date(Date.now() - 12 * 60 * 60 * 1000)
+    const matches = await this.prisma.sportsMatch.findMany({
+      where: {
+        OR: [
+          { startTime: { gte: since } },
+          { status: { in: [SportsMatchStatus.LIVE, SportsMatchStatus.UPCOMING] as any } },
+        ],
+      },
+      orderBy: [{ startTime: 'asc' }],
+      take: 600,
+    })
+    const feed = matches.filter((match) => {
+      const source = (match.score as any)?.source
+      return source === 'the-odds-api' || source === 'espn'
+    })
+    const rows = feed.length ? feed : matches
+    const odds = this.oddsApi.isConfigured() ? { ...this.oddsFeedMeta, ...this.oddsApi.getMeta() } : this.oddsFeedMeta
+    return {
+      matches: rows.map((match) => this.toBoardMatch(match)),
+      odds,
+      fetchedAt: new Date().toISOString(),
     }
   }
 
-  private getMockOddsData(): any[] {
-    return [
-      {
-        id: 'mock-cricket-1',
-        sport_key: 'cricket',
-        sport_title: 'Cricket',
-        commence_time: new Date(Date.now() + 86400000).toISOString(),
-        home_team: 'India',
-        away_team: 'Australia',
-        bookmakers: [
-          {
-            key: 'mock_bookmaker',
-            title: 'Mock Bookmaker',
-            last_update: new Date().toISOString(),
-            markets: [
-              {
-                key: 'h2h',
-                last_update: new Date().toISOString(),
-                outcomes: [
-                  {
-                    name: 'India',
-                    price: 1.85,
-                  },
-                  {
-                    name: 'Australia',
-                    price: 1.95,
-                  },
-                ],
-              },
-            ],
+  private async ensureReady() {
+    if (this.bootstrapped) return
+    if (!this.ready) {
+      this.ready = this.tickOddsFeed(8)
+        .then(() => {
+          this.bootstrapped = true
+          void this.backfillOdds()
+        })
+        .catch(() => {
+          this.bootstrapped = true
+        })
+    }
+    await this.ready
+  }
+
+  private async backfillOdds() {
+    for (let i = 0; i < 15; i += 1) {
+      const before = this.oddsApi.getMeta().quotaRemaining
+      const result = await this.oddsApi.tick(4)
+      if (result.pricedSports.length) {
+        await this.persistFeed(this.oddsApi.getNormalizedEvents(), this.oddsApi.getPricedIds())
+      }
+      if (!result.pricedSports.length) break
+      if (before != null && before < 20) break
+      await new Promise((resolve) => setTimeout(resolve, 400))
+    }
+  }
+
+  private async tickOddsFeed(limit: number) {
+    const result = await this.oddsApi.tick(limit)
+    if (this.oddsApi.isConfigured()) {
+      this.oddsFeedMeta = this.oddsApi.getMeta()
+      const events = this.oddsApi.getNormalizedEvents()
+      if ((result.catalogUpdated || result.pricedSports.length) && events.length) {
+        await this.persistFeed(events, this.oddsApi.getPricedIds())
+      }
+      return
+    }
+
+    try {
+      const espn = await this.espn.refresh(limit >= 8 ? 48 : 8)
+      if (espn.events.length) {
+        await this.persistFeed(espn.events, espn.priced)
+        this.oddsFeedMeta = { configured: true, upstreamStatus: 200, reason: 'ok' }
+      } else if (this.oddsFeedMeta.reason !== 'ok') {
+        this.oddsFeedMeta = {
+          configured: false,
+          upstreamStatus: null,
+          reason: 'ODDS_API_KEY is not set and the public scoreboard returned no matches',
+        }
+      }
+    } catch (error) {
+      console.error('[sports] scoreboard request failed', error)
+      if (this.oddsFeedMeta.reason !== 'ok') {
+        this.oddsFeedMeta = { configured: false, upstreamStatus: null, reason: 'Sports feed is temporarily unavailable' }
+      }
+    }
+  }
+
+  private async persistFeed(events: NormalizedEvent[], priced: Map<string, Set<string>>) {
+    const sportKeys = [...new Set(events.map((event) => event.sportKey))]
+    const existing = await this.prisma.sportsMatch.findMany({
+      where: { sport: { in: sportKeys } },
+    })
+    const byKey = new Map(existing.map((match) => [`${match.sport}:${match.externalId}`, match]))
+    const creates: any[] = []
+    const updates: Array<{ id: string; data: any }> = []
+    const now = new Date()
+
+    for (const event of events) {
+      const commence = new Date(event.commenceTime)
+      const startOk = !Number.isNaN(commence.getTime())
+      const prev = byKey.get(`${event.sportKey}:${event.externalId}`)
+      const prevScore = ((prev?.score as any) || {}) as any
+      const bookmakers = event.bookmakers.length ? event.bookmakers : prevScore.bookmakers || []
+      const pricedSet = priced.get(event.sportKey)
+      let bettingClosed = Boolean(prevScore.bettingClosed)
+      if (pricedSet) {
+        const stillListed = pricedSet.has(event.externalId)
+        bettingClosed = !stillListed && startOk && commence.getTime() <= Date.now()
+      }
+      if (event.completed) bettingClosed = true
+      const status = event.completed
+        ? SportsMatchStatus.FINISHED
+        : prev?.status === SportsMatchStatus.FINISHED
+          ? SportsMatchStatus.FINISHED
+          : startOk && commence.getTime() <= Date.now()
+            ? SportsMatchStatus.LIVE
+            : SportsMatchStatus.UPCOMING
+      const score = {
+        ...prevScore,
+        source: event.source || 'the-odds-api',
+        sportKey: event.sportKey,
+        sportGroup: event.sportGroup,
+        sportTitle: event.sportTitle,
+        bookmakers,
+        bettingClosed,
+        ...(event.homeScore != null &&
+        event.awayScore != null &&
+        (event.completed || (startOk && commence.getTime() <= Date.now()))
+          ? { teamA: String(event.homeScore), teamB: String(event.awayScore) }
+          : {}),
+      }
+      if (!prev) {
+        creates.push({
+          sport: event.sportKey,
+          externalId: event.externalId,
+          league: event.sportTitle || event.sportGroup,
+          teamA: event.homeTeam,
+          teamB: event.awayTeam,
+          startTime: startOk ? commence : null,
+          status: status as any,
+          score,
+          lastFetchedAt: now,
+        })
+      } else {
+        updates.push({
+          id: prev.id,
+          data: {
+            league: event.sportTitle || prev.league,
+            teamA: event.homeTeam || prev.teamA,
+            teamB: event.awayTeam || prev.teamB,
+            startTime: startOk ? commence : prev.startTime,
+            status: status as any,
+            score,
+            lastFetchedAt: now,
           },
-        ],
-      },
-      {
-        id: 'mock-football-1',
-        sport_key: 'football',
-        sport_title: 'Football',
-        commence_time: new Date(Date.now() + 172800000).toISOString(),
-        home_team: 'Manchester United',
-        away_team: 'Liverpool',
-        bookmakers: [
-          {
-            key: 'mock_bookmaker',
-            title: 'Mock Bookmaker',
-            last_update: new Date().toISOString(),
-            markets: [
-              {
-                key: 'h2h',
-                last_update: new Date().toISOString(),
-                outcomes: [
-                  {
-                    name: 'Manchester United',
-                    price: 2.10,
-                  },
-                  {
-                    name: 'Liverpool',
-                    price: 3.40,
-                  },
-                  {
-                    name: 'Draw',
-                    price: 3.25,
-                  },
-                ],
-              },
-            ],
-          },
-        ],
-      },
-    ]
+        })
+      }
+    }
+
+    if (creates.length) {
+      await this.prisma.sportsMatch.createMany({ data: creates, skipDuplicates: true })
+    }
+    for (let i = 0; i < updates.length; i += 20) {
+      const chunk = updates.slice(i, i + 20)
+      await Promise.all(chunk.map((row) => this.prisma.sportsMatch.update({ where: { id: row.id }, data: row.data })))
+    }
+  }
+
+  private toBoardMatch(match: any) {
+    const score = (match.score as any) || {}
+    const bookmakers: OddsBookmaker[] = Array.isArray(score.bookmakers) ? score.bookmakers : []
+    const feed = score.source === 'the-odds-api' || score.source === 'espn'
+    const closed = match.status === SportsMatchStatus.FINISHED || match.status === SportsMatchStatus.CANCELLED
+    return {
+      id: match.id,
+      externalId: match.externalId,
+      sport: feed ? score.sportGroup || match.sport : match.sport,
+      sportKey: score.sportKey || match.sport,
+      league: feed ? score.sportTitle || match.league : match.league,
+      teamA: match.teamA,
+      teamB: match.teamB,
+      status: match.status,
+      startTime: match.startTime,
+      lastFetchedAt: match.lastFetchedAt,
+      bettingOpen: !closed && !score.bettingClosed && bookmakers.length > 0,
+      score: this.publicScore(score),
+      result: match.result ?? null,
+      bookmakers,
+      odds: this.bestH2h(bookmakers),
+    }
+  }
+
+  private bestH2h(bookmakers: OddsBookmaker[]) {
+    const best = new Map<string, { name: string; price: number; bookmaker: string; bookmakerKey: string }>()
+    for (const book of bookmakers) {
+      const market = book.markets?.find((item) => item.key === 'h2h')
+      for (const outcome of market?.outcomes || []) {
+        const current = best.get(outcome.name)
+        if (!current || outcome.price > current.price) {
+          best.set(outcome.name, {
+            name: outcome.name,
+            price: outcome.price,
+            bookmaker: book.title,
+            bookmakerKey: book.key,
+          })
+        }
+      }
+    }
+    if (!best.size) return null
+    return {
+      source: 'the-odds-api',
+      bookmaker: 'Best',
+      updatedAt: new Date().toISOString(),
+      outcomes: [...best.values()],
+    }
+  }
+
+  private publicScore(score: any) {
+    if (!score || typeof score !== 'object') return score ?? null
+    const pick = (side: any) => {
+      if (side == null) return null
+      if (typeof side === 'string' || typeof side === 'number') return String(side)
+      if (typeof side !== 'object') return null
+      if (side.runs != null) {
+        const wickets = side.wickets != null ? `/${side.wickets}` : ''
+        const overs = side.overs != null ? ` (${side.overs} ov)` : ''
+        return `${side.runs}${wickets}${overs}`
+      }
+      if (side.score != null) return String(side.score)
+      if (side.goals != null) return String(side.goals)
+      return null
+    }
+    const teamA = pick(score.teamA ?? score.team1 ?? score.home)
+    const teamB = pick(score.teamB ?? score.team2 ?? score.away)
+    if (teamA == null && teamB == null && !score.detail && !score.status && !score.state) return null
+    return {
+      teamA,
+      teamB,
+      innings: Array.isArray(score.innings) ? score.innings.slice(0, 4) : undefined,
+      balls: Array.isArray(score.balls) ? score.balls.slice(-12) : Array.isArray(score.recentBalls) ? score.recentBalls.slice(-12) : undefined,
+      batting: Array.isArray(score.batting) ? score.batting.slice(0, 11) : undefined,
+      bowling: Array.isArray(score.bowling) ? score.bowling.slice(0, 11) : undefined,
+      detail: typeof score.status === 'string' ? score.status : typeof score.state === 'string' ? score.state : undefined,
+    }
   }
 
   async updateSetting(sport: SportType, patch: { enabled?: boolean; houseEdge?: number }) {
@@ -182,11 +344,17 @@ export class SportsService implements OnModuleInit {
   }
 
   async refreshAllSports() {
-    await Promise.all([
-      this.refreshSport(SportType.CRICKET),
-      this.refreshSport(SportType.FOOTBALL),
-      this.refreshSport(SportType.HOCKEY),
-    ])
+    if (this.refreshing) return
+    this.refreshing = true
+    try {
+      await Promise.all([
+        this.refreshSport(SportType.CRICKET),
+        this.refreshSport(SportType.FOOTBALL),
+        this.refreshSport(SportType.HOCKEY),
+      ])
+    } finally {
+      this.refreshing = false
+    }
   }
 
   async refreshSport(sport: SportType) {
@@ -249,23 +417,283 @@ export class SportsService implements OnModuleInit {
     })
   }
 
+  private async findMatch(matchId: string) {
+    const byId = await this.prisma.sportsMatch.findUnique({ where: { id: matchId } })
+    if (byId) return byId
+    return this.prisma.sportsMatch.findFirst({ where: { externalId: matchId } })
+  }
+
   async getMatch(matchId: string) {
-    const match = await this.prisma.sportsMatch.findUnique({ where: { id: matchId } })
+    const match = await this.findMatch(matchId)
     if (!match) throw new BadRequestException('Match not found')
-    return match
+    await this.maybeEnrichMatch(match)
+    const fresh = (await this.findMatch(match.id)) || match
+    return this.toBoardMatch(fresh)
+  }
+
+  private async maybeEnrichMatch(match: any) {
+    const score = (match.score as any) || {}
+    const fetchedAt = Number(score.detailFetchedAt || 0)
+    if (fetchedAt && Date.now() - fetchedAt < 10 * 60_000) return
+
+    if (score.source === 'espn') {
+      const sportKey = String(score.sportKey || '')
+      let extra: OddsBookmaker | null = null
+      try {
+        extra = await this.espn.fetchDetailMarkets(sportKey, match.externalId)
+      } catch {
+        return
+      }
+      if (!extra) return
+      const current = Array.isArray(score.bookmakers) ? score.bookmakers : []
+      const bookmakers = extra.markets.length ? this.mergeBookmakers(current, [extra]) : current
+      await this.prisma.sportsMatch.update({
+        where: { id: match.id },
+        data: { score: { ...score, bookmakers, detailFetchedAt: Date.now() } },
+      })
+      return
+    }
+
+    if (score.source !== 'the-odds-api') return
+    const sportKey = String(score.sportKey || match.sport || '')
+    if (!sportKey.startsWith('soccer_')) return
+    try {
+      const extra = await this.oddsApi.fetchEventOdds(sportKey, match.externalId, 'btts,draw_no_bet')
+      if (!extra.length) {
+        await this.prisma.sportsMatch.update({
+          where: { id: match.id },
+          data: { score: { ...score, detailFetchedAt: Date.now() } },
+        })
+        return
+      }
+      const merged = this.mergeBookmakers(Array.isArray(score.bookmakers) ? score.bookmakers : [], extra)
+      await this.prisma.sportsMatch.update({
+        where: { id: match.id },
+        data: { score: { ...score, bookmakers: merged, detailFetchedAt: Date.now() } },
+      })
+    } catch {
+      // Featured prices already on the match are enough if the extra call fails.
+    }
+  }
+
+  private mergeBookmakers(current: OddsBookmaker[], extra: OddsBookmaker[]) {
+    const byKey = new Map<string, OddsBookmaker>()
+    for (const book of current) byKey.set(book.key, { ...book, markets: [...(book.markets || [])] })
+    for (const book of extra) {
+      const existing = byKey.get(book.key)
+      if (!existing) {
+        byKey.set(book.key, book)
+        continue
+      }
+      for (const market of book.markets || []) {
+        existing.markets = [
+          ...existing.markets.filter((currentMarket) => currentMarket.key !== market.key),
+          market,
+        ]
+      }
+    }
+    return [...byKey.values()]
   }
 
   async getMarkets(matchId: string): Promise<{ match: any; markets: SportsMarket[] }> {
-    const match = await this.getMatch(matchId)
+    const match = await this.findMatch(matchId)
+    if (!match) throw new BadRequestException('Match not found')
+    const score = (match.score as any) || {}
+    const bookmakers = score.bookmakers
+    if (score.source === 'the-odds-api' || (Array.isArray(bookmakers) && bookmakers.length)) {
+      return {
+        match: this.toBoardMatch(match),
+        markets: this.marketsFromBookmakers(Array.isArray(bookmakers) ? bookmakers : []),
+      }
+    }
     const setting = await this.prisma.sportsSetting.findUnique({ where: { sport: match.sport } })
     if (!setting?.enabled) throw new BadRequestException('Sport is disabled')
     const markets = this.oddsEngine.buildMarkets(match as any, setting as any)
-    return { match, markets }
+    return { match: this.toBoardMatch(match), markets }
   }
 
-  async placeBet(userId: string, input: { sport: SportType; matchId: string; betType: SportsBetType; selection: string; line?: number; stake: number }) {
-    const match = await this.getMatch(input.matchId)
+  private marketsFromBookmakers(bookmakers: OddsBookmaker[]): SportsMarket[] {
+    const grouped = new Map<string, SportsMarket>()
+    for (const book of bookmakers) {
+      for (const market of book.markets || []) {
+        if (String(market.key).endsWith('_lay')) continue
+        if (!grouped.has(market.key)) {
+          grouped.set(market.key, {
+            betType: this.betTypeForMarket(market.key),
+            title: this.marketTitle(market.key),
+            options: [],
+          })
+        }
+        const bucket = grouped.get(market.key)!
+        for (const outcome of market.outcomes || []) {
+          const key = `${outcome.name}::${outcome.point ?? ''}`
+          const existing = bucket.options.find((option) => option.key === key)
+          if (!existing || outcome.price > existing.odds) {
+            const label = outcome.point != null ? `${outcome.name} ${outcome.point}` : outcome.name
+            if (existing) {
+              existing.odds = outcome.price
+              existing.label = label
+            } else {
+              bucket.options.push({
+                key,
+                label,
+                odds: outcome.price,
+                ...(outcome.point != null ? { line: outcome.point } : {}),
+              })
+            }
+          }
+        }
+      }
+    }
+    return [...grouped.values()].filter((market) => market.options.length > 0)
+  }
+
+  async placeBet(userId: string, input: PlaceBetInput) {
+    const match = await this.findMatch(input.matchId)
+    if (!match) throw new BadRequestException('Match not found')
+    const score = (match.score as any) || {}
+    const bookmakers: OddsBookmaker[] = Array.isArray(score.bookmakers) ? score.bookmakers : []
+    if (input.marketKey || score.source === 'the-odds-api' || score.source === 'espn') {
+      return this.placeBookmakerBet(userId, match, input, bookmakers)
+    }
+    return this.placeLegacyBet(userId, match, input)
+  }
+
+  private async placeBookmakerBet(userId: string, match: any, input: PlaceBetInput, bookmakers: OddsBookmaker[]) {
+    this.assertSport(match, input.sport)
+    if (![SportsMatchStatus.UPCOMING, SportsMatchStatus.LIVE].includes(match.status)) {
+      throw new BadRequestException('Betting closed for this match')
+    }
+    const score = (match.score as any) || {}
+    if (score.bettingClosed || !bookmakers.length) throw new BadRequestException('Betting closed for this match')
+    const setting = await this.prisma.sportsSetting.findUnique({ where: { sport: match.sport } })
+    if (setting && setting.enabled === false) throw new BadRequestException('Sport is disabled')
+
+    const marketKey = String(input.marketKey || 'h2h')
+    if (marketKey.endsWith('_lay')) throw new BadRequestException('Lay prices are display-only')
+    const quoted = this.findQuote(bookmakers, marketKey, input.bookmaker, input.selection, input.line)
+    if (!quoted) throw new BadRequestException('Selection is no longer available')
+    if (input.odds != null && Math.abs(Number(input.odds) - quoted.outcome.price) > 0.02) {
+      throw new BadRequestException('Odds changed. Review the price and try again.')
+    }
+
+    const stake = Number(input.stake)
+    if (!stake || stake <= 0) throw new BadRequestException('Invalid stake')
+    const h2h = bookmakers.flatMap((book) => book.markets || []).find((market) => market.key === 'h2h')
+    const drawOffered = Boolean(h2h?.outcomes?.some((outcome) => outcome.name.toLowerCase() === 'draw'))
+
+    const savedBet = await this.prisma.sportsBet.create({
+      data: {
+        userId,
+        sport: match.sport,
+        matchId: match.id,
+        externalMatchId: match.externalId,
+        betType: this.betTypeForMarket(marketKey) as any,
+        selection: quoted.outcome.name,
+        line: quoted.outcome.point ?? null,
+        stake,
+        odds: quoted.outcome.price,
+        payoutAmount: 0,
+        currency: Currency.INR,
+        status: SportsBetStatus.PENDING as any,
+        meta: {
+          source: score.source || 'the-odds-api',
+          marketKey,
+          marketTitle: this.marketTitle(marketKey),
+          optionLabel: quoted.outcome.point != null ? `${quoted.outcome.name} ${quoted.outcome.point}` : quoted.outcome.name,
+          bookmaker: quoted.book.title,
+          bookmakerKey: quoted.book.key,
+          oddsSnapshot: quoted.outcome.price,
+          lineSnapshot: quoted.outcome.point ?? null,
+          drawOffered,
+          commenceTime: match.startTime,
+          sportKey: score.sportKey || match.sport,
+          matchSnapshot: {
+            league: match.league,
+            teamA: match.teamA,
+            teamB: match.teamB,
+          },
+        },
+      },
+    })
+    try {
+      await this.walletService.createTransaction(userId, Currency.INR, stake, TransactionType.BET, savedBet.id, {
+        domain: 'sports',
+      })
+    } catch (err) {
+      await this.prisma.sportsBet.delete({ where: { id: savedBet.id } })
+      throw err
+    }
+    return savedBet
+  }
+
+  private findQuote(
+    bookmakers: OddsBookmaker[],
+    marketKey: string,
+    bookmaker: string | undefined,
+    selection: string,
+    line?: number,
+  ) {
+    const wanted = (bookmaker || '').trim().toLowerCase()
+    const books = bookmakers.filter((book) => {
+      if (!wanted) return true
+      return book.key.toLowerCase() === wanted || book.title.toLowerCase() === wanted
+    })
+    for (const book of books) {
+      for (const market of book.markets || []) {
+        if (market.key !== marketKey) continue
+        for (const outcome of market.outcomes || []) {
+          if (outcome.name !== selection) continue
+          if (line != null && outcome.point != null && Number(outcome.point) !== Number(line)) continue
+          if (line == null && outcome.point != null && marketKey !== 'h2h' && marketKey !== 'btts' && marketKey !== 'draw_no_bet') {
+            continue
+          }
+          return { book, market, outcome }
+        }
+      }
+    }
+    return null
+  }
+
+  private assertSport(match: any, sport: string) {
+    const score = (match.score as any) || {}
+    const aliases = [match.sport, score.sportKey, score.sportGroup, score.sportTitle, match.league]
+      .filter(Boolean)
+      .map((value) => String(value).toLowerCase())
+    if (!aliases.includes(String(sport || '').toLowerCase())) {
+      throw new BadRequestException('Sport mismatch')
+    }
+  }
+
+  private betTypeForMarket(marketKey: string): SportsBetType {
+    if (marketKey === 'totals' || marketKey.startsWith('alternate_totals') || marketKey === 'btts' || marketKey.includes('total')) {
+      return SportsBetType.OVER_UNDER
+    }
+    return SportsBetType.MATCH_WINNER
+  }
+
+  private marketTitle(marketKey: string) {
+    switch (marketKey) {
+      case 'h2h':
+        return 'Match Winner'
+      case 'spreads':
+        return 'Handicap'
+      case 'totals':
+        return 'Total'
+      case 'btts':
+        return 'Both Teams to Score'
+      case 'draw_no_bet':
+        return 'Draw No Bet'
+      default:
+        return marketKey
+          .replace(/_/g, ' ')
+          .replace(/\b\w/g, (char) => char.toUpperCase())
+    }
+  }
+
+  private async placeLegacyBet(userId: string, match: any, input: PlaceBetInput) {
     if (match.sport !== input.sport) throw new BadRequestException('Sport mismatch')
+    if (!input.betType) throw new BadRequestException('Market is required')
     if (![SportsMatchStatus.UPCOMING, SportsMatchStatus.LIVE].includes(match.status as any)) {
       throw new BadRequestException('Betting closed for this match')
     }
@@ -276,9 +704,7 @@ export class SportsService implements OnModuleInit {
     const option = market.options.find((o) => o.key === input.selection)
     if (!option) throw new BadRequestException('Selection not available')
 
-    // Line validation if applicable
     if (option.line != null && input.line != null) {
-      // Must match current line to avoid stale bets
       if (Number(option.line) !== Number(input.line)) throw new BadRequestException('Line changed, refresh odds')
     }
 
@@ -332,6 +758,167 @@ export class SportsService implements OnModuleInit {
     })
   }
 
+  private async settleAll() {
+    await this.settleBookmakerBets()
+    await this.settleFinishedMatches()
+  }
+
+  private scoreTtlMs() {
+    const remaining = this.oddsApi.getMeta().quotaRemaining
+    if (remaining == null || remaining > 2000) return 3 * 60_000
+    if (remaining > 200) return 30 * 60_000
+    return 3 * 60 * 60_000
+  }
+
+  private async settleEspnBets(bets: any[]) {
+    const goalsCache = new Map<string, Map<string, number> | null>()
+    for (const bet of bets) {
+      const match = await this.prisma.sportsMatch.findUnique({ where: { id: bet.matchId } })
+      if (!match || match.status !== SportsMatchStatus.FINISHED) continue
+      const score = (match.score as any) || {}
+      const homeScore = Number(score.teamA)
+      const awayScore = Number(score.teamB)
+      if (!Number.isFinite(homeScore) || !Number.isFinite(awayScore)) continue
+      const meta = (bet.meta as any) || {}
+      const marketKey = String(meta.marketKey || 'h2h')
+      let playerGoals: Map<string, number> | undefined
+      if (/goalscorer|to_score_\d+_goals/.test(marketKey)) {
+        if (!goalsCache.has(match.id)) {
+          goalsCache.set(match.id, await this.espn.fetchPlayerGoals(String(score.sportKey || ''), match.externalId))
+        }
+        const parsed = goalsCache.get(match.id)
+        if (parsed) playerGoals = parsed
+      }
+      const grade = gradeBookmakerBet({
+        marketKey,
+        selection: bet.selection,
+        line: bet.line != null ? toNum(bet.line) : null,
+        homeTeam: match.teamA,
+        awayTeam: match.teamB,
+        homeScore,
+        awayScore,
+        drawOffered: Boolean(meta.drawOffered),
+        playerGoals,
+      })
+      if (grade === 'open') continue
+      await this.applyGrade(bet, grade, { homeScore, awayScore })
+    }
+  }
+
+  private async settleBookmakerBets() {
+    const pending = await this.prisma.sportsBet.findMany({
+      where: { status: SportsBetStatus.PENDING as any },
+      orderBy: { createdAt: 'asc' },
+      take: 500,
+    })
+    const bookBets = pending.filter((bet) => {
+      const source = (bet.meta as any)?.source
+      return source === 'the-odds-api' || source === 'espn'
+    })
+    if (!bookBets.length) return
+    await this.settleEspnBets(bookBets.filter((bet) => (bet.meta as any)?.source === 'espn'))
+
+    const bySport = new Map<string, typeof bookBets>()
+    for (const bet of bookBets.filter((item) => (item.meta as any)?.source !== 'espn')) {
+      const sportKey = String((bet.meta as any)?.sportKey || bet.sport || '')
+      if (!sportKey) continue
+      const commence = new Date((bet.meta as any)?.commenceTime || 0).getTime()
+      if (Number.isFinite(commence) && commence > Date.now()) continue
+      const list = bySport.get(sportKey) || []
+      list.push(bet)
+      bySport.set(sportKey, list)
+    }
+
+    for (const [sportKey, bets] of bySport) {
+      const last = this.scoreFetchedAt.get(sportKey) || 0
+      if (Date.now() - last < this.scoreTtlMs()) continue
+      this.scoreFetchedAt.set(sportKey, Date.now())
+      let scores: Awaited<ReturnType<OddsApiProvider['fetchScores']>> = []
+      try {
+        scores = await this.oddsApi.fetchScores(sportKey)
+      } catch {
+        continue
+      }
+      const byId = new Map(scores.map((row) => [row.id, row]))
+      for (const bet of bets) {
+        const row = byId.get(bet.externalMatchId)
+        if (!row?.completed || !row.scores?.length) continue
+        const match = await this.prisma.sportsMatch.findUnique({ where: { id: bet.matchId } })
+        if (!match) continue
+        const homeScore = this.readSideScore(row.scores, match.teamA)
+        const awayScore = this.readSideScore(row.scores, match.teamB)
+        if (homeScore == null || awayScore == null) continue
+        const meta = (bet.meta as any) || {}
+        const grade = gradeBookmakerBet({
+          marketKey: meta.marketKey || 'h2h',
+          selection: bet.selection,
+          line: bet.line != null ? toNum(bet.line) : null,
+          homeTeam: match.teamA,
+          awayTeam: match.teamB,
+          homeScore,
+          awayScore,
+          drawOffered: Boolean(meta.drawOffered),
+        })
+        if (grade === 'open') continue
+        await this.applyGrade(bet, grade, { homeScore, awayScore })
+        const prevScore = (match.score as any) || {}
+        await this.prisma.sportsMatch.update({
+          where: { id: match.id },
+          data: {
+            status: SportsMatchStatus.FINISHED as any,
+            score: {
+              ...prevScore,
+              teamA: String(homeScore),
+              teamB: String(awayScore),
+              bettingClosed: true,
+            },
+            result: { winner: homeScore === awayScore ? 'draw' : homeScore > awayScore ? 'teamA' : 'teamB' },
+          },
+        })
+      }
+    }
+  }
+
+  private readSideScore(scores: Array<{ name: string; score: string }>, team: string) {
+    const row = scores.find((item) => item.name?.toLowerCase() === team.toLowerCase())
+    const value = Number(row?.score)
+    return Number.isFinite(value) ? value : null
+  }
+
+  private async applyGrade(bet: any, grade: 'won' | 'lost' | 'void', outcome: any) {
+    const fresh = await this.prisma.sportsBet.findUnique({ where: { id: bet.id } })
+    if (!fresh || fresh.status !== SportsBetStatus.PENDING) return
+    const stake = toNum(fresh.stake)
+    const odds = toNum(fresh.odds)
+    const meta = { ...((fresh.meta as any) ?? {}), settlement: { outcome, grade } }
+    if (grade === 'void') {
+      await this.prisma.sportsBet.update({
+        where: { id: fresh.id },
+        data: { status: SportsBetStatus.VOID as any, payoutAmount: 0, settledAt: new Date(), meta },
+      })
+      await this.walletService.createTransaction(fresh.userId, fresh.currency as any, stake, TransactionType.REFUND, fresh.id, {
+        sportsVoid: true,
+      })
+      return
+    }
+    if (grade === 'won') {
+      const payout = Number((stake * odds).toFixed(8))
+      await this.walletService.createTransaction(fresh.userId, fresh.currency as any, payout, TransactionType.WIN, fresh.id, {
+        unlockAmount: stake,
+      })
+      await this.prisma.sportsBet.update({
+        where: { id: fresh.id },
+        data: { status: SportsBetStatus.WON as any, payoutAmount: payout, settledAt: new Date(), meta },
+      })
+      return
+    }
+    await this.walletService.createTransaction(fresh.userId, fresh.currency as any, stake, TransactionType.LOSS, fresh.id)
+    await this.prisma.sportsBet.update({
+      where: { id: fresh.id },
+      data: { status: SportsBetStatus.LOST as any, payoutAmount: 0, settledAt: new Date(), meta },
+    })
+  }
+
   private resolveMatchOutcome(match: {
     result?: any
     score?: any
@@ -341,7 +928,6 @@ export class SportsService implements OnModuleInit {
     firstGoalKey?: 'teamA' | 'teamB'
     tossWinnerKey?: 'teamA' | 'teamB'
   } | null {
-    // Best-effort outcome derivation from normalized result/score payloads.
     const r = (match.result as any) || {}
     const s = (match.score as any) || {}
 
@@ -367,7 +953,6 @@ export class SportsService implements OnModuleInit {
       tossWinnerKey = 'teamB'
     }
 
-    // Winner
     const winner = String(r.winner ?? r.winnerKey ?? r.winner_team ?? '').toLowerCase()
     if (winner.includes('team') || winner.includes('home') || winner.includes('away')) {
       if (winner.includes('a') || winner.includes('home')) return { winnerKey: 'teamA', tossWinnerKey }
@@ -375,7 +960,6 @@ export class SportsService implements OnModuleInit {
     }
     if (winner.includes('draw') || winner.includes('tie')) return { winnerKey: 'draw', tossWinnerKey }
 
-    // Fallback by score
     const a = Number(s?.teamA?.score ?? s?.teamA?.goals ?? s?.teamA?.runs ?? 0)
     const b = Number(s?.teamB?.score ?? s?.teamB?.goals ?? s?.teamB?.runs ?? 0)
     if (a || b) {
@@ -389,7 +973,6 @@ export class SportsService implements OnModuleInit {
   }
 
   async settleFinishedMatches() {
-    // Grab recently-fetched finished matches and settle pending bets.
     const finished = await this.prisma.sportsMatch.findMany({
       where: { status: SportsMatchStatus.FINISHED as any },
       orderBy: { updatedAt: 'desc' },
@@ -407,6 +990,8 @@ export class SportsService implements OnModuleInit {
       })
 
       for (const bet of pendingBets) {
+        const betSource = (bet.meta as any)?.source
+        if (betSource === 'the-odds-api' || betSource === 'espn') continue
         const stake = toNum(bet.stake)
         const odds = toNum(bet.odds)
         const payout = Number((stake * odds).toFixed(8))
@@ -436,7 +1021,6 @@ export class SportsService implements OnModuleInit {
         }
 
         if (bet.betType === SportsBetType.FIRST_GOAL) {
-          // Best-effort; if not available, void.
           voided = true
         }
 

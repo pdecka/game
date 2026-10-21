@@ -194,83 +194,83 @@ export default function WalletPage() {
   }, [withdrawAmount, balanceINR])
 
   if (!ready || walletLoading) {
-    return <div className="min-h-screen flex items-center justify-center text-[#e2e8f0]">Loading...</div>
+    return <div className="flex min-h-screen items-center justify-center bg-bg-2 text-ink-2">Loading...</div>
   }
 
   return (
-    <main className="min-h-screen bg-[#020617] text-[#e2e8f0]">
+    <main className="min-h-screen bg-bg-2 text-ink">
       <div className="mx-auto w-full max-w-6xl px-4 py-8">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-[#ffffff]">Wallet</h1>
-          <p className="text-[#64748b] mt-1">Manage deposits, withdrawals, and view request history.</p>
+          <h1 className="text-3xl font-bold text-ink">Wallet</h1>
+          <p className="mt-1 text-ink-2">Manage deposits, withdrawals, and view request history.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
-          <div className="rounded-xl bg-[#ffffff] border border-[#e2e8f0] p-5 shadow-sm">
-            <p className="text-[#64748b] text-sm">Available Balance (INR)</p>
-            <p className="text-3xl font-bold text-[#020617] mt-2">{formatINR(balanceINR)}</p>
+          <div className="rounded-xl bg-white border border-line p-5 shadow-sm">
+            <p className="text-ink-2 text-sm">Available Balance (INR)</p>
+            <p className="text-3xl font-bold text-ink mt-2">{formatINR(balanceINR)}</p>
           </div>
-          <div className="rounded-xl bg-[#ffffff] border border-[#e2e8f0] p-5 shadow-sm">
-            <p className="text-[#64748b] text-sm">Exposure / Locked (INR)</p>
-            <p className="text-3xl font-bold text-[#020617] mt-2">{formatINR(exposureINR)}</p>
-            <p className="text-xs text-[#64748b] mt-1">Sports & open bets held here until settled.</p>
+          <div className="rounded-xl bg-white border border-line p-5 shadow-sm">
+            <p className="text-ink-2 text-sm">Exposure / Locked (INR)</p>
+            <p className="text-3xl font-bold text-ink mt-2">{formatINR(exposureINR)}</p>
+            <p className="text-xs text-ink-2 mt-1">Sports & open bets held here until settled.</p>
           </div>
-          <div className="rounded-xl bg-[#ffffff] border border-[#e2e8f0] p-5 shadow-sm">
-            <p className="text-[#64748b] text-sm">Pending Deposits</p>
-            <p className="text-3xl font-bold text-[#020617] mt-2">
+          <div className="rounded-xl bg-white border border-line p-5 shadow-sm">
+            <p className="text-ink-2 text-sm">Pending Deposits</p>
+            <p className="text-3xl font-bold text-ink mt-2">
               {deposits.filter((d) => d.status === 'pending' || d.status === 'processing').length}
             </p>
           </div>
-          <div className="rounded-xl bg-[#ffffff] border border-[#e2e8f0] p-5 shadow-sm">
-            <p className="text-[#64748b] text-sm">Pending Withdrawals</p>
-            <p className="text-3xl font-bold text-[#020617] mt-2">
+          <div className="rounded-xl bg-white border border-line p-5 shadow-sm">
+            <p className="text-ink-2 text-sm">Pending Withdrawals</p>
+            <p className="text-3xl font-bold text-ink mt-2">
               {withdrawals.filter((w) => w.status === 'pending' || w.status === 'processing').length}
             </p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <section className="rounded-xl bg-[#ffffff] border border-[#e2e8f0] p-5 shadow-sm">
-            <h2 className="text-[#020617] text-xl font-semibold">Deposit</h2>
-            <p className="text-[#64748b] mt-1 text-sm">Transfer externally, then submit UTR/reference for admin verification.</p>
+          <section className="rounded-xl bg-white border border-line p-5 shadow-sm">
+            <h2 className="text-ink text-xl font-semibold">Deposit</h2>
+            <p className="text-ink-2 mt-1 text-sm">Transfer externally, then submit UTR/reference for admin verification.</p>
 
             <div className="mt-4 space-y-3">
               <div>
-                <label className="text-xs text-[#64748b]">Amount (INR)</label>
+                <label className="text-xs text-ink-2">Amount (INR)</label>
                 <input
                   type="number"
                   inputMode="decimal"
                   value={depositAmount}
                   onChange={(e) => setDepositAmount(e.target.value)}
-                  className="mt-1 w-full rounded-md bg-[#e2e8f0] border border-[#e2e8f0] px-3 py-2 text-[#020617] placeholder:text-[#64748b] focus:ring-2 focus:ring-[#22c55e] focus:border-[#22c55e]"
+                  className="mt-1 w-full rounded-md bg-elevated border border-line px-3 py-2 text-ink placeholder:text-ink-2 focus:ring-2 focus:ring-brand focus:border-brand"
                   placeholder="e.g. 5000"
                 />
               </div>
               <div>
-                <label className="text-xs text-[#64748b]">UTR / Reference</label>
+                <label className="text-xs text-ink-2">UTR / Reference</label>
                 <input
                   value={depositRef}
                   onChange={(e) => setDepositRef(e.target.value)}
-                  className="mt-1 w-full rounded-md bg-[#e2e8f0] border border-[#e2e8f0] px-3 py-2 text-[#020617] placeholder:text-[#64748b] focus:ring-2 focus:ring-[#22c55e] focus:border-[#22c55e]"
+                  className="mt-1 w-full rounded-md bg-elevated border border-line px-3 py-2 text-ink placeholder:text-ink-2 focus:ring-2 focus:ring-brand focus:border-brand"
                   placeholder="Enter bank transfer reference"
                 />
               </div>
 
               <div className="flex items-center justify-between gap-3 mt-2">
-                <div className="text-xs text-[#64748b]">
+                <div className="text-xs text-ink-2">
                   Bank details:{' '}
                   {bankDefault ? (
-                      <span className="text-[#020617] font-medium">
+                      <span className="text-ink font-medium">
                         {bankDefault.bankName} • {bankDefault.accountHolder} • {bankDefault.accountNumber} • {bankDefault.ifsc}
                       </span>
                   ) : (
-                    <span className="text-[#64748b]">Not configured (ask admin)</span>
+                    <span className="text-ink-2">Not configured (ask admin)</span>
                   )}
                 </div>
                 <Button
                   onClick={submitDeposit}
                   disabled={depositBusy}
-                  className="rounded-xl bg-[#22c55e] hover:opacity-90 text-[#ffffff] transition-all"
+                  className="rounded-xl bg-brand hover:opacity-90 text-white transition-all"
                 >
                   {depositBusy ? 'Submitting...' : 'Submit Deposit'}
                 </Button>
@@ -278,77 +278,77 @@ export default function WalletPage() {
             </div>
           </section>
 
-          <section className="rounded-xl bg-[#ffffff] border border-[#e2e8f0] p-5 shadow-sm">
-            <h2 className="text-[#020617] text-xl font-semibold">Withdraw</h2>
-            <p className="text-[#64748b] mt-1 text-sm">Submit bank details. Admin approval triggers payout and updates wallet.</p>
+          <section className="rounded-xl bg-white border border-line p-5 shadow-sm">
+            <h2 className="text-ink text-xl font-semibold">Withdraw</h2>
+            <p className="text-ink-2 mt-1 text-sm">Submit bank details. Admin approval triggers payout and updates wallet.</p>
 
             <div className="mt-4 space-y-3">
               <div>
-                <label className="text-xs text-[#64748b]">Amount (INR)</label>
+                <label className="text-xs text-ink-2">Amount (INR)</label>
                 <input
                   type="number"
                   inputMode="decimal"
                   value={withdrawAmount}
                   onChange={(e) => setWithdrawAmount(e.target.value)}
-                  className="mt-1 w-full rounded-md bg-[#e2e8f0] border border-[#e2e8f0] px-3 py-2 text-[#020617] placeholder:text-[#64748b] focus:ring-2 focus:ring-[#22c55e] focus:border-[#22c55e]"
+                  className="mt-1 w-full rounded-md bg-elevated border border-line px-3 py-2 text-ink placeholder:text-ink-2 focus:ring-2 focus:ring-brand focus:border-brand"
                   placeholder="e.g. 1000"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-[#64748b]">Bank Name</label>
+                  <label className="text-xs text-ink-2">Bank Name</label>
                   <input
                     value={withdrawBank.bankName}
                     onChange={(e) => setWithdrawBank((b) => ({ ...b, bankName: e.target.value }))}
-                    className="mt-1 w-full rounded-md bg-[#e2e8f0] border border-[#e2e8f0] px-3 py-2 text-[#020617] placeholder:text-[#64748b] focus:ring-2 focus:ring-[#22c55e] focus:border-[#22c55e]"
+                    className="mt-1 w-full rounded-md bg-elevated border border-line px-3 py-2 text-ink placeholder:text-ink-2 focus:ring-2 focus:ring-brand focus:border-brand"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-[#64748b]">IFSC</label>
+                  <label className="text-xs text-ink-2">IFSC</label>
                   <input
                     value={withdrawBank.ifsc}
                     onChange={(e) => setWithdrawBank((b) => ({ ...b, ifsc: e.target.value }))}
-                    className="mt-1 w-full rounded-md bg-[#e2e8f0] border border-[#e2e8f0] px-3 py-2 text-[#020617] placeholder:text-[#64748b] focus:ring-2 focus:ring-[#22c55e] focus:border-[#22c55e]"
+                    className="mt-1 w-full rounded-md bg-elevated border border-line px-3 py-2 text-ink placeholder:text-ink-2 focus:ring-2 focus:ring-brand focus:border-brand"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-[#64748b]">Account Holder</label>
+                  <label className="text-xs text-ink-2">Account Holder</label>
                   <input
                     value={withdrawBank.accountHolder}
                     onChange={(e) => setWithdrawBank((b) => ({ ...b, accountHolder: e.target.value }))}
-                    className="mt-1 w-full rounded-md bg-[#e2e8f0] border border-[#e2e8f0] px-3 py-2 text-[#020617] placeholder:text-[#64748b] focus:ring-2 focus:ring-[#22c55e] focus:border-[#22c55e]"
+                    className="mt-1 w-full rounded-md bg-elevated border border-line px-3 py-2 text-ink placeholder:text-ink-2 focus:ring-2 focus:ring-brand focus:border-brand"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-[#64748b]">Account Number</label>
+                  <label className="text-xs text-ink-2">Account Number</label>
                   <input
                     value={withdrawBank.accountNumber}
                     onChange={(e) => setWithdrawBank((b) => ({ ...b, accountNumber: e.target.value }))}
-                    className="mt-1 w-full rounded-md bg-[#e2e8f0] border border-[#e2e8f0] px-3 py-2 text-[#020617] placeholder:text-[#64748b] focus:ring-2 focus:ring-[#22c55e] focus:border-[#22c55e]"
+                    className="mt-1 w-full rounded-md bg-elevated border border-line px-3 py-2 text-ink placeholder:text-ink-2 focus:ring-2 focus:ring-brand focus:border-brand"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-xs text-[#64748b]">Reference (optional)</label>
+                <label className="text-xs text-ink-2">Reference (optional)</label>
                 <input
                   value={withdrawBank.reference}
                   onChange={(e) => setWithdrawBank((b) => ({ ...b, reference: e.target.value }))}
-                  className="mt-1 w-full rounded-md bg-[#e2e8f0] border border-[#e2e8f0] px-3 py-2 text-[#020617] placeholder:text-[#64748b] focus:ring-2 focus:ring-[#22c55e] focus:border-[#22c55e]"
+                  className="mt-1 w-full rounded-md bg-elevated border border-line px-3 py-2 text-ink placeholder:text-ink-2 focus:ring-2 focus:ring-brand focus:border-brand"
                   placeholder="Add any reference for tracking"
                 />
               </div>
 
               <div className="flex items-center justify-between gap-3 mt-2">
-                <div className="text-xs text-[#64748b]">{canSubmitWithdrawal ? 'Ready to withdraw' : 'Check amount vs balance'}</div>
+                <div className="text-xs text-ink-2">{canSubmitWithdrawal ? 'Ready to withdraw' : 'Check amount vs balance'}</div>
                 <Button
                   onClick={submitWithdrawal}
                   disabled={withdrawBusy || !canSubmitWithdrawal}
-                  className="rounded-xl bg-[#22c55e] hover:opacity-90 text-[#ffffff] transition-all disabled:opacity-50"
+                  className="rounded-xl bg-brand hover:opacity-90 text-white transition-all disabled:opacity-50"
                 >
                   {withdrawBusy ? 'Submitting...' : 'Submit Withdrawal'}
                 </Button>
@@ -357,11 +357,11 @@ export default function WalletPage() {
           </section>
         </div>
 
-        <section className="mt-4 rounded-xl bg-[#ffffff] border border-[#e2e8f0] p-5 shadow-sm">
+        <section className="mt-4 rounded-xl bg-white border border-line p-5 shadow-sm">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             <div>
-              <h2 className="text-[#020617] text-xl font-semibold">History</h2>
-              <p className="text-[#64748b] mt-1 text-sm">
+              <h2 className="text-ink text-xl font-semibold">History</h2>
+              <p className="text-ink-2 mt-1 text-sm">
                 Deposit/withdraw requests update in near real-time. Status is controlled by admin approvals.
               </p>
             </div>
@@ -369,7 +369,7 @@ export default function WalletPage() {
               <Button
                 onClick={loadHistory}
                 disabled={loadingHistory}
-                className="rounded-xl bg-[#e2e8f0] hover:opacity-90 text-[#020617] transition-all"
+                className="rounded-xl bg-elevated hover:opacity-90 text-ink transition-all"
               >
                 {loadingHistory ? 'Refreshing...' : 'Refresh'}
               </Button>
@@ -377,12 +377,12 @@ export default function WalletPage() {
           </div>
 
           <div className="mt-5 grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="rounded-lg border border-[#e2e8f0] overflow-hidden">
-              <div className="px-4 py-3 bg-[#e2e8f0] text-[#64748b] text-sm font-medium">Deposit Requests</div>
+            <div className="rounded-lg border border-line overflow-hidden">
+              <div className="px-4 py-3 bg-elevated text-ink-2 text-sm font-medium">Deposit Requests</div>
               <div className="overflow-auto max-h-[360px]">
                 <table className="min-w-full text-sm">
                   <thead>
-                    <tr className="text-left border-b border-[#e2e8f0] bg-[#ffffff]">
+                    <tr className="text-left border-b border-line bg-white">
                       <th className="py-2 px-4 font-medium">Amount</th>
                       <th className="py-2 px-4 font-medium">Status</th>
                       <th className="py-2 px-4 font-medium">Reference</th>
@@ -392,13 +392,13 @@ export default function WalletPage() {
                   <tbody>
                     {deposits.length === 0 ? (
                       <tr>
-                        <td colSpan={4} className="py-6 px-4 text-center text-[#64748b]">
+                        <td colSpan={4} className="py-6 px-4 text-center text-ink-2">
                           No deposit requests yet
                         </td>
                       </tr>
                     ) : (
                       deposits.map((d) => (
-                        <tr key={d.id} className="border-b border-[#e2e8f0] hover:bg-[#e2e8f0]/40 transition-all">
+                        <tr key={d.id} className="border-b border-line hover:bg-elevated/40 transition-all">
                           <td className="py-2 px-4 whitespace-nowrap">{formatINR(d.amount)}</td>
                           <td className="py-2 px-4 whitespace-nowrap capitalize">{d.status}</td>
                           <td className="py-2 px-4 whitespace-nowrap">{d.reference ?? '-'}</td>
@@ -411,12 +411,12 @@ export default function WalletPage() {
               </div>
             </div>
 
-            <div className="rounded-lg border border-[#e2e8f0] overflow-hidden">
-              <div className="px-4 py-3 bg-[#e2e8f0] text-[#64748b] text-sm font-medium">Withdrawal Requests</div>
+            <div className="rounded-lg border border-line overflow-hidden">
+              <div className="px-4 py-3 bg-elevated text-ink-2 text-sm font-medium">Withdrawal Requests</div>
               <div className="overflow-auto max-h-[360px]">
                 <table className="min-w-full text-sm">
                   <thead>
-                    <tr className="text-left border-b border-[#e2e8f0] bg-[#ffffff]">
+                    <tr className="text-left border-b border-line bg-white">
                       <th className="py-2 px-4 font-medium">Amount</th>
                       <th className="py-2 px-4 font-medium">Status</th>
                       <th className="py-2 px-4 font-medium">Bank</th>
@@ -426,13 +426,13 @@ export default function WalletPage() {
                   <tbody>
                     {withdrawals.length === 0 ? (
                       <tr>
-                        <td colSpan={4} className="py-6 px-4 text-center text-[#64748b]">
+                        <td colSpan={4} className="py-6 px-4 text-center text-ink-2">
                           No withdrawal requests yet
                         </td>
                       </tr>
                     ) : (
                       withdrawals.map((w) => (
-                        <tr key={w.id} className="border-b border-[#e2e8f0] hover:bg-[#e2e8f0]/40 transition-all">
+                        <tr key={w.id} className="border-b border-line hover:bg-elevated/40 transition-all">
                           <td className="py-2 px-4 whitespace-nowrap">{formatINR(w.amount)}</td>
                           <td className="py-2 px-4 whitespace-nowrap capitalize">{w.status}</td>
                           <td className="py-2 px-4 whitespace-nowrap">

@@ -126,12 +126,12 @@ export default function BlackjackGame() {
   const canStartGame = gameState === 'betting' && betAmount > 0
   
   return (
-    <div className="min-h-screen bg-[#0f212e] text-white">
+    <div className="min-h-screen bg-bg-2 text-ink">
       <div className="max-w-7xl mx-auto px-4 py-6">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">Blackjack</h1>
-          <p className="text-slate-400">Beat the dealer to 21!</p>
+          <h1 className="mb-2 text-4xl font-bold text-ink">Blackjack</h1>
+          <p className="text-ink-2">Beat the dealer to 21!</p>
           <div className="mt-2 flex items-center justify-center gap-2">
             <div className={`text-sm font-medium ${getGameStateColor()}`}>
               {getGameStateText()}

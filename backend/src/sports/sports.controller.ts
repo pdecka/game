@@ -13,6 +13,11 @@ export class SportsController {
     return this.sportsService.getUpcomingOddsFeed()
   }
 
+  @Get('board')
+  async board() {
+    return this.sportsService.getBoard()
+  }
+
   @Get('matches')
   async listMatches(
     @Query('sport') sport: SportType,

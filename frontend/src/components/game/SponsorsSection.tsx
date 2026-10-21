@@ -33,20 +33,20 @@ export default function SponsorsSection() {
   ]
 
   return (
-    <div className="bg-[#0a0a0a] border-t border-white/10">
+    <div className="border-t border-line bg-bg-2">
       <div className="max-w-7xl mx-auto px-4 py-12">
         {/* Game Providers */}
         <div className="mb-12">
-          <h3 className="text-center text-lg font-semibold text-white mb-8">
+          <h3 className="mb-8 text-center text-lg font-semibold text-ink">
             Trusted Game Providers
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-6">
             {sponsors.map((sponsor) => (
               <div
                 key={sponsor.name}
-                className="bg-[#1a1a1a] rounded-lg p-4 flex items-center justify-center h-20 border border-white/10 hover:border-white/20 transition-colors"
+                className="flex h-20 items-center justify-center rounded-lg border border-line bg-white p-4 transition-colors hover:border-brand/40"
               >
-                <div className="text-xs text-slate-400 text-center font-medium">
+                <div className="text-center text-xs font-medium text-ink-2">
                   {sponsor.name}
                 </div>
               </div>
@@ -56,16 +56,16 @@ export default function SponsorsSection() {
 
         {/* Payment Methods */}
         <div className="mb-12">
-          <h3 className="text-center text-lg font-semibold text-white mb-8">
+          <h3 className="mb-8 text-center text-lg font-semibold text-ink">
             Payment Methods
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-6">
             {paymentMethods.map((payment) => (
               <div
                 key={payment.name}
-                className="bg-[#1a1a1a] rounded-lg p-4 flex items-center justify-center h-20 border border-white/10 hover:border-white/20 transition-colors"
+                className="flex h-20 items-center justify-center rounded-lg border border-line bg-white p-4 transition-colors hover:border-brand/40"
               >
-                <div className="text-xs text-slate-400 text-center font-medium">
+                <div className="text-center text-xs font-medium text-ink-2">
                   {payment.name}
                 </div>
               </div>
@@ -75,16 +75,16 @@ export default function SponsorsSection() {
 
         {/* Certifications */}
         <div className="mb-12">
-          <h3 className="text-center text-lg font-semibold text-white mb-8">
+          <h3 className="mb-8 text-center text-lg font-semibold text-ink">
             Certifications & Licenses
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {certifications.map((cert) => (
               <div
                 key={cert.name}
-                className="bg-[#1a1a1a] rounded-lg p-4 flex items-center justify-center h-20 border border-white/10 hover:border-white/20 transition-colors"
+                className="flex h-20 items-center justify-center rounded-lg border border-line bg-white p-4 transition-colors hover:border-brand/40"
               >
-                <div className="text-xs text-slate-400 text-center font-medium">
+                <div className="text-center text-xs font-medium text-ink-2">
                   {cert.name}
                 </div>
               </div>
@@ -94,21 +94,21 @@ export default function SponsorsSection() {
 
         {/* Additional Info */}
         <div className="text-center space-y-4">
-          <div className="bg-[#1a1a1a] rounded-lg p-6 border border-white/10">
-            <h4 className="text-sm font-semibold text-white mb-2">
+          <div className="rounded-lg border border-line bg-white p-6">
+            <h4 className="mb-2 text-sm font-semibold text-ink">
               Why Choose Our Platform?
             </h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-slate-400">
+            <div className="grid grid-cols-1 gap-4 text-xs text-ink-2 md:grid-cols-3">
               <div>
-                <div className="font-medium text-white mb-1">🔒 Secure & Fair</div>
+                <div className="mb-1 font-medium text-ink">🔒 Secure & Fair</div>
                 <div>Provably fair games with advanced encryption</div>
               </div>
               <div>
-                <div className="font-medium text-white mb-1">⚡ Instant Withdrawals</div>
+                <div className="mb-1 font-medium text-ink">⚡ Instant Withdrawals</div>
                 <div>Fast and reliable payment processing</div>
               </div>
               <div>
-                <div className="font-medium text-white mb-1">🎮 24/7 Gaming</div>
+                <div className="mb-1 font-medium text-ink">🎮 24/7 Gaming</div>
                 <div>Play anytime, anywhere on any device</div>
               </div>
             </div>
@@ -116,14 +116,14 @@ export default function SponsorsSection() {
         </div>
 
         {/* Bottom Logo */}
-        <div className="text-center pt-8 border-t border-white/10">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="h-10 w-10 bg-gradient-to-br from-emerald-400 to-sky-500 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">G</span>
+        <div className="border-t border-line pt-8 text-center">
+          <div className="mb-4 flex items-center justify-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand">
+              <span className="text-sm font-bold text-white">G</span>
             </div>
-            <span className="text-white font-semibold text-lg">Gaming Platform</span>
+            <span className="text-lg font-semibold text-ink">Gaming Platform</span>
           </div>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-ink-3">
             The premier destination for online gaming and sports betting
           </p>
         </div>

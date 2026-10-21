@@ -3,34 +3,88 @@
 @tailwind utilities;
 
 :root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
+  --bg: #ffffff;
+  --bg-2: #f7fbf8;
+  --sidebar: #ffffff;
+  --card: #ffffff;
+  --elevated: #f3f8f4;
+  --line: #d7e8dc;
+  --brand: #22c55e;
+  --brand-2: #16a34a;
+  --mint: #bbf7d0;
+  --ink: #0b1f12;
+  --ink-2: #4b6354;
+  --ink-3: #7a8f82;
+  --radius: 12px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
-  }
+html {
+  max-width: 100%;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+  color-scheme: light;
 }
 
-html,
 body {
   max-width: 100%;
   overflow-x: hidden;
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-tap-highlight-color: transparent;
+  font-feature-settings: 'ss01' on, 'cv11' on;
 }
 
-body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
-  -webkit-tap-highlight-color: transparent;
+::selection {
+  background: color-mix(in srgb, var(--brand) 28%, transparent);
+  color: var(--ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+@layer base {
+  h1 {
+    @apply text-2xl font-semibold tracking-tight text-ink sm:text-3xl;
+  }
+
+  h2 {
+    @apply text-lg font-semibold tracking-tight text-ink sm:text-xl;
+  }
+
+  h3 {
+    @apply text-base font-semibold text-ink;
+  }
+
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+
+  input[type='number'] {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  .surface-card {
+    @apply rounded-2xl border border-line bg-card shadow-panel;
+  }
+
+  .surface-elevated {
+    @apply rounded-2xl border border-line bg-elevated;
+  }
+
+  .icon-btn {
+    @apply inline-flex h-10 w-10 items-center justify-center rounded-xl border border-line bg-white text-ink-2 transition duration-200 hover:border-brand/40 hover:bg-brand/10 hover:text-ink;
+  }
+
+  .odds-num {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
 }
 
 @layer utilities {
@@ -52,5 +106,19 @@ body {
     100% {
       transform: translateX(-100%);
     }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

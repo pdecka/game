@@ -1,257 +1,232 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import toast from 'react-hot-toast'
 import { GameLayout } from '@/components/layout/GameLayout'
-import SportsSidebar from '@/components/sports/SportsSidebar'
 import SportsHeader from '@/components/sports/SportsHeader'
 import MatchList from '@/components/sports/MatchList'
-import MatchDetails from '@/components/sports/MatchDetails'
 import BetSlip from '@/components/sports/BetSlip'
 import ErrorBoundary from '@/components/sports/ErrorBoundary'
-import { EmptyState, ErrorState } from '@/components/sports/LoadingStates'
+import { ErrorState } from '@/components/sports/LoadingStates'
 import { MatchData } from '@/components/sports/MatchCard'
-import { sportsApi, SportCategory } from '@/services/sportsApi'
-import { bettingService, BetSlipItem } from '@/services/bettingService'
-import { realtimeOddsEngine, RealtimeOddsUpdate } from '@/services/realtimeOddsEngine'
+import { useSportsBetSlip } from '@/components/sports/useSportsBetSlip'
+import { sportsApi, BoardMatch } from '@/services/sportsApi'
+
+function money(value: number) {
+  const amount = Number.isFinite(value) ? value : 0
+  return `₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+}
+
+function mapBoardMatch(match: BoardMatch): MatchData {
+  return {
+    id: match.id,
+    sport_key: match.sportKey || match.sport,
+    sport_title: match.sport,
+    league: match.league,
+    commence_time: match.startTime || '',
+    home_team: match.teamA,
+    away_team: match.teamB,
+    status: match.status,
+    scoreHome: match.score?.teamA || null,
+    scoreAway: match.score?.teamB || null,
+    scoreDetail: match.score?.detail,
+    lastFetchedAt: match.lastFetchedAt,
+    bettingOpen: match.bettingOpen,
+    bookmakers: match.bookmakers?.length
+      ? match.bookmakers
+      : match.odds
+        ? [{
+            key: match.odds.source,
+            title: match.odds.bookmaker,
+            markets: [{ key: 'h2h', outcomes: match.odds.outcomes }],
+          }]
+        : [],
+  }
+}
 
 export default function SportsPage() {
   const router = useRouter()
-  
+  const slip = useSportsBetSlip()
   const [matches, setMatches] = useState<MatchData[]>([])
-  const [categories, setCategories] = useState<SportCategory[]>([])
-  const [selectedCategory, setSelectedCategory] = useState<string>()
-  const [selectedMatch, setSelectedMatch] = useState<MatchData | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [lastUpdated, setLastUpdated] = useState<Date>()
+  const [selectedCategory, setSelectedCategory] = useState<string>('All')
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  
-  // Betting state
-  const [betSlipItems, setBetSlipItems] = useState<BetSlipItem[]>([])
-  const [isBetSlipOpen, setIsBetSlipOpen] = useState(false)
-  const [isPlacingBets, setIsPlacingBets] = useState(false)
-  const [userBalance, setUserBalance] = useState(10000) // Mock balance
-  const [oddsChanges, setOddsChanges] = useState<RealtimeOddsUpdate['changes']>([])
+  const [feedNote, setFeedNote] = useState('')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'live' | 'upcoming' | 'finished'>('all')
+  const [query, setQuery] = useState('')
 
-  const loadData = useCallback(async (category?: string) => {
+  const loadData = useCallback(async (signal?: AbortSignal, silent = false) => {
     try {
-      setLoading(true)
+      if (!silent) setLoading(true)
       setError(null)
-      
-      const response = await sportsApi.getMatchesByCategory(category)
-      const apiResponse = await sportsApi.fetchUpcomingOdds()
-      
-      setMatches(response)
-      setCategories(apiResponse.categories)
-      setLastUpdated(apiResponse.lastUpdated)
+      const board = await sportsApi.fetchBoard(signal)
+      setMatches(board.matches.map(mapBoardMatch))
+      const reason = board.oddsStatus?.reason || ''
+      if (!board.oddsStatus?.configured) {
+        setFeedNote('Bookmaker prices are offline until ODDS_API_KEY is set on the server.')
+      } else if (reason && reason !== 'ok') {
+        setFeedNote(reason)
+      } else {
+        setFeedNote('')
+      }
     } catch (err: any) {
-      console.error('Error loading sports data:', err)
-      setError(err.message || 'Failed to load sports data')
-      toast.error('Failed to load sports data')
+      if (err?.name === 'AbortError') return
+      setError('Sports data is temporarily unavailable.')
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
   }, [])
 
-  const handleRefresh = useCallback(async () => {
-    await sportsApi.forceRefresh()
-    await loadData(selectedCategory)
-  }, [loadData, selectedCategory])
-
-  const handleCategorySelect = useCallback((category: string) => {
-    setSelectedCategory(category)
-    setSelectedMatch(null)
-    loadData(category)
+  useEffect(() => {
+    const controller = new AbortController()
+    loadData(controller.signal)
+    const timer = window.setInterval(() => {
+      if (!document.hidden) loadData(undefined, true)
+    }, 30000)
+    return () => {
+      controller.abort()
+      window.clearInterval(timer)
+    }
   }, [loadData])
 
-  const handleMatchSelect = useCallback((match: MatchData) => {
-    setSelectedMatch(match)
-    // Navigate to match details page
-    router.push(`/sports/match/${match.id}`)
-  }, [router])
+  const categories = useMemo(() => {
+    const counts = new Map<string, number>()
+    matches.forEach((match) => counts.set(match.sport_title, (counts.get(match.sport_title) || 0) + 1))
+    return [{ sport_title: 'All', count: matches.length }, ...[...counts.entries()].map(([sport_title, count]) => ({ sport_title, count })).sort((a, b) => b.count - a.count)]
+  }, [matches])
 
-  // Betting handlers
-  const handleOddsClick = useCallback((market: string, outcome: string, odds: number, bookmaker: string, match: MatchData) => {
-    const marketType = market.includes('lay') ? 'lay' : 'back'
-    const betId = `${match.id}_${market}_${outcome}_${bookmaker}`
-    
-    // Check if bet already exists
-    const existingBetIndex = betSlipItems.findIndex(item => item.id === betId)
-    
-    if (existingBetIndex >= 0) {
-      // Remove existing bet
-      setBetSlipItems(prev => prev.filter(item => item.id !== betId))
-      toast.error('Bet removed from slip')
-    } else {
-      // Add new bet
-      const newBet: BetSlipItem = {
-        id: betId,
+  const visible = useMemo(() => {
+    return matches.filter((match) => {
+      if (selectedCategory !== 'All' && match.sport_title !== selectedCategory) return false
+      if (statusFilter !== 'all' && match.status !== statusFilter) return false
+      if (query.trim()) {
+        const q = query.trim().toLowerCase()
+        return (
+          match.home_team.toLowerCase().includes(q) ||
+          match.away_team.toLowerCase().includes(q) ||
+          (match.league || '').toLowerCase().includes(q)
+        )
+      }
+      return true
+    })
+  }, [matches, query, selectedCategory, statusFilter])
+
+  const addOdds = useCallback(
+    (
+      market: string,
+      outcome: string,
+      odds: number,
+      bookmaker: string,
+      point: number | undefined,
+      bookmakerKey: string,
+      match: MatchData,
+    ) => {
+      const lineKey = point != null ? `:${point}` : ''
+      slip.toggleOdds({
+        id: `${match.id}:${market}:${outcome}${lineKey}:${bookmakerKey}`,
         matchId: match.id,
         matchName: `${match.home_team} vs ${match.away_team}`,
         market,
         outcome,
         odds,
         bookmaker,
-        stake: 100,
-        type: marketType
-      }
-      
-      setBetSlipItems(prev => [...prev, newBet])
-      setIsBetSlipOpen(true)
-      toast.success(`${marketType.toUpperCase()} bet added to slip`)
-    }
-  }, [betSlipItems])
-
-  const handleUpdateBetStake = useCallback((betId: string, stake: number) => {
-    setBetSlipItems(prev => prev.map(item => 
-      item.id === betId ? { ...item, stake } : item
-    ))
-  }, [])
-
-  const handleRemoveBet = useCallback((betId: string) => {
-    setBetSlipItems(prev => prev.filter(item => item.id !== betId))
-  }, [])
-
-  const handlePlaceBets = useCallback(async () => {
-    setIsPlacingBets(true)
-    
-    try {
-      // Validate all bets
-      for (const bet of betSlipItems) {
-        const validation = bettingService.validateBet(bet, userBalance)
-        if (!validation.isValid) {
-          toast.error(validation.error || 'Invalid bet')
-          return
-        }
-      }
-
-      // Calculate required balance
-      const requiredBalance = bettingService.getRequiredBalance(betSlipItems)
-      if (requiredBalance > userBalance) {
-        toast.error('Insufficient balance for all bets')
-        return
-      }
-
-      // Place bets
-      const placedBets = await bettingService.placeMultipleBets(betSlipItems, 'user-123') // Mock user ID
-      
-      // Update balance
-      const totalStake = bettingService.calculateTotalStake(betSlipItems)
-      setUserBalance(prev => prev - totalStake)
-      
-      // Clear bet slip
-      setBetSlipItems([])
-      setIsBetSlipOpen(false)
-      
-      toast.success(`${placedBets.length} bets placed successfully!`)
-    } catch (error) {
-      console.error('Error placing bets:', error)
-      toast.error('Failed to place bets')
-    } finally {
-      setIsPlacingBets(false)
-    }
-  }, [betSlipItems, userBalance])
-
-  // Real-time odds integration
-  useEffect(() => {
-    const unsubscribe = realtimeOddsEngine.subscribe((update: RealtimeOddsUpdate) => {
-      setMatches(update.matches)
-      setOddsChanges(update.changes)
-      setLastUpdated(update.timestamp)
-      
-      // Update odds in bet slip if they changed
-      setBetSlipItems(prev => prev.map(item => {
-        const change = update.changes.find(c => 
-          c.matchId === item.matchId && 
-          c.market === item.market && 
-          c.outcome === item.outcome &&
-          c.bookmaker === item.bookmaker
-        )
-        
-        if (change) {
-          return { ...item, odds: change.newOdds }
-        }
-        return item
-      }))
-    })
-
-    // Start polling
-    realtimeOddsEngine.startPolling(async () => {
-      const response = await sportsApi.fetchUpcomingOdds()
-      return response.data
-    })
-
-    return () => {
-      unsubscribe()
-      realtimeOddsEngine.stopPolling()
-    }
-  }, [])
-
-  // Initial load
-  useEffect(() => {
-    loadData()
-  }, [loadData])
+        bookmakerKey,
+        sportKey: match.sport_key,
+        ...(point != null ? { line: point } : {}),
+      })
+    },
+    [slip],
+  )
 
   return (
     <ErrorBoundary>
       <GameLayout>
-        <div className="flex flex-1 overflow-hidden">
-          {/* Sports Sidebar */}
-          <div className="hidden lg:block w-64 bg-[#0f212e] border-r border-white/10 p-4">
-            <SportsSidebar
-              categories={categories}
-              selectedCategory={selectedCategory}
-              onCategorySelect={handleCategorySelect}
+        <div className="mx-auto w-full max-w-5xl px-3 py-4 sm:px-6 sm:py-6">
+          <SportsHeader selectedCategory={selectedCategory === 'All' ? undefined : selectedCategory} count={visible.length} />
+
+          {slip.loggedIn && (
+            <p className="mb-4 text-sm text-ink-2">
+              Balance <span className="odds-num font-semibold text-ink">{money(slip.balance)}</span>
+              <span className="text-ink-3"> ({money(slip.exposure)})</span>
+            </p>
+          )}
+
+          <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
+            {categories.map((category) => {
+              const active = selectedCategory === category.sport_title
+              return (
+                <button
+                  key={category.sport_title}
+                  type="button"
+                  onClick={() => setSelectedCategory(category.sport_title)}
+                  className={`shrink-0 rounded-full border px-3 py-1.5 text-sm ${
+                    active ? 'border-brand bg-brand text-white' : 'border-line bg-white text-ink-2 hover:bg-brand/10'
+                  }`}
+                >
+                  {category.sport_title}
+                  <span className="ml-2 text-xs opacity-80">{category.count}</span>
+                </button>
+              )
+            })}
+          </div>
+
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            {(['all', 'live', 'upcoming', 'finished'] as const).map((filter) => (
+              <button
+                key={filter}
+                type="button"
+                onClick={() => setStatusFilter(filter)}
+                className={`rounded-full border px-3 py-1 text-xs capitalize ${
+                  statusFilter === filter ? 'border-brand bg-brand/10 text-brand-2' : 'border-line bg-white text-ink-2'
+                }`}
+              >
+                {filter}
+              </button>
+            ))}
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search teams or leagues"
+              className="ml-auto w-full rounded-lg border border-line bg-white px-3 py-1.5 text-sm text-ink outline-none placeholder:text-ink-3 focus:border-brand/50 focus:ring-2 focus:ring-brand/20 sm:w-56"
             />
           </div>
 
-          {/* Main Content */}
-          <div className="flex-1 overflow-y-auto">
-            <div className="p-3 sm:p-6">
-              {/* Sports Header */}
-              <SportsHeader
-                selectedCategory={selectedCategory}
-                onRefresh={handleRefresh}
-                loading={loading}
-                lastUpdated={lastUpdated}
-              />
+          {feedNote && <p className="mb-4 text-sm text-ink-3">{feedNote}</p>}
 
-              {error ? (
-                <ErrorState error={error} onRetry={handleRefresh} />
-              ) : (
-                <div className="space-y-6">
-                  <div>
-                    <h2 className="text-xl font-semibold text-white mb-4">
-                      {selectedCategory ? `${selectedCategory} Matches` : 'All Sports'}
-                    </h2>
-                    <MatchList
-                      matches={matches}
-                      selectedMatchId={selectedMatch?.id}
-                      onMatchSelect={handleMatchSelect}
-                      onOddsClick={handleOddsClick}
-                      loading={loading}
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+          {error ? (
+            <ErrorState error={error} onRetry={() => loadData()} />
+          ) : (
+            <MatchList
+              matches={visible}
+              onMatchSelect={(match) => router.push(`/sports/match/${match.id}`)}
+              onOddsClick={addOdds}
+              loading={loading && matches.length === 0}
+            />
+          )}
         </div>
-        
-        {/* Bet Slip */}
+
+        {!slip.isOpen && slip.items.length > 0 && (
+          <button
+            type="button"
+            onClick={() => slip.setIsOpen(true)}
+            className="fixed bottom-4 right-4 z-40 rounded-full bg-brand px-4 py-3 text-sm font-semibold text-white shadow-lift"
+          >
+            Bets · {slip.items.length} · {money(slip.items.reduce((sum, item) => sum + Number(item.stake || 0), 0))}
+          </button>
+        )}
+
         <BetSlip
-          isOpen={isBetSlipOpen}
-          onClose={() => setIsBetSlipOpen(false)}
-          items={betSlipItems}
-          onUpdateItem={handleUpdateBetStake}
-          onRemoveItem={handleRemoveBet}
-          onPlaceBets={handlePlaceBets}
-          isPlacing={isPlacingBets}
-          balance={userBalance}
+          isOpen={slip.isOpen}
+          onClose={() => slip.setIsOpen(false)}
+          items={slip.items}
+          onUpdateItem={slip.updateStake}
+          onRemoveItem={slip.remove}
+          onPlaceBets={slip.placeBets}
+          isPlacing={slip.isPlacing}
+          balance={slip.balance}
+          exposure={slip.exposure}
         />
       </GameLayout>
     </ErrorBoundary>
   )
 }
-

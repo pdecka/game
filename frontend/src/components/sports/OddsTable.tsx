@@ -1,178 +1,123 @@
 'use client'
 
-import { useMemo } from 'react'
+const MARKET_TITLES: Record<string, string> = {
+  h2h: 'Match Winner',
+  spreads: 'Handicap',
+  totals: 'Total',
+  btts: 'Both Teams to Score',
+  draw_no_bet: 'Draw No Bet',
+}
 
 interface Outcome {
   name: string
   price: number
+  point?: number
+  description?: string
 }
 
 interface Market {
   key: string
-  last_update: string
+  last_update?: string
   outcomes: Outcome[]
 }
 
 interface Bookmaker {
   key: string
   title: string
-  last_update: string
+  last_update?: string
   markets: Market[]
 }
 
 interface OddsTableProps {
   bookmakers: Bookmaker[]
-  onOddsClick?: (market: string, outcome: string, odds: number, bookmaker: string) => void
+  homeTeam?: string
+  awayTeam?: string
+  bettingOpen?: boolean
+  onOddsClick?: (
+    market: string,
+    outcome: string,
+    odds: number,
+    bookmaker: string,
+    point: number | undefined,
+    bookmakerKey: string,
+  ) => void
 }
 
-export default function OddsTable({ bookmakers, onOddsClick }: OddsTableProps) {
-  const { marketsData, uniqueOutcomes } = useMemo(() => {
-    const allOutcomes = new Set<string>()
-    const marketsMap = new Map<string, Map<string, { price: number; bookmaker: string }>>()
+function marketTitle(key: string) {
+  if (MARKET_TITLES[key]) return MARKET_TITLES[key]
+  return key
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase())
+}
 
-    // Collect all unique outcomes and organize odds by market and outcome
-    bookmakers.forEach(bookmaker => {
-      bookmaker.markets.forEach(market => {
-        if (!marketsMap.has(market.key)) {
-          marketsMap.set(market.key, new Map())
-        }
-        
-        const marketData = marketsMap.get(market.key)!
-        
-        market.outcomes.forEach(outcome => {
-          allOutcomes.add(outcome.name)
-          marketData.set(outcome.name, {
-            price: outcome.price,
-            bookmaker: bookmaker.title
-          })
-        })
-      })
-    })
+function outcomeLabel(outcome: Outcome) {
+  if (outcome.point == null) return outcome.name
+  if (/\b(over|under)\b/i.test(outcome.name)) return `${outcome.name} ${outcome.point}`
+  const point = outcome.point > 0 ? `+${outcome.point}` : String(outcome.point)
+  return `${outcome.name} ${point}`
+}
 
-    return {
-      marketsData: Object.fromEntries(marketsMap),
-      uniqueOutcomes: Array.from(allOutcomes)
-    }
-  }, [bookmakers])
+export default function OddsTable({ bookmakers, homeTeam, awayTeam, bettingOpen = true, onOddsClick }: OddsTableProps) {
+  const marketKeys = Array.from(
+    new Set(
+      bookmakers.flatMap((book) => book.markets.map((market) => market.key)).filter((key) => !key.endsWith('_lay')),
+    ),
+  )
+  const preferred = ['h2h', 'spreads', 'totals', 'btts', 'draw_no_bet']
+  marketKeys.sort((a, b) => {
+    const ai = preferred.indexOf(a)
+    const bi = preferred.indexOf(b)
+    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi)
+  })
 
-  const getMarketDisplayName = (marketKey: string) => {
-    switch (marketKey) {
-      case 'h2h':
-        return 'Match Winner'
-      case 'h2h_lay':
-        return 'Lay Betting'
-      case 'totals':
-        return 'Totals'
-      case 'spreads':
-        return 'Point Spread'
-      default:
-        return marketKey.charAt(0).toUpperCase() + marketKey.slice(1).replace(/_/g, ' ')
-    }
-  }
-
-  const getMarketType = (marketKey: string) => {
-    if (marketKey.includes('lay')) return 'lay'
-    return 'back'
-  }
-
-  const getOddsColor = (price: number, marketType: string) => {
-    if (marketType === 'lay') return 'text-[#ef4444]' // Red for lay
-    if (price <= 1.5) return 'text-[#22c55e]' // Green for favorable
-    if (price >= 3.0) return 'text-[#ef4444]' // Red for risky
-    return 'text-[#3b82f6]' // Blue for regular back
-  }
-
-  const getOddsButtonColor = (marketType: string) => {
-    if (marketType === 'lay') return 'bg-[#ef4444]/10 hover:bg-[#ef4444]/20 border-[#ef4444]/30'
-    return 'bg-[#3b82f6]/10 hover:bg-[#3b82f6]/20 border-[#3b82f6]/30'
-  }
-
-  if (bookmakers.length === 0) {
+  if (!bookmakers.length || !marketKeys.length) {
     return (
-      <div className="rounded-xl border border-white/10 bg-white/5 p-6 text-center">
-        <p className="text-sm text-slate-300">No odds available</p>
+      <div className="rounded-2xl border border-line bg-card p-6 text-center">
+        <p className="text-sm text-ink-2">Prices for this match are not up yet.</p>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
-      {Object.entries(marketsData).map(([marketKey, marketData]) => {
-        const marketType = getMarketType(marketKey)
-        
-        return (
-          <div key={marketKey} className="rounded-2xl border border-white/10 bg-white/5 p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h4 className="text-base font-semibold text-white">{getMarketDisplayName(marketKey)}</h4>
-              <div className="flex items-center gap-2">
-                <span className={`text-xs px-2 py-1 rounded-full ${
-                  marketType === 'lay' 
-                    ? 'bg-[#ef4444]/10 border border-[#ef4444]/30 text-[#ef4444]'
-                    : 'bg-[#3b82f6]/10 border border-[#3b82f6]/30 text-[#3b82f6]'
-                }`}>
-                  {marketType === 'lay' ? 'LAY' : 'BACK'}
-                </span>
-                <span className="text-xs text-slate-400">
-                  {marketData.size} outcomes
-                </span>
-              </div>
-            </div>
-            
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-white/10">
-                    <th className="text-left py-2 px-3 text-xs font-medium text-slate-400">Outcome</th>
-                    <th className="text-right py-2 px-3 text-xs font-medium text-slate-400">Odds</th>
-                    <th className="text-right py-2 px-3 text-xs font-medium text-slate-400">Bookmaker</th>
-                    <th className="text-center py-2 px-3 text-xs font-medium text-slate-400">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {Array.from(marketData.entries()).map(([outcome, odds]) => (
-                    <tr key={outcome} className="border-b border-white/5 last:border-0">
-                      <td className="py-3 px-3">
-                        <span className="text-sm text-white font-medium">{outcome}</span>
-                      </td>
-                      <td className="py-3 px-3 text-right">
-                        <span className={`text-sm font-bold ${getOddsColor(odds.price, marketType)}`}>
-                          {odds.price.toFixed(2)}
-                        </span>
-                      </td>
-                      <td className="py-3 px-3 text-right">
-                        <span className="text-xs text-slate-400">{odds.bookmaker}</span>
-                      </td>
-                      <td className="py-3 px-3 text-center">
-                        <button
-                          onClick={() => onOddsClick?.(marketKey, outcome, odds.price, odds.bookmaker)}
-                          className={`rounded-lg px-3 py-1 text-xs font-semibold transition-all ${getOddsButtonColor(marketType)}`}
-                        >
-                          {marketType === 'lay' ? 'Lay' : 'Back'}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+    <div className="space-y-4">
+      {marketKeys.map((marketKey) => (
+        <section key={marketKey} className="rounded-2xl border border-line bg-card p-4">
+          <h3 className="text-base font-semibold text-ink">{marketTitle(marketKey)}</h3>
+          <div className="mt-3 space-y-2">
+            {bookmakers.map((book) => {
+              const market = book.markets.find((item) => item.key === marketKey)
+              if (!market) return null
+              const outcomes = [...market.outcomes].sort((a, b) => {
+                const order = [homeTeam, 'Draw', awayTeam, 'Over', 'Under', 'Yes', 'No']
+                const ai = order.findIndex((name) => name?.toLowerCase() === a.name.toLowerCase())
+                const bi = order.findIndex((name) => name?.toLowerCase() === b.name.toLowerCase())
+                return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi)
+              })
+              return (
+                <div key={book.key} className="rounded-xl bg-elevated p-3">
+                  <p className="mb-2 text-xs font-medium text-ink-3">{book.title}</p>
+                  <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    {outcomes.map((outcome) => (
+                      <button
+                        key={`${book.key}-${outcome.name}-${outcome.point ?? ''}-${outcome.description ?? ''}`}
+                        type="button"
+                        disabled={!bettingOpen}
+                        onClick={() =>
+                          onOddsClick?.(marketKey, outcome.name, outcome.price, book.title, outcome.point, book.key)
+                        }
+                        className="flex items-center justify-between rounded-lg border border-line bg-bg-2 px-3 py-2.5 text-left transition-colors hover:border-brand/40 hover:bg-brand/10 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <span className="truncate pr-2 text-sm text-ink-2">{outcomeLabel(outcome)}</span>
+                        <span className="odds-num text-sm font-bold text-ink">{outcome.price.toFixed(2)}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
           </div>
-        )
-      })}
-      
-      {/* Future-ready markets (simulated if not present) */}
-      {!marketsData['totals'] && (
-        <div className="rounded-2xl border border-white/5 bg-white/3 p-4 opacity-60">
-          <div className="flex items-center justify-between mb-4">
-            <h4 className="text-base font-semibold text-slate-400">Session Markets</h4>
-            <span className="text-xs px-2 py-1 rounded-full bg-white/10 border border-white/20 text-slate-400">
-              COMING SOON
-            </span>
-          </div>
-          <p className="text-sm text-slate-400 text-center py-4">
-            Session betting markets will be available soon
-          </p>
-        </div>
-      )}
+        </section>
+      ))}
     </div>
   )
 }

@@ -154,24 +154,24 @@ export default function GameSidebar({ isOpen, onClose }: GameSidebarProps) {
 
       {/* Sidebar */}
       <div className={`
-        fixed top-0 left-0 h-full w-64 bg-[#1a1a1a] border-r border-white/10 z-[60] transform transition-transform duration-300 ease-in-out
+        fixed top-0 left-0 z-[60] h-full w-64 transform border-r border-line bg-white transition-transform duration-300 ease-in-out
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
         lg:translate-x-0 lg:static lg:z-auto lg:w-64
       `}>
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-white/10">
+        <div className="flex items-center justify-between border-b border-line p-4">
           <div className="flex items-center gap-3">
-            <div className="h-8 w-8 bg-gradient-to-br from-emerald-400 to-sky-500 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">G</span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand">
+              <span className="text-sm font-bold text-white">G</span>
             </div>
-            <span className="text-white font-semibold">Stake</span>
+            <span className="font-semibold text-ink">Stake</span>
           </div>
           
           <Button
             variant="ghost"
             size="sm"
             onClick={onClose}
-            className="text-white hover:bg-white/10 lg:hidden"
+            className="text-ink hover:bg-brand/10 lg:hidden"
           >
             <X className="h-5 w-5" />
           </Button>
@@ -186,7 +186,7 @@ export default function GameSidebar({ isOpen, onClose }: GameSidebarProps) {
                 <Button
                   variant="ghost"
                   onClick={() => toggleSection(section.id)}
-                  className="w-full justify-between text-white hover:bg-white/10 p-3 h-auto"
+                  className="h-auto w-full justify-between p-3 text-ink hover:bg-brand/10"
                 >
                   <div className="flex items-center gap-3">
                     {section.icon}
@@ -201,7 +201,7 @@ export default function GameSidebar({ isOpen, onClose }: GameSidebarProps) {
                   <div className="ml-7 space-y-1">
                     {section.items.map((item) => (
                       <Link key={item.name} href={item.href} onClick={onClose}>
-                        <div className="flex items-center p-2 rounded text-xs text-slate-400 hover:text-white hover:bg-white/5 transition-colors">
+                        <div className="flex items-center rounded p-2 text-xs text-ink-2 transition-colors hover:bg-brand/10 hover:text-brand-2">
                           {item.name}
                         </div>
                       </Link>
@@ -214,11 +214,11 @@ export default function GameSidebar({ isOpen, onClose }: GameSidebarProps) {
         </nav>
 
         {/* Footer */}
-        <div className="p-4 border-t border-white/10">
-          <div className="flex items-center gap-2 text-xs text-slate-400">
+        <div className="border-t border-line p-4">
+          <div className="flex items-center gap-2 text-xs text-ink-2">
             <span>© 2024 Gaming Platform</span>
           </div>
-          <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
+          <div className="mt-1 flex items-center gap-2 text-xs text-ink-3">
             <span>Play responsibly. 18+ only.</span>
           </div>
         </div>

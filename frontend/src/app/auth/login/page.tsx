@@ -31,43 +31,41 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0f212e] to-[#1a2c38] p-4">
-      <div className="w-full max-w-md p-8 bg-[#1a2c38] rounded-xl shadow-2xl border border-white/10">
-        <h1 className="text-3xl font-bold text-center mb-6 text-white">Welcome Back</h1>
+    <div className="flex min-h-screen items-center justify-center bg-bg-2 p-4">
+      <div className="w-full max-w-md rounded-2xl border border-line bg-card p-8 shadow-panel">
+        <h1 className="mb-6 text-center text-3xl font-bold text-ink">Welcome Back</h1>
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium mb-2 text-white">Username or Email</label>
+            <label className="mb-2 block text-sm font-medium text-ink">Username or Email</label>
             <Input
               type="text"
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
               required
               placeholder="Enter your username or email"
-              className="bg-[#0f212e] border-white/20 text-white placeholder:text-white/40"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-2 text-white">Password</label>
+            <label className="mb-2 block text-sm font-medium text-ink">Password</label>
             <Input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
               placeholder="Enter your password"
-              className="bg-[#0f212e] border-white/20 text-white placeholder:text-white/40"
             />
           </div>
           <Button
             type="submit"
-            className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-medium transition-all duration-200"
+            className="w-full"
             disabled={loading}
           >
             {loading ? 'Logging in...' : 'Login'}
           </Button>
         </form>
-        <p className="mt-6 text-center text-sm text-white/60">
+        <p className="mt-6 text-center text-sm text-ink-2">
           Don&apos;t have an account?{' '}
-          <Link href="/auth/register" className="text-emerald-400 hover:text-emerald-300 hover:underline">
+          <Link href="/auth/register" className="font-medium text-brand-2 hover:underline">
             Register
           </Link>
         </p>

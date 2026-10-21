@@ -18,41 +18,41 @@ interface HistoryTableProps {
 
 export default function HistoryTable({ history }: HistoryTableProps) {
   return (
-    <div className="bg-[#0f212e] rounded-lg border border-white/10 overflow-hidden">
-      <div className="px-6 py-4 border-b border-white/10">
-        <h3 className="text-lg font-semibold text-white">Game History</h3>
+    <div className="overflow-hidden rounded-lg border border-line bg-white shadow-panel">
+      <div className="border-b border-line px-6 py-4">
+        <h3 className="text-lg font-semibold text-ink">Game History</h3>
       </div>
       
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-white/10">
+            <tr className="border-b border-line">
               <th className="px-6 py-3 text-left">
                 <div className="flex items-center gap-2">
-                  <Trophy className="h-4 w-4 text-slate-400" />
-                  <span className="text-xs font-medium text-slate-400">Game</span>
+                  <Trophy className="h-4 w-4 text-ink-3" />
+                  <span className="text-xs font-medium text-ink-3">Game</span>
                 </div>
               </th>
               <th className="px-6 py-3 text-left">
                 <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-slate-400" />
-                  <span className="text-xs font-medium text-slate-400">Time</span>
+                  <Clock className="h-4 w-4 text-ink-3" />
+                  <span className="text-xs font-medium text-ink-3">Time</span>
                 </div>
               </th>
               <th className="px-6 py-3 text-left">
                 <div className="flex items-center gap-2">
-                  <DollarSign className="h-4 w-4 text-slate-400" />
-                  <span className="text-xs font-medium text-slate-400">Bet Amount</span>
+                  <DollarSign className="h-4 w-4 text-ink-3" />
+                  <span className="text-xs font-medium text-ink-3">Bet Amount</span>
                 </div>
               </th>
               <th className="px-6 py-3 text-left">
                 <div className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-slate-400" />
-                  <span className="text-xs font-medium text-slate-400">Multiplier</span>
+                  <TrendingUp className="h-4 w-4 text-ink-3" />
+                  <span className="text-xs font-medium text-ink-3">Multiplier</span>
                 </div>
               </th>
               <th className="px-6 py-3 text-left">
-                <span className="text-xs font-medium text-slate-400">Payout</span>
+                <span className="text-xs font-medium text-ink-3">Payout</span>
               </th>
             </tr>
           </thead>
@@ -60,33 +60,33 @@ export default function HistoryTable({ history }: HistoryTableProps) {
             {history.length === 0 ? (
               <tr>
                 <td colSpan={5} className="px-6 py-8 text-center">
-                  <p className="text-sm text-slate-400">No games played yet</p>
+                  <p className="text-sm text-ink-3">No games played yet</p>
                 </td>
               </tr>
             ) : (
               history.map((game) => (
-                <tr key={game.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                <tr key={game.id} className="border-b border-line transition-colors hover:bg-elevated">
                   <td className="px-6 py-4">
-                    <span className="text-sm text-white font-medium">{game.game}</span>
+                    <span className="text-sm font-medium text-ink">{game.game}</span>
                   </td>
                   <td className="px-6 py-4">
-                    <span className="text-sm text-slate-300">{game.time}</span>
+                    <span className="text-sm text-ink-2">{game.time}</span>
                   </td>
                   <td className="px-6 py-4">
-                    <span className="text-sm text-slate-300">¥{game.betAmount.toFixed(2)}</span>
+                    <span className="odds-num text-sm text-ink-2">₹{game.betAmount.toFixed(2)}</span>
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`text-sm font-medium ${
-                      game.result === 'win' ? 'text-emerald-400' : 'text-slate-400'
+                    <span className={`odds-num text-sm font-medium ${
+                      game.result === 'win' ? 'text-brand-2' : 'text-ink-3'
                     }`}>
                       {game.multiplier.toFixed(2)}x
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`text-sm font-semibold ${
-                      game.result === 'win' ? 'text-emerald-400' : 'text-red-400'
+                    <span className={`odds-num text-sm font-semibold ${
+                      game.result === 'win' ? 'text-brand-2' : 'text-red-500'
                     }`}>
-                      {game.result === 'win' ? '+' : '-'}¥{game.payout.toFixed(2)}
+                      {game.result === 'win' ? '+' : '-'}₹{game.payout.toFixed(2)}
                     </span>
                   </td>
                 </tr>

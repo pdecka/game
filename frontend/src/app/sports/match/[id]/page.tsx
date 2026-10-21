@@ -1,125 +1,153 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import toast from 'react-hot-toast'
-import SportsLayout from '@/components/sports/SportsLayout'
-import SportsHeader from '@/components/sports/SportsHeader'
+import { GameLayout } from '@/components/layout/GameLayout'
 import MatchDetails from '@/components/sports/MatchDetails'
+import BetSlip from '@/components/sports/BetSlip'
 import ErrorBoundary from '@/components/sports/ErrorBoundary'
 import { MatchData } from '@/components/sports/MatchCard'
+import { useSportsBetSlip } from '@/components/sports/useSportsBetSlip'
 import { sportsApi } from '@/services/sportsApi'
+
+function money(value: number) {
+  const amount = Number.isFinite(value) ? value : 0
+  return `₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+}
+
+function toMatch(stored: any): MatchData {
+  const score = stored.score || {}
+  return {
+    id: stored.id,
+    sport_key: stored.sportKey || stored.sport,
+    sport_title: stored.sport,
+    league: stored.league,
+    commence_time: stored.startTime || '',
+    home_team: stored.teamA,
+    away_team: stored.teamB,
+    status: stored.status,
+    scoreHome: score.teamA || null,
+    scoreAway: score.teamB || null,
+    scoreDetail: score.detail,
+    lastFetchedAt: stored.lastFetchedAt,
+    bettingOpen: stored.bettingOpen,
+    bookmakers: Array.isArray(stored.bookmakers) ? stored.bookmakers : [],
+  }
+}
 
 export default function MatchDetailsPage() {
   const params = useParams()
   const matchId = params.id as string
-  
+  const slip = useSportsBetSlip()
   const [match, setMatch] = useState<MatchData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [lastUpdated, setLastUpdated] = useState<Date>()
 
-  const loadMatch = useCallback(async () => {
+  const loadMatch = useCallback(async (silent = false) => {
     try {
-      setLoading(true)
+      if (!silent) setLoading(true)
       setError(null)
-      
-      const matchData = await sportsApi.getMatchById(matchId)
-      const apiResponse = await sportsApi.fetchUpcomingOdds()
-      
-      if (!matchData) {
-        setError('Match not found')
+      const stored = await sportsApi.fetchStoredMatch(matchId)
+      if (!stored?.id) {
+        setError('This match is currently unavailable.')
         return
       }
-      
-      setMatch(matchData)
-      setLastUpdated(apiResponse.lastUpdated)
-    } catch (err: any) {
-      console.error('Error loading match details:', err)
-      setError(err.message || 'Failed to load match details')
-      toast.error('Failed to load match details')
+      setMatch(toMatch(stored))
+    } catch {
+      setError('This match is currently unavailable.')
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
   }, [matchId])
 
-  const handleRefresh = useCallback(async () => {
-    await sportsApi.forceRefresh()
-    await loadMatch()
-  }, [loadMatch])
-
-  // Initial load
   useEffect(() => {
     loadMatch()
+    const timer = window.setInterval(() => {
+      if (!document.hidden) loadMatch(true)
+    }, 30000)
+    return () => window.clearInterval(timer)
   }, [loadMatch])
 
-  // Auto-refresh every 5 seconds for match details
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (!error && match) {
-        loadMatch()
-      }
-    }, 5000)
-
-    return () => clearInterval(interval)
-  }, [loadMatch, error, match])
-
-  if (loading && !match) {
-    return (
-      <SportsLayout 
-        sidebar={<div className="w-64 bg-[#1a2c38] p-4">Loading sidebar...</div>}
-        header={<SportsHeader loading={true} />}
-      >
-        <div className="flex-1 p-6">
-          <div className="animate-pulse space-y-4">
-            <div className="h-8 bg-white/10 rounded w-1/3"></div>
-            <div className="h-32 bg-white/10 rounded"></div>
-          </div>
-        </div>
-      </SportsLayout>
-    )
-  }
-
-  if (error || !match) {
-    return (
-      <SportsLayout 
-        sidebar={<div className="w-64 bg-[#1a2c38] p-4">Error loading sidebar...</div>}
-        header={<SportsHeader loading={false} />}
-      >
-        <div className="flex-1 p-6">
-          <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-6 text-center">
-            <p className="text-red-400 mb-2">{error || 'Match not found'}</p>
-            <button
-              onClick={handleRefresh}
-              className="rounded-xl bg-red-500/20 hover:bg-red-500/30 px-4 py-2 text-sm text-red-300 transition-all"
-            >
-              Retry
-            </button>
-          </div>
-        </div>
-      </SportsLayout>
-    )
-  }
+  const addOdds = useCallback(
+    (market: string, outcome: string, odds: number, bookmaker: string, point: number | undefined, bookmakerKey: string) => {
+      if (!match) return
+      const lineKey = point != null ? `:${point}` : ''
+      slip.toggleOdds({
+        id: `${match.id}:${market}:${outcome}${lineKey}:${bookmakerKey}`,
+        matchId: match.id,
+        matchName: `${match.home_team} vs ${match.away_team}`,
+        market,
+        outcome,
+        odds,
+        bookmaker,
+        bookmakerKey,
+        sportKey: match.sport_key,
+        ...(point != null ? { line: point } : {}),
+      })
+    },
+    [match, slip],
+  )
 
   return (
-    <SportsLayout
-      sidebar={null}
-      header={
-        <SportsHeader
-          selectedCategory={match.sport_title}
-          onRefresh={handleRefresh}
-          loading={loading}
-          lastUpdated={lastUpdated}
-        />
-      }
-    >
-      <div className="p-6">
-        <div className="max-w-4xl mx-auto">
-          <ErrorBoundary>
-            <MatchDetails match={match} />
-          </ErrorBoundary>
+    <ErrorBoundary>
+      <GameLayout>
+        <div className="mx-auto w-full max-w-4xl px-3 py-4 sm:px-6 sm:py-6">
+          <Link href="/sports" className="text-sm text-ink-2 hover:text-brand-2">
+            ← All sports
+          </Link>
+          {slip.loggedIn && (
+            <p className="mt-3 text-sm text-ink-2">
+              Balance <span className="odds-num font-semibold text-ink">{money(slip.balance)}</span>
+              <span className="text-ink-3"> ({money(slip.exposure)})</span>
+            </p>
+          )}
+
+          {loading && !match ? (
+            <div className="mt-6 animate-pulse space-y-4">
+              <div className="h-8 w-1/3 rounded bg-elevated" />
+              <div className="h-40 rounded-2xl bg-elevated" />
+            </div>
+          ) : error || !match ? (
+            <div className="mt-6 rounded-2xl border border-line bg-card p-6 text-center shadow-panel">
+              <p className="text-ink-2">{error || 'This match is currently unavailable.'}</p>
+              <button
+                type="button"
+                onClick={() => loadMatch()}
+                className="mt-3 rounded-xl bg-brand px-4 py-2 text-sm text-white"
+              >
+                Try again
+              </button>
+            </div>
+          ) : (
+            <div className="mt-4">
+              <MatchDetails match={match} onOddsClick={addOdds} />
+            </div>
+          )}
         </div>
-      </div>
-    </SportsLayout>
+
+        {!slip.isOpen && slip.items.length > 0 && (
+          <button
+            type="button"
+            onClick={() => slip.setIsOpen(true)}
+            className="fixed bottom-4 right-4 z-40 rounded-full bg-brand px-4 py-3 text-sm font-semibold text-white shadow-lift"
+          >
+            Bets · {slip.items.length} · {money(slip.items.reduce((sum, item) => sum + Number(item.stake || 0), 0))}
+          </button>
+        )}
+
+        <BetSlip
+          isOpen={slip.isOpen}
+          onClose={() => slip.setIsOpen(false)}
+          items={slip.items}
+          onUpdateItem={slip.updateStake}
+          onRemoveItem={slip.remove}
+          onPlaceBets={slip.placeBets}
+          isPlacing={slip.isPlacing}
+          balance={slip.balance}
+          exposure={slip.exposure}
+        />
+      </GameLayout>
+    </ErrorBoundary>
   )
 }

@@ -16,14 +16,16 @@ export const Button: React.FC<ButtonProps> = ({
   return (
     <button
       className={clsx(
-        'rounded-lg font-medium transition-colors',
+        'inline-flex items-center justify-center rounded-xl font-semibold tracking-tight transition duration-200',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
+        'disabled:pointer-events-none disabled:opacity-50',
         {
-          'bg-primary-600 text-white hover:bg-primary-700': variant === 'default',
-          'border border-primary-600 text-primary-600 hover:bg-primary-50': variant === 'outline',
-          'text-primary-600 hover:bg-primary-50': variant === 'ghost',
-          'px-3 py-1.5 text-sm': size === 'sm',
-          'px-4 py-2 text-base': size === 'md',
-          'px-6 py-3 text-lg': size === 'lg',
+          'bg-brand text-white hover:bg-brand-2': variant === 'default',
+          'border border-line bg-white text-ink hover:border-brand/40 hover:bg-brand/10': variant === 'outline',
+          'text-ink-2 hover:bg-brand/10 hover:text-ink': variant === 'ghost',
+          'h-9 px-3 text-sm': size === 'sm',
+          'h-11 px-4 text-sm': size === 'md',
+          'h-12 px-6 text-base': size === 'lg',
         },
         className
       )}

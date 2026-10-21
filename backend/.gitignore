@@ -4,6 +4,7 @@ dist/
 *.sqlite
 dev.sqlite
 uploads/
+.cache/
 coverage/
 tsconfig.tsbuildinfo
 tsc-errors.txt

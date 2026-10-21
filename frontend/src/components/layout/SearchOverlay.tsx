@@ -9,15 +9,15 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm">
       <div className="mx-auto mt-8 max-w-3xl px-4">
-        <div className="flex items-center gap-3 rounded-2xl border border-white/15 bg-[#0f212e]/90 px-4 py-3 shadow-2xl">
-          <Search className="h-5 w-5 text-slate-300" />
+        <div className="flex items-center gap-3 rounded-2xl border border-line bg-card px-4 py-3 shadow-panel">
+          <Search className="h-5 w-5 text-ink-3" />
           <input
             autoFocus
             type="text"
             placeholder="Search games, events or providers"
-            className="flex-1 bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
+            className="flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-ink-3"
             onKeyDown={(e) => {
               if (e.key === 'Escape') {
                 onClose()
@@ -27,7 +27,7 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg bg-white/5 px-3 py-1 text-xs text-slate-300 hover:bg-white/10"
+            className="rounded-lg bg-elevated px-3 py-1 text-xs text-ink-2 hover:bg-brand/10 hover:text-ink"
           >
             ESC
           </button>
@@ -36,4 +36,3 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
     </div>
   )
 }
-

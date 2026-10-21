@@ -45,12 +45,12 @@ export default function ColorGame() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0f212e] text-white">
+    <div className="min-h-screen bg-bg-2 text-ink">
       <div className="max-w-7xl mx-auto px-4 py-6">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">Color Prediction</h1>
-          <p className="text-slate-400">Predict the color or number and win!</p>
+          <h1 className="mb-2 text-4xl font-bold text-ink">Color Prediction</h1>
+          <p className="text-ink-2">Predict the color or number and win!</p>
         </div>
 
         {/* Main Game Layout */}

@@ -21,7 +21,7 @@ export default function MinesGrid({
   const getTileContent = (index: number) => {
     if (!revealedTiles[index]) {
       return (
-        <div className="w-full h-full bg-[#1a2c38] hover:bg-[#2a3c48] border-2 border-[#2a3c48] rounded-lg transition-all duration-200 cursor-pointer flex items-center justify-center">
+        <div className="flex h-full w-full cursor-pointer items-center justify-center rounded-lg border-2 border-line bg-elevated transition-all duration-200 hover:border-brand/40 hover:bg-brand/10">
           <span className="text-[10px] text-slate-500"></span>
         </div>
       )
@@ -57,7 +57,7 @@ export default function MinesGrid({
   }
 
   return (
-    <div className="grid grid-cols-5 gap-3 p-3 bg-[#0f212e] rounded-lg border border-white/10 max-w-xl mx-auto">
+    <div className="mx-auto grid max-w-xl grid-cols-5 gap-3 rounded-lg border border-line bg-white p-3 shadow-panel">
       {Array.from({ length: 25 }, (_, index) => (
         <button
           key={index}

@@ -159,7 +159,7 @@ export default function Home() {
   }
 
   return (
-    <main className="flex h-screen overflow-hidden bg-gradient-to-br from-[#0f212e] to-[#1a2c38] text-slate-100">
+    <main className="flex h-screen overflow-hidden bg-bg-2 text-ink">
       <Sidebar
         collapsed={isSidebarCollapsed}
         onToggle={() => setIsSidebarCollapsed((prev) => !prev)}
@@ -188,45 +188,45 @@ export default function Home() {
               {/* VIP Progress */}
               <div className="min-w-0">
                 {/* Top Label */}
-                <p className="text-white font-semibold mb-4">Your VIP Progress</p>
+                <p className="mb-4 font-semibold text-ink">Your VIP Progress</p>
                 
                 {/* VIP Progress Card */}
-                <div className="border-2 border-[#d9b98c] rounded-[14px] p-3 lg:p-4 bg-gradient-to-br from-[#0f212e] to-[#1a2c38] h-[155px] relative w-full max-w-none md:max-w-[300px]">
+                <div className="relative h-[155px] w-full max-w-none rounded-[14px] border-2 border-brand/40 bg-white p-3 md:max-w-[300px] lg:p-4">
                   {/* Top Row */}
                   <div className="flex justify-between items-center mb-2">
-                    <div className="text-white font-bold text-[30px]">
+                    <div className="text-[30px] font-bold text-ink">
                       Ro7744
                     </div>
-                    <ChevronRight className="text-white w-5 h-5" />
+                    <ChevronRight className="h-5 w-5 text-ink" />
                   </div>
                   
                   {/* Right Side Star Icon */}
                   <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                    <Star className="w-9 h-9 text-[#d9b98c] stroke-current fill-none" strokeWidth={2} />
+                    <Star className="h-9 w-9 fill-none text-brand stroke-current" strokeWidth={2} />
                   </div>
                   
                   {/* Middle Section */}
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-white font-bold">4.94%</span>
+                    <span className="font-bold text-ink">4.94%</span>
                     <Info className="text-gray-400 w-4 h-4" />
                   </div>
                   
                   {/* Progress Bar */}
-                  <div className="w-full bg-gray-700 rounded-full h-2 mb-3 overflow-hidden">
+                  <div className="mb-3 h-2 w-full overflow-hidden rounded-full bg-elevated">
                     <div 
-                      className="h-full bg-gradient-to-r from-[#d9b98c] to-[#f4e4c1] rounded-full" 
+                      className="h-full rounded-full bg-gradient-to-r from-brand to-brand-2" 
                       style={{ width: '4.94%' }}
                     ></div>
                   </div>
                   
                   {/* Bottom Text */}
-                  <p className="text-gray-500 text-sm">Next level: Silver</p>
+                  <p className="text-sm text-ink-3">Next level: Silver</p>
                 </div>
               </div>
 
               {/* Casino Thumbnail */}
               <div className="min-w-0">
-                <Link href="/casino" className="group relative block overflow-hidden rounded-2xl bg-[#1a2c38] shadow-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl">
+                <Link href="/casino" className="group relative block overflow-hidden rounded-2xl border border-line bg-white shadow-panel transition-all duration-300 hover:shadow-lift">
                   <div className="aspect-video lg:aspect-[16/10]">
                     <img 
                       src="/games/casino-thumb.jpeg" 
@@ -243,7 +243,7 @@ export default function Home() {
 
               {/* Sports Thumbnail */}
               <div className="min-w-0">
-                <Link href="/sports" className="group relative block overflow-hidden rounded-2xl bg-[#1a2c38] shadow-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl">
+                <Link href="/sports" className="group relative block overflow-hidden rounded-2xl border border-line bg-white shadow-panel transition-all duration-300 hover:shadow-lift">
                   <div className="aspect-video lg:aspect-[16/10]">
                     <img 
                       src="/games/sports-thumb.jpeg" 
@@ -261,16 +261,16 @@ export default function Home() {
 
             {/* Second Section - Mega Search Bar */}
             <section className="mb-8">
-              <div className="flex items-center gap-2 sm:gap-4 rounded-xl bg-[#1a2c38] px-3 sm:px-6 py-3 sm:py-4 shadow-lg">
-                <button className="flex shrink-0 items-center gap-2 rounded-lg bg-slate-800 px-3 py-2 text-xs font-medium text-slate-100 transition duration-300 ease-in-out hover:bg-slate-700">
+              <div className="flex items-center gap-2 rounded-xl border border-line bg-white px-3 py-3 shadow-panel sm:gap-4 sm:px-6 sm:py-4">
+                <button className="flex shrink-0 items-center gap-2 rounded-lg bg-elevated px-3 py-2 text-xs font-medium text-ink transition duration-300 ease-in-out hover:bg-brand/10">
                   <span>Casino</span>
-                  <span className="text-[10px] text-slate-400">▼</span>
+                  <span className="text-[10px] text-ink-3">▼</span>
                 </button>
                 <div className="h-7 w-px shrink-0 bg-white/10" />
                 <input
                   type="text"
                   placeholder="Search your game"
-                  className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-slate-400"
+                  className="min-w-0 flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-ink-3"
                 />
               </div>
             </section>
@@ -278,8 +278,8 @@ export default function Home() {
             {/* Third Section - Game Slider */}
             <section className="mb-8">
               <div className="mb-4 flex items-center justify-between gap-3 sm:mb-6">
-                <h2 className="text-lg sm:text-xl font-semibold text-white">Continue Playing</h2>
-                <div className="truncate text-xs sm:text-sm text-slate-300">
+                <h2 className="text-lg font-semibold text-ink sm:text-xl">Continue Playing</h2>
+                <div className="truncate text-xs text-ink-2 sm:text-sm">
                   {lastVisitedGame ? `Last: ${lastVisitedGame}` : 'All Casino Games'}
                 </div>
               </div>
@@ -289,7 +289,7 @@ export default function Home() {
                   {/* Left Arrow */}
                   <button 
                     onClick={handlePrevGame}
-                    className="absolute left-1 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-slate-600 bg-gradient-to-r from-slate-800 to-slate-700 text-slate-300 transition-all duration-300 hover:scale-110 hover:from-slate-700 hover:to-slate-600 hover:text-white hover:shadow-lg hover:shadow-emerald-500/20 sm:static sm:h-12 sm:w-12 sm:shrink-0 sm:translate-y-0"
+                    className="absolute left-1 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-line bg-white text-ink-2 shadow-panel transition-all duration-300 hover:border-brand/40 hover:text-brand-2 sm:static sm:h-12 sm:w-12 sm:shrink-0 sm:translate-y-0"
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </button>
@@ -335,7 +335,7 @@ export default function Home() {
                   {/* Right Arrow */}
                   <button 
                     onClick={handleNextGame}
-                    className="absolute right-1 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-slate-600 bg-gradient-to-r from-slate-800 to-slate-700 text-slate-300 transition-all duration-300 hover:scale-110 hover:from-slate-700 hover:to-slate-600 hover:text-white hover:shadow-lg hover:shadow-emerald-500/20 sm:static sm:h-12 sm:w-12 sm:shrink-0 sm:translate-y-0"
+                    className="absolute right-1 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-line bg-white text-ink-2 shadow-panel transition-all duration-300 hover:border-brand/40 hover:text-brand-2 sm:static sm:h-12 sm:w-12 sm:shrink-0 sm:translate-y-0"
                   >
                     <ChevronRight className="w-5 h-5" />
                   </button>
@@ -346,8 +346,8 @@ export default function Home() {
             {/* Fourth Section - Sports Slider */}
             <section className="mb-8">
               <div className="mb-4 flex items-center justify-between gap-3 sm:mb-6">
-                <h2 className="text-lg sm:text-xl font-semibold text-white">Popular Sports</h2>
-                <div className="truncate text-xs sm:text-sm text-slate-300">
+                <h2 className="text-lg font-semibold text-ink sm:text-xl">Popular Sports</h2>
+                <div className="truncate text-xs text-ink-2 sm:text-sm">
                   Live & Upcoming Matches
                 </div>
               </div>
@@ -357,7 +357,7 @@ export default function Home() {
                   {/* Left Arrow */}
                   <button 
                     onClick={handlePrevSport}
-                    className="absolute left-1 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-slate-600 bg-gradient-to-r from-slate-800 to-slate-700 text-slate-300 transition-all duration-300 hover:scale-110 hover:from-slate-700 hover:to-slate-600 hover:text-white hover:shadow-lg hover:shadow-emerald-500/20 sm:static sm:h-12 sm:w-12 sm:shrink-0 sm:translate-y-0"
+                    className="absolute left-1 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-line bg-white text-ink-2 shadow-panel transition-all duration-300 hover:border-brand/40 hover:text-brand-2 sm:static sm:h-12 sm:w-12 sm:shrink-0 sm:translate-y-0"
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </button>
@@ -405,7 +405,7 @@ export default function Home() {
                   {/* Right Arrow */}
                   <button 
                     onClick={handleNextSport}
-                    className="absolute right-1 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-slate-600 bg-gradient-to-r from-slate-800 to-slate-700 text-slate-300 transition-all duration-300 hover:scale-110 hover:from-slate-700 hover:to-slate-600 hover:text-white hover:shadow-lg hover:shadow-emerald-500/20 sm:static sm:h-12 sm:w-12 sm:shrink-0 sm:translate-y-0"
+                    className="absolute right-1 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-line bg-white text-ink-2 shadow-panel transition-all duration-300 hover:border-brand/40 hover:text-brand-2 sm:static sm:h-12 sm:w-12 sm:shrink-0 sm:translate-y-0"
                   >
                     <ChevronRight className="w-5 h-5" />
                   </button>
@@ -416,17 +416,17 @@ export default function Home() {
             
           </div>
           {/* Fifth Section - Footer */}
-          <footer className="bg-[#0f212e] border-t border-white/10">
+          <footer className="border-t border-line bg-white">
               {/* First Row - 6 Columns */}
               <div className="w-full py-12 px-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 gap-8">
                   {/* Column 1 - Casino */}
                   <div>
-                    <h3 className="text-white font-bold text-lg mb-4">Casino</h3>
+                    <h3 className="mb-4 text-lg font-bold text-ink">Casino</h3>
                     <ul className="space-y-2">
                       {['Casino Games', 'Slots', 'Live Casino', 'Roulette', 'Blackjack', 'Poker', 'Publishers', 'Promos & Competitions', 'Stake Engine', 'Stake Vendors'].map((link) => (
                         <li key={link}>
-                          <button className="text-slate-400 hover:text-white hover:translate-x-1 duration-200 text-sm cursor-pointer transition-all">
+                          <button className="cursor-pointer text-sm text-ink-2 transition-all duration-200 hover:translate-x-1 hover:text-brand-2">
                             {link}
                           </button>
                         </li>
@@ -436,11 +436,11 @@ export default function Home() {
 
                   {/* Column 2 - Sports */}
                   <div>
-                    <h3 className="text-white font-bold text-lg mb-4">Sports</h3>
+                    <h3 className="mb-4 text-lg font-bold text-ink">Sports</h3>
                     <ul className="space-y-2">
                       {['Sportsbook', 'Live Sports', 'Soccer', 'Basketball', 'Tennis', 'eSports', 'Bet Bonuses', 'Sports Rules', 'Racing Rules'].map((link) => (
                         <li key={link}>
-                          <button className="text-slate-400 hover:text-white hover:translate-x-1 duration-200 text-sm cursor-pointer transition-all">
+                          <button className="cursor-pointer text-sm text-ink-2 transition-all duration-200 hover:translate-x-1 hover:text-brand-2">
                             {link}
                           </button>
                         </li>
@@ -450,11 +450,11 @@ export default function Home() {
 
                   {/* Column 3 - Support */}
                   <div>
-                    <h3 className="text-white font-bold text-lg mb-4">Support</h3>
+                    <h3 className="mb-4 text-lg font-bold text-ink">Support</h3>
                     <ul className="space-y-2">
                       {['Help Center', 'Fairness', 'Responsible Gambling', 'Gambling Helpline', 'Live Support', 'Self Exclusion', 'Law Enforcement Request'].map((link) => (
                         <li key={link}>
-                          <button className="text-slate-400 hover:text-white hover:translate-x-1 duration-200 text-sm cursor-pointer transition-all">
+                          <button className="cursor-pointer text-sm text-ink-2 transition-all duration-200 hover:translate-x-1 hover:text-brand-2">
                             {link}
                           </button>
                         </li>
@@ -464,11 +464,11 @@ export default function Home() {
 
                   {/* Column 4 - About Us */}
                   <div>
-                    <h3 className="text-white font-bold text-lg mb-4">About Us</h3>
+                    <h3 className="mb-4 text-lg font-bold text-ink">About Us</h3>
                     <ul className="space-y-2">
                       {['VIP Club', 'Affiliate', 'Privacy Policy', 'AML Policy', 'Terms of Service'].map((link) => (
                         <li key={link}>
-                          <button className="text-slate-400 hover:text-white hover:translate-x-1 duration-200 text-sm cursor-pointer transition-all">
+                          <button className="cursor-pointer text-sm text-ink-2 transition-all duration-200 hover:translate-x-1 hover:text-brand-2">
                             {link}
                           </button>
                         </li>
@@ -478,11 +478,11 @@ export default function Home() {
 
                   {/* Column 5 - Payment Info */}
                   <div>
-                    <h3 className="text-white font-bold text-lg mb-4">Payment Info</h3>
+                    <h3 className="mb-4 text-lg font-bold text-ink">Payment Info</h3>
                     <ul className="space-y-2">
                       {['Deposit & Withdrawals', 'Currency Guide', 'Crypto Guide', 'Supported Crypto', 'How to Use the Vault', 'How Much to Bet With'].map((link) => (
                         <li key={link}>
-                          <button className="text-slate-400 hover:text-white hover:translate-x-1 duration-200 text-sm cursor-pointer transition-all">
+                          <button className="cursor-pointer text-sm text-ink-2 transition-all duration-200 hover:translate-x-1 hover:text-brand-2">
                             {link}
                           </button>
                         </li>
@@ -492,11 +492,11 @@ export default function Home() {
 
                   {/* Column 6 - FAQ */}
                   <div>
-                    <h3 className="text-white font-bold text-lg mb-4">FAQ</h3>
+                    <h3 className="mb-4 text-lg font-bold text-ink">FAQ</h3>
                     <ul className="space-y-2">
                       {['How-to Guides', 'Online Casino Guide', 'Sports Betting Guide', 'How to Live Stream Sports', 'Stake VIP Guide', 'House Edge Guide'].map((link) => (
                         <li key={link}>
-                          <button className="text-slate-400 hover:text-white hover:translate-x-1 duration-200 text-sm cursor-pointer transition-all">
+                          <button className="cursor-pointer text-sm text-ink-2 transition-all duration-200 hover:translate-x-1 hover:text-brand-2">
                             {link}
                           </button>
                         </li>
@@ -509,13 +509,13 @@ export default function Home() {
               {/* Second Row - Social Icons */}
               <div className="max-w-7xl mx-auto px-4 pb-8">
                 <div className="flex justify-center items-center gap-6 flex-wrap">
-                  <MessageSquare className="w-6 h-6 text-slate-400 hover:text-white hover:scale-110 transition-all cursor-pointer" />
-                  <Phone className="w-6 h-6 text-slate-400 hover:text-white hover:scale-110 transition-all cursor-pointer" />
-                  <Facebook className="w-6 h-6 text-slate-400 hover:text-white hover:scale-110 transition-all cursor-pointer" />
-                  <Twitter className="w-6 h-6 text-slate-400 hover:text-white hover:scale-110 transition-all cursor-pointer" />
-                  <Instagram className="w-6 h-6 text-slate-400 hover:text-white hover:scale-110 transition-all cursor-pointer" />
-                  <Youtube className="w-6 h-6 text-slate-400 hover:text-white hover:scale-110 transition-all cursor-pointer" />
-                  <Send className="w-6 h-6 text-slate-400 hover:text-white hover:scale-110 transition-all cursor-pointer" />
+                  <MessageSquare className="h-6 w-6 cursor-pointer text-ink-3 transition-all hover:scale-110 hover:text-brand-2" />
+                  <Phone className="h-6 w-6 cursor-pointer text-ink-3 transition-all hover:scale-110 hover:text-brand-2" />
+                  <Facebook className="h-6 w-6 cursor-pointer text-ink-3 transition-all hover:scale-110 hover:text-brand-2" />
+                  <Twitter className="h-6 w-6 cursor-pointer text-ink-3 transition-all hover:scale-110 hover:text-brand-2" />
+                  <Instagram className="h-6 w-6 cursor-pointer text-ink-3 transition-all hover:scale-110 hover:text-brand-2" />
+                  <Youtube className="h-6 w-6 cursor-pointer text-ink-3 transition-all hover:scale-110 hover:text-brand-2" />
+                  <Send className="h-6 w-6 cursor-pointer text-ink-3 transition-all hover:scale-110 hover:text-brand-2" />
                 </div>
               </div>
 
@@ -524,24 +524,24 @@ export default function Home() {
 
               {/* Fourth Row - Copyright */}
               <div className="max-w-7xl mx-auto px-4 py-6">
-                <p className="text-slate-400 text-sm text-center">
+                <p className="text-center text-sm text-ink-3">
                   © 2026 Stake.com | All Rights Reserved.
                 </p>
               </div>
 
               {/* Fifth Row - Legal / Company Info */}
               <div className="max-w-5xl mx-auto px-4 pb-6">
-                <div className="text-slate-400 text-sm leading-7 space-y-2">
+                <div className="space-y-2 text-sm leading-7 text-ink-3">
                   <p>Stake is owned and operated by Medium Rare N.V., registration number: 145353, registered address: Seru Loraweg 17 B, Curaçao.</p>
                   <p>Payment agent companies are Medium Rare Limited and MRS Tech Limited.</p>
-                  <p>Contact us at <a href="mailto:support@stake.com" className="hover:text-white transition-colors">support@stake.com</a></p>
-                  <p>Stake is committed to responsible gambling, for more information visit <a href="https://Gamblingtherapy.org" className="underline hover:text-white transition-colors">Gamblingtherapy.org</a></p>
+                  <p>Contact us at <a href="mailto:support@stake.com" className="transition-colors hover:text-brand-2">support@stake.com</a></p>
+                  <p>Stake is committed to responsible gambling, for more information visit <a href="https://Gamblingtherapy.org" className="underline transition-colors hover:text-brand-2">Gamblingtherapy.org</a></p>
                 </div>
               </div>
 
               {/* Sixth Row - Live BTC Price */}
               <div className="max-w-7xl mx-auto px-4 pb-6">
-                <p className="text-slate-400 text-sm text-center font-mono">
+                <p className="text-center font-mono text-sm text-ink-3">
                   1 BTC = {btcPrice}
                 </p>
               </div>
@@ -552,7 +552,7 @@ export default function Home() {
                   <div className="relative">
                     <button
                       onClick={() => setIsLanguageDropdownOpen(!isLanguageDropdownOpen)}
-                      className="bg-[#2f4553] text-white rounded-xl px-5 py-3 min-w-[170px] hover:bg-[#3a5568] transition-colors flex items-center justify-between"
+                      className="flex min-w-[170px] items-center justify-between rounded-xl border border-line bg-elevated px-5 py-3 text-ink transition-colors hover:bg-brand/10"
                     >
                       <div className="flex items-center gap-2">
                         <Globe className="w-4 h-4" />
@@ -562,7 +562,7 @@ export default function Home() {
                     </button>
                     
                     {isLanguageDropdownOpen && (
-                      <div className="absolute bottom-full left-0 mb-2 bg-[#2f4553] rounded-xl shadow-lg overflow-hidden z-50">
+                      <div className="absolute bottom-full left-0 z-50 mb-2 overflow-hidden rounded-xl border border-line bg-white shadow-panel">
                         {['English', ' Hindi', ' Gujarati', 'Español', 'Português', 'Français', 'Deutsch', 'Italiano', 'Türkçe', 'Russian'].map((lang) => (
                           <button
                             key={lang}
@@ -570,7 +570,7 @@ export default function Home() {
                               setSelectedLanguage(lang.trim())
                               setIsLanguageDropdownOpen(false)
                             }}
-                            className="block w-full text-left px-5 py-3 text-white hover:bg-[#3a5568] transition-colors"
+                            className="block w-full px-5 py-3 text-left text-ink transition-colors hover:bg-brand/10"
                           >
                             {lang}
                           </button>

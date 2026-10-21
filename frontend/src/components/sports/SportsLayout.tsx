@@ -22,7 +22,7 @@ export default function SportsLayout({ children, sidebar, header }: SportsLayout
   }, [mobileOpen])
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-gradient-to-br from-[#0f212e] to-[#1a2c38] text-slate-100">
+    <main className="min-h-screen overflow-x-hidden bg-bg-2 text-ink">
       <div className="relative flex h-screen">
         {mobileOpen && (
           <div
@@ -41,12 +41,12 @@ export default function SportsLayout({ children, sidebar, header }: SportsLayout
           `}
         >
           <div className="flex h-full flex-col">
-            <div className="flex items-center justify-between border-b border-white/10 bg-[#0f212e] px-4 py-3 lg:hidden">
-              <span className="text-sm font-semibold text-white">Sports</span>
+            <div className="flex items-center justify-between border-b border-line bg-white px-4 py-3 lg:hidden">
+              <span className="text-sm font-semibold text-ink">Sports</span>
               <button
                 type="button"
                 onClick={() => setMobileOpen(false)}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-white/5 text-slate-200"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-elevated text-ink"
                 aria-label="Close sports menu"
               >
                 <X className="h-5 w-5" />
@@ -60,12 +60,12 @@ export default function SportsLayout({ children, sidebar, header }: SportsLayout
 
         {/* Main content */}
         <div className="flex min-w-0 flex-1 flex-col lg:ml-64">
-          <div className="sticky top-0 z-30 border-b border-white/10 bg-[#0f212e]/95 backdrop-blur">
+          <div className="sticky top-0 z-30 border-b border-line bg-white/95 backdrop-blur">
             <div className="flex items-start gap-2 px-3 pt-3 lg:hidden">
               <button
                 type="button"
                 onClick={() => setMobileOpen(true)}
-                className="mt-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/5 text-slate-200"
+                className="mt-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-elevated text-ink"
                 aria-label="Open sports menu"
               >
                 <Menu className="h-5 w-5" />

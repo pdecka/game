@@ -20,7 +20,7 @@ export default function GameLayout({
   walletBalance = 0 
 }: GameLayoutProps) {
   return (
-    <div className="h-screen bg-gradient-to-br from-[#0f212e] to-[#1a2c38] text-white">
+    <div className="h-screen bg-bg-2 text-ink">
       {/* Fixed Header */}
       <div className="fixed top-0 left-0 right-0 z-[70]">
         <GameHeader

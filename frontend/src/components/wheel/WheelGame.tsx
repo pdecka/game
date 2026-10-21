@@ -34,12 +34,12 @@ export default function WheelGame() {
   const isWin = currentRound?.isWin ?? null
   
   return (
-    <div className="min-h-screen bg-[#0f212e] text-white">
+    <div className="min-h-screen bg-bg-2 text-ink">
       <div className="max-w-7xl mx-auto px-4 py-6">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">Wheel of Fortune</h1>
-          <p className="text-slate-400">Choose your difficulty and spin to win!</p>
+          <h1 className="mb-2 text-4xl font-bold text-ink">Wheel of Fortune</h1>
+          <p className="text-ink-2">Choose your difficulty and spin to win!</p>
         </div>
 
         {/* Main Game Layout */}

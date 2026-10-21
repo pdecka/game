@@ -36,28 +36,28 @@ export default function BlogListPage() {
   }, [])
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-[#0b1220] to-[#111827] text-slate-100">
+    <main className="min-h-screen bg-bg-2 text-ink">
       <div className="mx-auto max-w-4xl px-4 py-12">
-        <h1 className="text-3xl font-bold text-white">Blog</h1>
-        <p className="mt-2 text-slate-400">News, updates, and guides.</p>
+        <h1 className="text-3xl font-bold text-ink">Blog</h1>
+        <p className="mt-2 text-ink-2">News, updates, and guides.</p>
         {loading ? (
-          <p className="mt-8 text-slate-500">Loading…</p>
+          <p className="mt-8 text-ink-3">Loading…</p>
         ) : posts.length === 0 ? (
-          <p className="mt-8 text-slate-500">No published posts yet.</p>
+          <p className="mt-8 text-ink-3">No published posts yet.</p>
         ) : (
           <ul className="mt-8 grid gap-4 sm:grid-cols-2">
             {posts.map((p) => (
               <li key={p.id}>
                 <Link
                   href={`/blog/${encodeURIComponent(p.slug)}`}
-                  className="block rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-md transition hover:border-emerald-400/40 hover:bg-white/10"
+                  className="block rounded-2xl border border-line bg-white p-5 shadow-panel transition hover:border-brand/40 hover:shadow-lift"
                 >
                   {p.imageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={p.imageUrl} alt="" className="mb-3 h-36 w-full rounded-lg object-cover" />
                   ) : null}
-                  <h2 className="text-lg font-semibold text-white">{p.title}</h2>
-                  <p className="mt-1 text-xs text-slate-500">{new Date(p.createdAt).toLocaleDateString()}</p>
+                  <h2 className="text-lg font-semibold text-ink">{p.title}</h2>
+                  <p className="mt-1 text-xs text-ink-3">{new Date(p.createdAt).toLocaleDateString()}</p>
                 </Link>
               </li>
             ))}

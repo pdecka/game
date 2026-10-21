@@ -1,8 +1,10 @@
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/context/AuthContext'
+import api from '@/lib/api'
 import {
   Bell,
   MessageCircle,
@@ -41,6 +43,9 @@ export function Navbar({
   showBetslip,
 }: NavbarProps) {
   const { user, wallet, walletLoading, logout } = useAuth() as any
+  const pathname = usePathname()
+  const onSports = Boolean(pathname?.startsWith('/sports'))
+  const [exposure, setExposure] = useState(0)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 })
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -76,34 +81,62 @@ export function Navbar({
     }
   }, [isUserMenuOpen])
 
+  useEffect(() => {
+    if (!onSports || !user) {
+      setExposure(0)
+      return
+    }
+    let cancelled = false
+    api
+      .get('/sports/bets/my')
+      .then((response) => {
+        const rows = Array.isArray(response.data) ? response.data : []
+        const openStake = rows
+          .filter((bet: { status?: string; stake?: number }) => String(bet?.status || '').toLowerCase() === 'pending')
+          .reduce((sum: number, bet: { stake?: number }) => sum + Number(bet?.stake || 0), 0)
+        if (!cancelled) setExposure(openStake)
+      })
+      .catch(() => {
+        if (!cancelled) setExposure(0)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [onSports, user, wallet?.INR])
+
+  const available = Number(wallet?.INR ?? 0)
   const balance =
-    walletLoading || !wallet?.INR ? '₹0.00' : `₹${Number(wallet.INR).toFixed(2)}`
+    onSports && user
+      ? `₹${available.toFixed(2)} (₹${exposure.toFixed(2)})`
+      : walletLoading || !wallet?.INR
+        ? '₹0.00'
+        : `₹${available.toFixed(2)}`
 
   return (
-    <header className="flex h-14 sm:h-16 flex-shrink-0 items-center justify-between gap-2 border-b border-white/10 bg-[#101b26]/95 px-2 sm:px-4 backdrop-blur">
+    <header className="flex h-14 sm:h-16 flex-shrink-0 items-center justify-between gap-2 border-b border-line bg-bg-2/95 px-2 sm:px-4 backdrop-blur">
       <div className="flex min-w-0 items-center gap-2 sm:gap-3">
         <button
           type="button"
           onClick={onToggleSidebar}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-white/5 text-slate-200 hover:bg-white/10 md:hidden"
+          className="icon-btn md:hidden"
         >
           <span className="sr-only">Toggle sidebar</span>
           <span className="flex flex-col gap-1.5">
-            <span className="h-0.5 w-4 rounded bg-white" />
-            <span className="h-0.5 w-4 rounded bg-white" />
-            <span className="h-0.5 w-4 rounded bg-white" />
+            <span className="h-0.5 w-4 rounded bg-ink" />
+            <span className="h-0.5 w-4 rounded bg-ink" />
+            <span className="h-0.5 w-4 rounded bg-ink" />
           </span>
         </button>
 
         <Link href="/" className="flex min-w-0 items-center gap-2">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#1475e1] text-lg font-black text-white shadow-lg">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand text-lg font-black text-white">
             G
           </span>
           <div className="hidden leading-tight sm:block">
-            <p className="text-[10px] uppercase tracking-[0.32em] text-slate-500">
+            <p className="text-[10px] font-medium uppercase tracking-[0.28em] text-ink-3">
               Gaming Platform
             </p>
-            <p className="text-xs font-semibold text-slate-100">Casino • Sports • Crypto</p>
+            <p className="text-xs font-semibold text-ink">Casino • Sports • Crypto</p>
           </div>
         </Link>
       </div>
@@ -112,11 +145,13 @@ export function Navbar({
         <button
           type="button"
           onClick={onOpenWallet}
-          className="flex max-w-full items-center gap-1.5 sm:gap-3 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2.5 sm:px-4 py-1.5 text-xs text-emerald-100 shadow-sm transition hover:bg-emerald-500/20"
+          className="flex max-w-full items-center gap-1.5 rounded-full border border-brand/30 bg-brand/10 px-2.5 py-1.5 text-xs text-brand-2 transition hover:bg-brand/20 sm:gap-3 sm:px-4"
         >
           <Wallet2 className="h-4 w-4 shrink-0" />
-          <span className="truncate font-semibold">{balance}</span>
-          <span className="hidden rounded-full bg-emerald-500/40 px-2 py-0.5 text-[10px] uppercase tracking-wide sm:inline">
+          <span className="odds-num truncate font-semibold text-ink" title={onSports && user ? 'Balance (exposure)' : 'Balance'}>
+            {balance}
+          </span>
+          <span className="hidden rounded-full bg-brand/20 px-2 py-0.5 text-[10px] uppercase tracking-wide text-brand sm:inline">
             Wallet
           </span>
         </button>
@@ -126,7 +161,7 @@ export function Navbar({
         <button
           type="button"
           onClick={onOpenSearch}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/5 text-slate-200 hover:bg-white/10"
+          className="icon-btn"
         >
           <Search className="h-4 w-4" />
         </button>
@@ -134,10 +169,10 @@ export function Navbar({
         <button
           type="button"
           onClick={onToggleNotifications}
-          className="relative hidden h-10 w-10 items-center justify-center rounded-full bg-white/5 text-slate-200 hover:bg-white/10 sm:inline-flex"
+          className="icon-btn relative hidden sm:inline-flex"
         >
           <Bell className="h-4 w-4" />
-          <span className="absolute -right-0.5 -top-0.5 flex h-3 w-3 items-center justify-center rounded-full bg-emerald-400 text-[9px] text-black">
+          <span className="absolute -right-0.5 -top-0.5 flex h-3 w-3 items-center justify-center rounded-full bg-brand text-[9px] text-white">
             3
           </span>
         </button>
@@ -145,7 +180,7 @@ export function Navbar({
         <button
           type="button"
           onClick={onToggleChat}
-          className="hidden h-10 w-10 items-center justify-center rounded-full bg-white/5 text-slate-200 hover:bg-white/10 sm:inline-flex"
+          className="icon-btn hidden sm:inline-flex"
         >
           <MessageCircle className="h-4 w-4" />
         </button>
@@ -153,7 +188,7 @@ export function Navbar({
         <button
           type="button"
           onClick={onToggleBetslip}
-          className="hidden h-10 w-10 items-center justify-center rounded-full bg-white/5 text-slate-200 hover:bg-white/10 md:inline-flex"
+          className="icon-btn hidden md:inline-flex"
         >
           <Ticket className="h-4 w-4" />
         </button>
@@ -164,9 +199,9 @@ export function Navbar({
               ref={buttonRef}
               type="button"
               onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-              className="flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-2 py-1 text-xs text-slate-100 hover:bg-white/10"
+              className="flex items-center gap-2 rounded-full border border-line bg-elevated px-2 py-1 text-xs text-ink hover:bg-brand/10"
             >
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-200">
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand/15 text-brand">
                 {String(user?.username || 'U').slice(0, 1).toUpperCase()}
               </span>
               <span className="hidden max-w-[120px] truncate sm:inline">
@@ -177,12 +212,12 @@ export function Navbar({
             {isUserMenuOpen &&
               createPortal(
                 <div
-                  className="fixed right-4 top-16 w-56 rounded-xl border border-white/10 bg-[#0f212e] py-2 text-sm text-slate-100 shadow-2xl z-[99999]"
+                  className="fixed right-4 top-16 z-[99999] w-56 rounded-xl border border-line bg-card py-2 text-sm text-ink shadow-panel"
                   style={{ top: dropdownPosition.top, right: dropdownPosition.right }}
                 >
                   <Link
                     href="/dashboard"
-                    className="flex items-center gap-3 px-4 py-2 hover:bg-white/5 transition-colors"
+                    className="flex items-center gap-3 px-4 py-2 transition-colors hover:bg-brand/10"
                     onClick={() => setIsUserMenuOpen(false)}
                   >
                     <User className="h-4 w-4" />
@@ -194,14 +229,14 @@ export function Navbar({
                       onOpenWallet()
                       setIsUserMenuOpen(false)
                     }}
-                    className="flex w-full items-center gap-3 px-4 py-2 text-left hover:bg-white/5 transition-colors"
+                    className="flex w-full items-center gap-3 px-4 py-2 text-left transition-colors hover:bg-brand/10"
                   >
                     <Wallet2 className="h-4 w-4" />
                     <span>Wallet</span>
                   </button>
                   <Link
                     href="/dashboard"
-                    className="flex items-center gap-3 px-4 py-2 hover:bg-white/5 transition-colors"
+                    className="flex items-center gap-3 px-4 py-2 transition-colors hover:bg-brand/10"
                     onClick={() => setIsUserMenuOpen(false)}
                   >
                     <History className="h-4 w-4" />
@@ -209,13 +244,13 @@ export function Navbar({
                   </Link>
                   <Link
                     href="/dashboard"
-                    className="flex items-center gap-3 px-4 py-2 hover:bg-white/5 transition-colors"
+                    className="flex items-center gap-3 px-4 py-2 transition-colors hover:bg-brand/10"
                     onClick={() => setIsUserMenuOpen(false)}
                   >
                     <Settings className="h-4 w-4" />
                     <span>Settings</span>
                   </Link>
-                  <div className="border-t border-white/10 my-1"></div>
+                  <div className="my-1 border-t border-line"></div>
                   <button
                     type="button"
                     onClick={() => {
@@ -237,7 +272,7 @@ export function Navbar({
               <Button
                 variant="outline"
                 size="sm"
-                className="border-transparent bg-transparent px-2 sm:px-3 text-xs font-medium text-white hover:bg-white/10"
+                className="border-transparent bg-transparent px-2 text-xs font-medium text-ink-2 hover:bg-brand/10 hover:text-ink sm:px-3"
               >
                 Login
               </Button>
@@ -245,7 +280,7 @@ export function Navbar({
             <Link href="/auth/register">
               <Button
                 size="sm"
-                className="bg-[#1475e1] px-2.5 sm:px-4 text-xs font-semibold text-white shadow-lg hover:bg-[#1b82f0]"
+                className="px-2.5 text-xs sm:px-4"
               >
                 Register
               </Button>

@@ -103,31 +103,31 @@ export default function CountryCodeSelector({ value, onChange, disabled = false 
         type="button"
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
-        className="flex items-center gap-2 px-3 py-3 bg-[#1a2c38] border border-white/20 rounded-l-lg hover:bg-[#2a3c48] transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-w-[100px]"
+        className="flex min-w-[100px] items-center gap-2 rounded-l-lg border border-line bg-white px-3 py-3 transition-colors hover:bg-elevated disabled:cursor-not-allowed disabled:opacity-50"
       >
         <span className="text-xl">{selectedCountry.flag}</span>
-        <span className="text-white text-sm font-medium">{selectedCountry.dialCode}</span>
-        {!disabled && <ChevronDown className="w-4 h-4 text-white/60" />}
+        <span className="text-sm font-medium text-ink">{selectedCountry.dialCode}</span>
+        {!disabled && <ChevronDown className="h-4 w-4 text-ink-2" />}
       </button>
 
       {isOpen && !disabled && (
-        <div className="absolute top-full left-0 mt-1 w-72 bg-[#0f212e] border border-white/20 rounded-lg shadow-xl z-50 max-h-80 overflow-hidden">
+        <div className="absolute left-0 top-full z-50 mt-1 max-h-80 w-72 overflow-hidden rounded-lg border border-line bg-white shadow-panel">
           {/* Search Input */}
-          <div className="p-3 border-b border-white/10">
+          <div className="border-b border-line p-3">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-3" />
               <input
                 type="text"
                 placeholder="Search country..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-[#1a2c38] border border-white/20 rounded-lg pl-10 pr-4 py-2 text-white placeholder:text-white/40 text-sm focus:outline-none focus:border-emerald-500"
+                className="w-full rounded-lg border border-line bg-white py-2 pl-10 pr-4 text-sm text-ink placeholder:text-ink-3 focus:border-brand focus:outline-none"
                 autoFocus
               />
               {searchTerm && (
                 <button
                   onClick={() => setSearchTerm('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-3 hover:text-ink"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -138,7 +138,7 @@ export default function CountryCodeSelector({ value, onChange, disabled = false 
           {/* Country List */}
           <div className="overflow-y-auto max-h-60">
             {filteredCountries.length === 0 ? (
-              <div className="p-4 text-center text-white/40 text-sm">
+              <div className="p-4 text-center text-sm text-ink-3">
                 No countries found
               </div>
             ) : (
@@ -147,14 +147,14 @@ export default function CountryCodeSelector({ value, onChange, disabled = false 
                   key={country.code}
                   type="button"
                   onClick={() => handleSelect(country)}
-                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#1a2c38] transition-colors text-left"
+                  className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-elevated"
                 >
                   <span className="text-xl">{country.flag}</span>
                   <div className="flex-1">
-                    <div className="text-white text-sm font-medium">{country.name}</div>
-                    <div className="text-white/40 text-xs">{country.code}</div>
+                    <div className="text-sm font-medium text-ink">{country.name}</div>
+                    <div className="text-xs text-ink-3">{country.code}</div>
                   </div>
-                  <div className="text-white/60 text-sm">{country.dialCode}</div>
+                  <div className="text-sm text-ink-2">{country.dialCode}</div>
                 </button>
               ))
             )}

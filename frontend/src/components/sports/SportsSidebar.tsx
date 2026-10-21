@@ -20,10 +20,10 @@ export default function SportsSidebar({ categories, selectedCategory, onCategory
   }, [categories])
 
   return (
-    <div className="flex h-full w-full flex-col border-r border-white/10 bg-[#0f212e]/90">
-      <div className="p-4 border-b border-white/10">
-        <h2 className="text-lg font-bold text-white">Sports</h2>
-        <p className="text-xs text-slate-400 mt-1">Live & Upcoming</p>
+    <div className="flex h-full w-full flex-col border-r border-line bg-white">
+      <div className="border-b border-line p-4">
+        <h2 className="text-lg font-bold text-ink">Sports</h2>
+        <p className="mt-1 text-xs text-ink-2">Live & Upcoming</p>
       </div>
       
       <div className="flex-1 overflow-y-auto p-4">
@@ -36,14 +36,14 @@ export default function SportsSidebar({ categories, selectedCategory, onCategory
                 onClick={() => onCategorySelect?.(category.sport_title)}
                 className={`w-full rounded-xl px-3 py-2 text-left transition-all ${
                   isActive 
-                    ? 'bg-[#22c55e] text-white shadow-sm' 
-                    : 'bg-white/5 text-slate-200 hover:bg-white/10'
+                    ? 'bg-brand text-white shadow-lift' 
+                    : 'bg-elevated text-ink hover:bg-brand/10'
                 }`}
               >
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">{category.sport_title}</span>
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    isActive ? 'bg-white/20 text-white' : 'bg-white/10 text-slate-400'
+                  <span className={`rounded-full px-2 py-1 text-xs ${
+                    isActive ? 'bg-white/20 text-white' : 'bg-white text-ink-2'
                   }`}>
                     {category.count}
                   </span>
@@ -54,9 +54,9 @@ export default function SportsSidebar({ categories, selectedCategory, onCategory
         </div>
       </div>
 
-      <div className="p-4 border-t border-white/10">
+      <div className="border-t border-line p-4">
         <Link href="/wallet">
-          <button className="w-full rounded-xl bg-[#22c55e] hover:opacity-90 text-white px-4 py-2 text-sm font-semibold transition-all">
+          <button className="w-full rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-brand-2">
             Wallet
           </button>
         </Link>

@@ -13,6 +13,38 @@ export interface SportsApiResponse {
   data: MatchData[]
   categories: SportCategory[]
   lastUpdated: Date
+  oddsStatus?: { configured: boolean; upstreamStatus: number | null; reason: string }
+}
+
+export interface BoardMatch {
+  id: string
+  externalId?: string
+  sport: string
+  sportKey?: string
+  league: string
+  teamA: string
+  teamB: string
+  status: string
+  startTime?: string | null
+  lastFetchedAt?: string | null
+  bettingOpen?: boolean
+  bookmakers?: MatchData['bookmakers']
+  score?: {
+    teamA?: string | null
+    teamB?: string | null
+    detail?: string
+    innings?: unknown[]
+    balls?: unknown[]
+    batting?: unknown[]
+    bowling?: unknown[]
+  } | null
+  result?: unknown
+  odds?: {
+    source: string
+    bookmaker: string
+    updatedAt?: string
+    outcomes: Array<{ name: string; price: number }>
+  } | null
 }
 
 class SportsApiService {
@@ -30,6 +62,7 @@ class SportsApiService {
 
     try {
       const response = await fetch(`${API_BASE}/sports/odds/upcoming`, {
+        cache: 'no-store',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -40,9 +73,10 @@ class SportsApiService {
       }
 
       const rawData = await response.json()
+      const events = Array.isArray(rawData) ? rawData : []
       
       // Process and normalize the data
-      const processedData = this.processApiResponse(rawData)
+      const processedData = this.processApiResponse(events)
       
       // Update cache
       this.cache = processedData
@@ -115,6 +149,36 @@ class SportsApiService {
   async getMatchById(matchId: string): Promise<MatchData | null> {
     const response = await this.fetchUpcomingOdds()
     return response.data.find(match => match.id === matchId) || null
+  }
+
+  async fetchBoard(signal?: AbortSignal): Promise<{
+    matches: BoardMatch[]
+    oddsStatus: { configured: boolean; upstreamStatus: number | null; reason: string }
+    fetchedAt: string
+  }> {
+    const response = await fetch(`${API_BASE}/sports/board`, {
+      signal,
+      cache: 'no-store',
+      headers: { 'Content-Type': 'application/json' },
+    })
+    if (!response.ok) {
+      throw new Error(`Sports data is temporarily unavailable (${response.status})`)
+    }
+    const body = await response.json()
+    return {
+      matches: Array.isArray(body?.matches) ? body.matches : [],
+      oddsStatus: body?.odds || { configured: false, upstreamStatus: null, reason: 'unavailable' },
+      fetchedAt: body?.fetchedAt || new Date().toISOString(),
+    }
+  }
+
+  async fetchStoredMatch(matchId: string, signal?: AbortSignal) {
+    const response = await fetch(`${API_BASE}/sports/matches/${encodeURIComponent(matchId)}`, {
+      signal,
+      cache: 'no-store',
+    })
+    if (!response.ok) return null
+    return response.json()
   }
 
   // Force refresh cache

@@ -44,14 +44,14 @@ export default function GameControls({
   }
 
   return (
-    <div className="bg-[#0f212e] rounded-lg border border-white/10 p-6 space-y-6">
+    <div className="space-y-6 rounded-lg border border-line bg-white p-6 shadow-panel">
       {/* Bet Mode */}
       <div className="flex gap-2">
         <Button
           variant={betMode === 'manual' ? 'default' : 'outline'}
           size="sm"
           onClick={() => setBetMode('manual')}
-          className={`flex-1 transition-all duration-300 ${betMode === 'manual' ? 'bg-emerald-500 hover:bg-emerald-600 hover:shadow-lg hover:shadow-emerald-500/50 text-white' : 'bg-[#1a2c38] hover:bg-[#2a3c48] border border-white/20 text-white hover:border-emerald-500'}`}
+          className={`flex-1 transition-all duration-300 ${betMode === 'manual' ? 'bg-brand text-white hover:bg-brand-2' : 'border border-line bg-elevated text-ink hover:border-brand/40'}`}
         >
           Manual
         </Button>
@@ -59,7 +59,7 @@ export default function GameControls({
           variant={betMode === 'auto' ? 'default' : 'outline'}
           size="sm"
           onClick={() => setBetMode('auto')}
-          className={`flex-1 transition-all duration-300 ${betMode === 'auto' ? 'bg-emerald-500 hover:bg-emerald-600 hover:shadow-lg hover:shadow-emerald-500/50 text-white' : 'bg-[#1a2c38] hover:bg-[#2a3c48] border border-white/20 text-white hover:border-emerald-500'}`}
+          className={`flex-1 transition-all duration-300 ${betMode === 'auto' ? 'bg-brand text-white hover:bg-brand-2' : 'border border-line bg-elevated text-ink hover:border-brand/40'}`}
         >
           Auto
         </Button>
@@ -67,17 +67,17 @@ export default function GameControls({
 
       {/* Bet Amount */}
       <div className="space-y-3">
-        <label className="text-sm font-medium text-white">Bet Amount (INR)</label>
+        <label className="text-sm font-medium text-ink">Bet Amount (INR)</label>
         <div className="flex gap-2">
           <div className="relative flex-1">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white font-medium">₹</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 font-medium text-ink">₹</span>
             <Input
               type="number"
               value={betAmount}
               onChange={(e) => onBetAmountChange(e.target.value)}
               placeholder="0.00"
               disabled={gameState === 'playing' || loading}
-              className="bg-[#1a2c38] border-white/20 text-white placeholder:text-slate-500 pl-8 shadow-inner shadow-black/30"
+              className="border-line bg-white pl-8 text-ink placeholder:text-ink-3"
             />
           </div>
           <Button
@@ -85,7 +85,7 @@ export default function GameControls({
             size="sm"
             onClick={() => onBetAmountChange('')}
             disabled={gameState === 'playing' || loading}
-            className="border-white/20 text-white shadow-inner shadow-black/30"
+            className="border-line text-ink"
           >
             Clear
           </Button>
@@ -100,7 +100,7 @@ export default function GameControls({
               size="sm"
               onClick={() => handleQuickBet(amount)}
               disabled={gameState === 'playing' || loading}
-              className="border-white/20 text-white text-xs px-3 py-1 shadow-inner shadow-black/30"
+              className="border-line px-3 py-1 text-xs text-ink"
             >
               ₹{amount}
             </Button>
@@ -110,30 +110,30 @@ export default function GameControls({
 
       {/* Mines Count */}
       <div className="space-y-3">
-        <label className="text-sm font-medium text-white">
-          Number of Mines: <span className="text-emerald-400">{minesCount}</span>
+        <label className="text-sm font-medium text-ink">
+          Number of Mines: <span className="text-brand-2">{minesCount}</span>
         </label>
         <div className="relative">
           <select
             value={minesCount}
             onChange={(e) => onMinesChange(parseInt(e.target.value))}
             disabled={gameState === 'playing' || loading}
-            className="w-full bg-[#1a2c38] border border-white/20 text-white rounded-lg px-4 py-2 appearance-none cursor-pointer shadow-inner shadow-black/30 pr-10 h-10 max-h-[100px] overflow-y-auto"
+            className="h-10 max-h-[100px] w-full cursor-pointer appearance-none overflow-y-auto rounded-lg border border-line bg-white px-4 py-2 pr-10 text-ink"
           >
             {Array.from({ length: 23 }, (_, i) => i + 2).map((num) => (
-              <option key={num} value={num} className="bg-[#1a2c38] text-white">
+              <option key={num} value={num} className="bg-white text-ink">
                 {num} {num === 1 ? 'Mine' : 'Mines'}
               </option>
             ))}
           </select>
-          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white pointer-events-none" />
+          <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-2" />
         </div>
         
         {/* Info */}
-        <div className="bg-[#1a2c38] rounded-lg p-3 border border-white/10 shadow-inner shadow-black/30">
+        <div className="rounded-lg border border-line bg-elevated p-3">
           <div className="flex justify-between text-xs">
-            <span className="text-slate-400">Diamonds:</span>
-            <span className="text-emerald-400 font-medium">{diamondsCount}</span>
+            <span className="text-ink-3">Diamonds:</span>
+            <span className="font-medium text-brand-2">{diamondsCount}</span>
           </div>
         </div>
       </div>
@@ -145,7 +145,7 @@ export default function GameControls({
           <Button
             onClick={onBet}
             disabled={disabled || loading || !betAmount || parseFloat(betAmount) <= 0}
-            className="w-full bg-emerald-500 hover:bg-emerald-600 cursor-pointer text-white font-bold py-4 text-lg shadow-lg shadow-emerald-500/30 flex items-center justify-center"
+            className="flex w-full cursor-pointer items-center justify-center bg-brand py-4 text-lg font-bold text-white hover:bg-brand-2"
           >
             {loading ? (
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mr-3"></div>
@@ -161,7 +161,7 @@ export default function GameControls({
             <Button
               onClick={onCashout}
               disabled={loading}
-              className="w-full bg-emerald-500 hover:bg-emerald-600 cursor-pointer text-white font-bold py-4 text-lg shadow-lg shadow-emerald-500/30 flex items-center justify-center"
+              className="flex w-full cursor-pointer items-center justify-center bg-brand py-4 text-lg font-bold text-white hover:bg-brand-2"
             >
               {loading ? (
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mr-3"></div>
@@ -174,7 +174,7 @@ export default function GameControls({
             <Button
               variant="outline"
               onClick={onRandomPick}
-              className="w-full border-white/20 cursor-pointer transition-all duration-300 bg-[#1a2c38] hover:bg-[#243f50] hover:border-emerald-500 text-white hover:shadow-lg hover:shadow-emerald-500/50 flex items-center justify-center py-4"
+              className="flex w-full cursor-pointer items-center justify-center border-line bg-elevated py-4 text-ink hover:border-brand/40 hover:bg-brand/10"
             >
               <Shuffle className="h-6 w-6 mr-3" />
               Random Pick
@@ -187,7 +187,7 @@ export default function GameControls({
             <Button
               onClick={onBet}
               disabled={disabled || !betAmount || parseFloat(betAmount) <= 0}
-              className="w-full bg-emerald-500 hover:bg-emerald-600 cursor-pointer text-white font-bold py-4 text-lg shadow-lg shadow-emerald-500/30 flex items-center justify-center"
+              className="flex w-full cursor-pointer items-center justify-center bg-brand py-4 text-lg font-bold text-white hover:bg-brand-2"
             >
               <Play className="h-6 w-6 mr-3" />
               Play Again
@@ -197,12 +197,12 @@ export default function GameControls({
 
         {gameState === 'cashed_out' && (
           <div className="text-center">
-            <p className="text-emerald-400 font-semibold mb-1">Cashed Out!</p>
-            <p className="text-white text-lg font-bold mb-3">₹{potentialWin.toFixed(2)}</p>
+            <p className="mb-1 font-semibold text-brand-2">Cashed Out!</p>
+            <p className="odds-num mb-3 text-lg font-bold text-ink">₹{potentialWin.toFixed(2)}</p>
             <Button
               onClick={onBet}
               disabled={disabled || !betAmount || parseFloat(betAmount) <= 0}
-              className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-3"
+              className="flex w-full items-center justify-center bg-brand py-3 font-semibold text-white hover:bg-brand-2"
             >
               <Play className="h-4 w-4 mr-2" />
               Play Again
@@ -214,18 +214,18 @@ export default function GameControls({
       {/* Game Stats */}
       {gameState === 'playing' && (
         <div className="space-y-3">
-          <div className="bg-[#1a2c38] rounded-lg p-4 border border-white/10 space-y-2 shadow-inner shadow-black/30">
+          <div className="space-y-2 rounded-lg border border-line bg-elevated p-4">
             <div className="flex justify-between">
-              <span className="text-sm text-slate-400">Revealed:</span>
-              <span className="text-sm font-medium text-white">{revealedCount}/25</span>
+              <span className="text-sm text-ink-3">Revealed:</span>
+              <span className="odds-num text-sm font-medium text-ink">{revealedCount}/25</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-sm text-slate-400">Multiplier:</span>
-              <span className="text-sm font-medium text-emerald-400">{currentMultiplier.toFixed(2)}x</span>
+              <span className="text-sm text-ink-3">Multiplier:</span>
+              <span className="odds-num text-sm font-medium text-brand-2">{currentMultiplier.toFixed(2)}x</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-sm text-slate-400">Potential Win:</span>
-              <span className="text-sm font-medium text-emerald-400">₹{potentialWin.toFixed(2)}</span>
+              <span className="text-sm text-ink-3">Potential Win:</span>
+              <span className="odds-num text-sm font-medium text-brand-2">₹{potentialWin.toFixed(2)}</span>
             </div>
           </div>
         </div>

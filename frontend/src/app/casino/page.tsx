@@ -33,8 +33,8 @@ export default function CasinoPage() {
       <div className="p-3 sm:p-6">
         <div className="mx-auto max-w-6xl">
           <div className="mb-4 sm:mb-6">
-            <h1 className="text-2xl sm:text-3xl font-bold text-white">Casino</h1>
-            <p className="mt-1 text-sm text-[#64748b]">All games — fully playable with wallet + history.</p>
+            <h1 className="text-2xl font-bold text-ink sm:text-3xl">Casino</h1>
+            <p className="mt-1 text-sm text-ink-2">All games — fully playable with wallet + history.</p>
           </div>
 
           <div className="mx-auto grid max-w-7xl grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5">
@@ -42,7 +42,7 @@ export default function CasinoPage() {
               <Link
                 key={g.href}
                 href={g.href}
-                className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-gray-900 to-black shadow-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl"
+                className="group relative overflow-hidden rounded-2xl border border-line bg-white shadow-panel transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lift"
               >
                 <div className="relative h-36 overflow-hidden sm:h-48">
                   {g.image ? (
@@ -59,15 +59,15 @@ export default function CasinoPage() {
 
                   {/* Always visible on touch; hover-reveal on desktop */}
                   <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-100 transition-opacity duration-300 md:bg-transparent md:opacity-0 md:group-hover:bg-black/20 md:group-hover:opacity-100">
-                    <div className="rounded-lg bg-emerald-500 px-3 py-2 text-xs font-semibold text-white shadow-lg sm:px-6 sm:py-3 sm:text-sm">
+                    <div className="rounded-lg bg-brand px-3 py-2 text-xs font-semibold text-white shadow-lift sm:px-6 sm:py-3 sm:text-sm">
                       Play Now
                     </div>
                   </div>
                 </div>
                 
                 <div className="p-3 sm:p-4">
-                  <h3 className="text-sm font-bold text-white">{g.name}</h3>
-                  <p className="mt-1 line-clamp-2 text-xs text-gray-400">{g.desc}</p>
+                  <h3 className="text-sm font-bold text-ink">{g.name}</h3>
+                  <p className="mt-1 line-clamp-2 text-xs text-ink-3">{g.desc}</p>
                 </div>
               </Link>
             ))}

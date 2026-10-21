@@ -80,7 +80,7 @@ export default function MinesPage() {
   }
 
   return (
-    <main className="flex h-screen overflow-hidden bg-gradient-to-br from-[#0f212e] to-[#1a2c38] text-slate-100">
+    <main className="flex h-screen overflow-hidden bg-bg-2 text-ink">
       <Sidebar
         collapsed={sidebarCollapsed}
         onToggle={() => setSidebarCollapsed((prev) => !prev)}
@@ -178,12 +178,12 @@ export default function MinesPage() {
           {/* Post Game Section */}
           <div className="space-y-8">
             {/* Action Buttons */}
-            <div className="p-6 bg-[#0f212e] rounded-lg border border-white/10">
+            <div className="rounded-lg border border-line bg-white p-6 shadow-panel">
               <div className="flex flex-wrap gap-3 justify-center sm:justify-start">
                 <Button
                   variant="outline"
                   size="sm"
-                  className="border-white/20 text-white min-w-[120px]"
+                  className="min-w-[120px] border-line text-ink"
                 >
                   <RefreshCw className="h-4 w-4 mr-2" />
                   New Game
@@ -191,7 +191,7 @@ export default function MinesPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="border-white/20 text-white min-w-[120px]"
+                  className="min-w-[120px] border-line text-ink"
                 >
                   <Trophy className="h-4 w-4 mr-2" />
                   Leaderboard
@@ -199,7 +199,7 @@ export default function MinesPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="border-white/20 text-white min-w-[120px]"
+                  className="min-w-[120px] border-line text-ink"
                 >
                   <Shield className="h-4 w-4 mr-2" />
                   Statistics
@@ -207,7 +207,7 @@ export default function MinesPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="border-white/20 text-white min-w-[120px]"
+                  className="min-w-[120px] border-line text-ink"
                   onClick={() => setShowProvablyFair(true)}
                 >
                   <Shield className="h-4 w-4 mr-2" />
@@ -234,17 +234,17 @@ export default function MinesPage() {
         />
 
         {/* Footer - From Main Page */}
-        <footer className="bg-[#0f212e] border-t border-white/10">
+        <footer className="border-t border-line bg-white">
             {/* First Row - 6 Columns */}
             <div className="w-full py-12 px-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 gap-8 max-w-7xl mx-auto">
                 {/* Column 1 - Casino */}
                 <div>
-                  <h3 className="text-white font-bold text-lg mb-4">Casino</h3>
+                  <h3 className="mb-4 text-lg font-bold text-ink">Casino</h3>
                   <ul className="space-y-2">
                     {['Casino Games', 'Slots', 'Live Casino', 'Roulette', 'Blackjack', 'Poker', 'Publishers', 'Promos & Competitions', 'Stake Engine', 'Stake Vendors'].map((link) => (
                       <li key={link}>
-                        <button className="text-slate-400 hover:text-white hover:translate-x-1 duration-200 text-sm cursor-pointer transition-all">
+                        <button className="cursor-pointer text-sm text-ink-2 duration-200 transition-all hover:translate-x-1 hover:text-brand-2">
                           {link}
                         </button>
                       </li>
@@ -254,11 +254,11 @@ export default function MinesPage() {
 
                 {/* Column 2 - Sports */}
                 <div>
-                  <h3 className="text-white font-bold text-lg mb-4">Sports</h3>
+                  <h3 className="mb-4 text-lg font-bold text-ink">Sports</h3>
                   <ul className="space-y-2">
                     {['Sportsbook', 'Live Sports', 'Soccer', 'Basketball', 'Tennis', 'eSports', 'Bet Bonuses', 'Sports Rules', 'Racing Rules'].map((link) => (
                       <li key={link}>
-                        <button className="text-slate-400 hover:text-white hover:translate-x-1 duration-200 text-sm cursor-pointer transition-all">
+                        <button className="cursor-pointer text-sm text-ink-2 duration-200 transition-all hover:translate-x-1 hover:text-brand-2">
                           {link}
                         </button>
                       </li>
@@ -268,11 +268,11 @@ export default function MinesPage() {
 
                 {/* Column 3 - Support */}
                 <div>
-                  <h3 className="text-white font-bold text-lg mb-4">Support</h3>
+                  <h3 className="mb-4 text-lg font-bold text-ink">Support</h3>
                   <ul className="space-y-2">
                     {['Help Center', 'Fairness', 'Responsible Gambling', 'Gambling Helpline', 'Live Support', 'Self Exclusion', 'Law Enforcement Request'].map((link) => (
                       <li key={link}>
-                        <button className="text-slate-400 hover:text-white hover:translate-x-1 duration-200 text-sm cursor-pointer transition-all">
+                        <button className="cursor-pointer text-sm text-ink-2 duration-200 transition-all hover:translate-x-1 hover:text-brand-2">
                           {link}
                         </button>
                       </li>
@@ -282,11 +282,11 @@ export default function MinesPage() {
 
                 {/* Column 4 - About Us */}
                 <div>
-                  <h3 className="text-white font-bold text-lg mb-4">About Us</h3>
+                  <h3 className="mb-4 text-lg font-bold text-ink">About Us</h3>
                   <ul className="space-y-2">
                     {['VIP Club', 'Affiliate', 'Privacy Policy', 'AML Policy', 'Terms of Service'].map((link) => (
                       <li key={link}>
-                        <button className="text-slate-400 hover:text-white hover:translate-x-1 duration-200 text-sm cursor-pointer transition-all">
+                        <button className="cursor-pointer text-sm text-ink-2 duration-200 transition-all hover:translate-x-1 hover:text-brand-2">
                           {link}
                         </button>
                       </li>
@@ -296,11 +296,11 @@ export default function MinesPage() {
 
                 {/* Column 5 - Payment Info */}
                 <div>
-                  <h3 className="text-white font-bold text-lg mb-4">Payment Info</h3>
+                  <h3 className="mb-4 text-lg font-bold text-ink">Payment Info</h3>
                   <ul className="space-y-2">
                     {['Deposit & Withdrawals', 'Currency Guide', 'Crypto Guide', 'Supported Crypto', 'How to Use Vault', 'How Much to Bet With'].map((link) => (
                       <li key={link}>
-                        <button className="text-slate-400 hover:text-white hover:translate-x-1 duration-200 text-sm cursor-pointer transition-all">
+                        <button className="cursor-pointer text-sm text-ink-2 duration-200 transition-all hover:translate-x-1 hover:text-brand-2">
                           {link}
                         </button>
                       </li>
@@ -310,11 +310,11 @@ export default function MinesPage() {
 
                 {/* Column 6 - FAQ */}
                 <div>
-                  <h3 className="text-white font-bold text-lg mb-4">FAQ</h3>
+                  <h3 className="mb-4 text-lg font-bold text-ink">FAQ</h3>
                   <ul className="space-y-2">
                     {['How-to Guides', 'Online Casino Guide', 'Sports Betting Guide', 'How to Live Stream Sports', 'Stake VIP Guide', 'House Edge Guide'].map((link) => (
                       <li key={link}>
-                        <button className="text-slate-400 hover:text-white hover:translate-x-1 duration-200 text-sm cursor-pointer transition-all">
+                        <button className="cursor-pointer text-sm text-ink-2 duration-200 transition-all hover:translate-x-1 hover:text-brand-2">
                           {link}
                         </button>
                       </li>
@@ -326,39 +326,39 @@ export default function MinesPage() {
               {/* Second Row - Social Icons */}
               <div className="px-4 pb-8">
                 <div className="flex justify-center items-center gap-6 flex-wrap">
-                  <MessageSquare className="w-6 h-6 text-slate-400 hover:text-white hover:scale-110 transition-all cursor-pointer" />
-                  <Phone className="w-6 h-6 text-slate-400 hover:text-white hover:scale-110 transition-all cursor-pointer" />
-                  <Facebook className="w-6 h-6 text-slate-400 hover:text-white hover:scale-110 transition-all cursor-pointer" />
-                  <Twitter className="w-6 h-6 text-slate-400 hover:text-white hover:scale-110 transition-all cursor-pointer" />
-                  <Instagram className="w-6 h-6 text-slate-400 hover:text-white hover:scale-110 transition-all cursor-pointer" />
-                  <Youtube className="w-6 h-6 text-slate-400 hover:text-white hover:scale-110 transition-all cursor-pointer" />
-                  <Send className="w-6 h-6 text-slate-400 hover:text-white hover:scale-110 transition-all cursor-pointer" />
+                  <MessageSquare className="h-6 w-6 cursor-pointer text-ink-2 transition-all hover:scale-110 hover:text-brand-2" />
+                  <Phone className="h-6 w-6 cursor-pointer text-ink-2 transition-all hover:scale-110 hover:text-brand-2" />
+                  <Facebook className="h-6 w-6 cursor-pointer text-ink-2 transition-all hover:scale-110 hover:text-brand-2" />
+                  <Twitter className="h-6 w-6 cursor-pointer text-ink-2 transition-all hover:scale-110 hover:text-brand-2" />
+                  <Instagram className="h-6 w-6 cursor-pointer text-ink-2 transition-all hover:scale-110 hover:text-brand-2" />
+                  <Youtube className="h-6 w-6 cursor-pointer text-ink-2 transition-all hover:scale-110 hover:text-brand-2" />
+                  <Send className="h-6 w-6 cursor-pointer text-ink-2 transition-all hover:scale-110 hover:text-brand-2" />
                 </div>
               </div>
 
               {/* Third Row - Divider */}
-              <div className="border-t border-white/10"></div>
+              <div className="border-t border-line"></div>
 
               {/* Fourth Row - Copyright */}
               <div className="px-4 py-6">
-                <p className="text-slate-400 text-sm text-center">
+                <p className="text-center text-sm text-ink-2">
                   © 2026 Stake.com | All Rights Reserved.
                 </p>
               </div>
 
               {/* Fifth Row - Legal / Company Info */}
               <div className="px-4 pb-6">
-                <div className="text-slate-400 text-sm leading-7 space-y-2">
+                <div className="space-y-2 text-sm leading-7 text-ink-2">
                   <p>Stake is owned and operated by Medium Rare N.V., registration number: 145353, registered address: Seru Loraweg 17 B, Curaçao.</p>
                   <p>Payment agent companies are Medium Rare Limited and MRS Tech Limited.</p>
-                  <p>Contact us at <a href="mailto:support@stake.com" className="hover:text-white transition-colors">support@stake.com</a></p>
-                  <p>Stake is committed to responsible gambling, for more information visit <a href="https://Gamblingtherapy.org" className="underline hover:text-white transition-colors">Gamblingtherapy.org</a></p>
+                  <p>Contact us at <a href="mailto:support@stake.com" className="transition-colors hover:text-brand-2">support@stake.com</a></p>
+                  <p>Stake is committed to responsible gambling, for more information visit <a href="https://Gamblingtherapy.org" className="underline transition-colors hover:text-brand-2">Gamblingtherapy.org</a></p>
                 </div>
               </div>
 
               {/* Sixth Row - Live BTC Price */}
               <div className="px-4 pb-6">
-                <p className="text-slate-400 text-sm text-center font-mono">
+                <p className="text-center font-mono text-sm text-ink-2">
                   1 BTC = $95,000.00
                 </p>
               </div>
@@ -369,7 +369,7 @@ export default function MinesPage() {
                   <div className="relative">
                     <button
                       onClick={() => setIsLanguageDropdownOpen(!isLanguageDropdownOpen)}
-                      className="bg-[#2f4553] text-white rounded-xl px-5 py-3 min-w-[170px] hover:bg-[#3a5568] transition-colors flex items-center justify-between"
+                      className="flex min-w-[170px] items-center justify-between rounded-xl border border-line bg-white px-5 py-3 text-ink transition-colors hover:border-brand/40"
                     >
                       <div className="flex items-center gap-2">
                         <Globe className="w-4 h-4" />
@@ -379,7 +379,7 @@ export default function MinesPage() {
                     </button>
                     
                     {isLanguageDropdownOpen && (
-                      <div className="absolute bottom-full left-0 mb-2 bg-[#2f4553] rounded-xl shadow-lg overflow-hidden z-50">
+                      <div className="absolute bottom-full left-0 z-50 mb-2 overflow-hidden rounded-xl border border-line bg-white shadow-panel">
                         {['English', 'Hindi', 'Gujarati', 'Español', 'Português', 'Français', 'Deutsch', 'Italiano', 'Türkçe', 'Russian'].map((lang) => (
                           <button
                             key={lang}
@@ -387,7 +387,7 @@ export default function MinesPage() {
                               setSelectedLanguage(lang.trim())
                               setIsLanguageDropdownOpen(false)
                             }}
-                            className="block w-full text-left px-5 py-3 text-white hover:bg-[#3a5568] transition-colors"
+                            className="block w-full px-5 py-3 text-left text-ink transition-colors hover:bg-elevated"
                           >
                             {lang}
                           </button>

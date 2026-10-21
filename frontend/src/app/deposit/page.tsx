@@ -127,18 +127,18 @@ export default function DepositPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#020617] text-slate-100">
-      <div className="mx-auto max-w-6xl px-4 py-8 space-y-6">
-        <h1 className="text-3xl font-bold">Deposit</h1>
+    <main className="min-h-screen bg-bg-2 text-ink">
+      <div className="mx-auto max-w-6xl space-y-6 px-4 py-8">
+        <h1 className="text-3xl font-bold text-ink">Deposit</h1>
         <div className="flex gap-2">
-          <button className={`rounded-lg px-4 py-2 ${activeTab === 'INR' ? 'bg-emerald-500 text-black' : 'bg-white/10'}`} onClick={() => setActiveTab('INR')}>INR</button>
-          <button className={`rounded-lg px-4 py-2 ${activeTab === 'CRYPTO' ? 'bg-emerald-500 text-black' : 'bg-white/10'}`} onClick={() => setActiveTab('CRYPTO')}>Crypto</button>
+          <button className={`rounded-lg px-4 py-2 ${activeTab === 'INR' ? 'bg-brand text-white' : 'border border-line bg-white text-ink-2'}`} onClick={() => setActiveTab('INR')}>INR</button>
+          <button className={`rounded-lg px-4 py-2 ${activeTab === 'CRYPTO' ? 'bg-brand text-white' : 'border border-line bg-white text-ink-2'}`} onClick={() => setActiveTab('CRYPTO')}>Crypto</button>
         </div>
 
-        <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
+        <section className="rounded-2xl border border-line bg-white p-5 shadow-panel">
           {activeTab === 'INR' ? (
             <div className="space-y-3">
-              <p className="text-sm text-slate-400">Transfer externally then submit proof.</p>
+              <p className="text-sm text-ink-2">Transfer externally then submit proof.</p>
               <p className="text-sm">Bank: <b>{bankDefault?.bankName || inrMethod?.displayName || 'State Bank of India'}</b></p>
               <p className="text-sm">A/C Holder: <b>{bankDefault?.accountHolder || 'Romil'}</b></p>
               <p className="text-sm">A/C Number: <b>{bankDefault?.accountNumber || '39286377165'}</b></p>
@@ -147,7 +147,7 @@ export default function DepositPage() {
                 <p className="text-sm">UPI: <b>{bankDefault?.upiId || inrMethod?.upiId || inrMethod?.metadata?.upiId || 'N/A'}</b></p>
                 {(bankDefault?.upiId || inrMethod?.upiId || inrMethod?.metadata?.upiId) ? (
                   <button
-                    className="text-xs text-emerald-400 hover:underline"
+                    className="text-xs text-brand-2 hover:underline"
                     onClick={() => {
                       const val = String(bankDefault?.upiId || inrMethod?.upiId || inrMethod?.metadata?.upiId || '')
                       void navigator.clipboard.writeText(val)
@@ -159,13 +159,13 @@ export default function DepositPage() {
                 ) : null}
               </div>
               {(bankDefault?.qrImageUrl || inrMethod?.qrImageUrl || inrMethod?.metadata?.qrImageUrl) ? (
-                <a href={String(bankDefault?.qrImageUrl || inrMethod?.qrImageUrl || inrMethod?.metadata?.qrImageUrl)} target="_blank" rel="noreferrer" className="text-emerald-400 text-sm hover:underline">View QR</a>
+                <a href={String(bankDefault?.qrImageUrl || inrMethod?.qrImageUrl || inrMethod?.metadata?.qrImageUrl)} target="_blank" rel="noreferrer" className="text-sm text-brand-2 hover:underline">View QR</a>
               ) : null}
             </div>
           ) : (
             <div className="space-y-3">
               <select
-                className="rounded-lg bg-black/40 border border-white/10 px-3 py-2"
+                className="rounded-lg border border-line bg-white px-3 py-2 text-ink"
                 value={selectedMethod}
                 onChange={(e) => setSelectedMethod(e.target.value)}
               >
@@ -176,7 +176,7 @@ export default function DepositPage() {
               <p className="text-sm">Address: <b>{currentCrypto?.depositAddress || currentCrypto?.metadata?.address || 'N/A'}</b></p>
               {(currentCrypto?.depositAddress || currentCrypto?.metadata?.address) ? (
                 <button
-                  className="text-xs text-emerald-400 hover:underline"
+                  className="text-xs text-brand-2 hover:underline"
                   onClick={() => {
                     const val = String(currentCrypto?.depositAddress || currentCrypto?.metadata?.address || '')
                     void navigator.clipboard.writeText(val)
@@ -187,43 +187,43 @@ export default function DepositPage() {
                 </button>
               ) : null}
               {currentCrypto?.qrImageUrl ? (
-                <a href={currentCrypto.qrImageUrl} target="_blank" rel="noreferrer" className="text-emerald-400 text-sm hover:underline">View QR</a>
+                <a href={currentCrypto.qrImageUrl} target="_blank" rel="noreferrer" className="text-sm text-brand-2 hover:underline">View QR</a>
               ) : null}
             </div>
           )}
 
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <input value={amount} onChange={(e) => setAmount(e.target.value)} type="number" placeholder="Amount" className="rounded-lg bg-black/40 border border-white/10 px-3 py-2" />
+            <input value={amount} onChange={(e) => setAmount(e.target.value)} type="number" placeholder="Amount" className="rounded-lg border border-line bg-white px-3 py-2 text-ink" />
             {activeTab === 'INR' ? (
-              <input value={reference} onChange={(e) => setReference(e.target.value)} placeholder="UTR / Reference" className="rounded-lg bg-black/40 border border-white/10 px-3 py-2" />
+              <input value={reference} onChange={(e) => setReference(e.target.value)} placeholder="UTR / Reference" className="rounded-lg border border-line bg-white px-3 py-2 text-ink" />
             ) : (
-              <input value={txHash} onChange={(e) => setTxHash(e.target.value)} placeholder="Transaction hash" className="rounded-lg bg-black/40 border border-white/10 px-3 py-2" />
+              <input value={txHash} onChange={(e) => setTxHash(e.target.value)} placeholder="Transaction hash" className="rounded-lg border border-line bg-white px-3 py-2 text-ink" />
             )}
             <input
               type="file"
               accept="image/*"
               onChange={(e) => setScreenshotFile(e.target.files?.[0] ?? null)}
-              className="rounded-lg bg-black/40 border border-white/10 px-3 py-2 sm:col-span-2"
+              className="rounded-lg border border-line bg-white px-3 py-2 text-ink sm:col-span-2"
             />
             <input
               value={screenshotUrl}
               onChange={(e) => setScreenshotUrl(e.target.value)}
               placeholder="Or paste screenshot URL"
-              className="rounded-lg bg-black/40 border border-white/10 px-3 py-2 sm:col-span-2"
+              className="rounded-lg border border-line bg-white px-3 py-2 text-ink sm:col-span-2"
             />
           </div>
 
-          <button disabled={busy} onClick={() => void submit()} className="mt-4 rounded-lg bg-emerald-500 px-4 py-2 font-semibold text-black disabled:opacity-50">
+          <button disabled={busy} onClick={() => void submit()} className="mt-4 rounded-lg bg-brand px-4 py-2 font-semibold text-white disabled:opacity-50">
             {busy ? 'Submitting...' : 'Submit Deposit'}
           </button>
         </section>
 
-        <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
-          <h2 className="text-xl font-semibold">My Deposits</h2>
+        <section className="rounded-2xl border border-line bg-white p-5 shadow-panel">
+          <h2 className="text-xl font-semibold text-ink">My Deposits</h2>
           <div className="mt-3 overflow-auto">
             <table className="min-w-full text-sm">
               <thead>
-                <tr className="text-left text-slate-400 border-b border-white/10">
+                <tr className="border-b border-line text-left text-ink-2">
                   <th className="py-2 pr-3">Amount</th>
                   <th className="py-2 pr-3">Method</th>
                   <th className="py-2 pr-3">UTR / Hash</th>
@@ -234,19 +234,19 @@ export default function DepositPage() {
               </thead>
               <tbody>
                 {rows.map((r) => (
-                  <tr key={r.id} className="border-b border-white/5">
+                  <tr key={r.id} className="border-b border-line">
                     <td className="py-2 pr-3">{r.currency} {Number(r.amount).toFixed(2)}</td>
                     <td className="py-2 pr-3">{r.method}</td>
                     <td className="py-2 pr-3">{r.reference || r.txHash || '-'}</td>
-                    <td className="py-2 pr-3">{r.screenshotUrl ? <a className="text-emerald-400 hover:underline" target="_blank" rel="noreferrer" href={r.screenshotUrl}>View</a> : '-'}</td>
+                    <td className="py-2 pr-3">{r.screenshotUrl ? <a className="text-brand-2 hover:underline" target="_blank" rel="noreferrer" href={r.screenshotUrl}>View</a> : '-'}</td>
                     <td className="py-2 pr-3 capitalize">
                       <span
                         className={`rounded-md px-2 py-1 text-xs ${
                           r.status === 'pending' || r.status === 'processing'
-                            ? 'bg-yellow-500/20 text-yellow-300'
+                            ? 'bg-yellow-100 text-yellow-800'
                             : r.status === 'completed'
-                              ? 'bg-emerald-500/20 text-emerald-300'
-                              : 'bg-red-500/20 text-red-300'
+                              ? 'bg-brand/15 text-brand-2'
+                              : 'bg-red-100 text-red-700'
                         }`}
                       >
                         {r.status === 'completed' ? 'approved' : r.status === 'failed' ? 'rejected' : r.status}

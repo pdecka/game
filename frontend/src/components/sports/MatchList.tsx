@@ -7,25 +7,32 @@ interface MatchListProps {
   matches: MatchData[]
   selectedMatchId?: string
   onMatchSelect?: (match: MatchData) => void
-  onOddsClick?: (market: string, outcome: string, odds: number, bookmaker: string, match: MatchData) => void
+  onOddsClick?: (
+    market: string,
+    outcome: string,
+    odds: number,
+    bookmaker: string,
+    point: number | undefined,
+    bookmakerKey: string,
+    match: MatchData,
+  ) => void
   loading?: boolean
 }
 
 export default function MatchList({ matches, selectedMatchId, onMatchSelect, onOddsClick, loading }: MatchListProps) {
   const sortedMatches = useMemo(() => {
+    const rank = (status?: string) => {
+      if (status === 'live') return 0
+      if (status === 'upcoming') return 1
+      if (status === 'finished') return 2
+      return 3
+    }
     return [...matches].sort((a, b) => {
-      // Sort by commence time, with upcoming matches first
-      const now = new Date()
-      const aTime = new Date(a.commence_time)
-      const bTime = new Date(b.commence_time)
-      
-      const aIsLive = now > aTime
-      const bIsLive = now > bTime
-      
-      if (aIsLive && !bIsLive) return -1
-      if (!aIsLive && bIsLive) return 1
-      
-      return aTime.getTime() - bTime.getTime()
+      const byStatus = rank(a.status) - rank(b.status)
+      if (byStatus !== 0) return byStatus
+      const aTime = a.commence_time ? new Date(a.commence_time).getTime() : 0
+      const bTime = b.commence_time ? new Date(b.commence_time).getTime() : 0
+      return rank(a.status) === 2 ? bTime - aTime : aTime - bTime
     })
   }, [matches])
 
@@ -65,8 +72,8 @@ export default function MatchList({ matches, selectedMatchId, onMatchSelect, onO
           match={match}
           isSelected={match.id === selectedMatchId}
           onClick={onMatchSelect}
-          onOddsClick={(market, outcome, odds, bookmaker) => 
-            onOddsClick?.(market, outcome, odds, bookmaker, match)
+          onOddsClick={(market, outcome, odds, bookmaker, point, bookmakerKey) =>
+            onOddsClick?.(market, outcome, odds, bookmaker, point, bookmakerKey, match)
           }
         />
       ))}

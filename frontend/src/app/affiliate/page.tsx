@@ -44,32 +44,32 @@ export default function AffiliatePage() {
   }, [user])
 
   if (!ready || !user) {
-    return <div className="min-h-screen bg-[#0b1220] text-slate-200 flex items-center justify-center">Loading…</div>
+    return <div className="flex min-h-screen items-center justify-center bg-bg-2 text-ink-2">Loading…</div>
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-[#0b1220] to-[#111827] text-slate-100">
+    <main className="min-h-screen bg-bg-2 text-ink">
       <div className="mx-auto max-w-3xl px-4 py-12">
-        <Link href="/" className="text-sm text-emerald-400 hover:underline">
+        <Link href="/" className="text-sm text-brand-2 hover:underline">
           ← Home
         </Link>
-        <h1 className="mt-6 text-3xl font-bold text-white">Affiliate</h1>
-        <p className="mt-2 text-slate-400">Share your code and earn commission on referred players&apos; bets.</p>
+        <h1 className="mt-6 text-3xl font-bold text-ink">Affiliate</h1>
+        <p className="mt-2 text-ink-2">Share your code and earn commission on referred players&apos; bets.</p>
 
         {loading ? (
-          <p className="mt-8 text-slate-500">Loading…</p>
+          <p className="mt-8 text-ink-3">Loading…</p>
         ) : (
           <div className="mt-8 space-y-6">
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-md">
-              <p className="text-sm text-slate-400">Your referral code</p>
-              <p className="mt-2 text-2xl font-mono font-bold tracking-widest text-white">{data?.referralCode ?? '—'}</p>
+            <div className="rounded-2xl border border-line bg-white p-6 shadow-panel">
+              <p className="text-sm text-ink-2">Your referral code</p>
+              <p className="mt-2 font-mono text-2xl font-bold tracking-widest text-ink">{data?.referralCode ?? '—'}</p>
               {link ? (
                 <div className="mt-4">
-                  <p className="text-xs text-slate-500">Share link</p>
-                  <p className="mt-1 break-all text-sm text-emerald-300">{link}</p>
+                  <p className="text-xs text-ink-3">Share link</p>
+                  <p className="mt-1 break-all text-sm text-brand-2">{link}</p>
                   <button
                     type="button"
-                    className="mt-3 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-black hover:bg-emerald-400"
+                    className="mt-3 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-2"
                     onClick={() => {
                       void navigator.clipboard.writeText(link)
                       toast.success('Copied')
@@ -81,25 +81,25 @@ export default function AffiliatePage() {
               ) : null}
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-                <p className="text-sm text-slate-400">Total referrals</p>
-                <p className="mt-2 text-2xl font-bold text-white">{data?.totalReferrals ?? 0}</p>
+              <div className="rounded-2xl border border-line bg-white p-5 shadow-panel">
+                <p className="text-sm text-ink-2">Total referrals</p>
+                <p className="mt-2 text-2xl font-bold text-ink">{data?.totalReferrals ?? 0}</p>
               </div>
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-                <p className="text-sm text-slate-400">Total earnings (commission credited)</p>
-                <p className="mt-2 text-2xl font-bold text-white">₹{Number(data?.totalEarnings ?? 0).toFixed(2)}</p>
+              <div className="rounded-2xl border border-line bg-white p-5 shadow-panel">
+                <p className="text-sm text-ink-2">Total earnings (commission credited)</p>
+                <p className="mt-2 text-2xl font-bold text-ink">₹{Number(data?.totalEarnings ?? 0).toFixed(2)}</p>
               </div>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-              <p className="font-semibold text-white">Recent commission</p>
+            <div className="rounded-2xl border border-line bg-white p-5 shadow-panel">
+              <p className="font-semibold text-ink">Recent commission</p>
               {!data?.history?.length ? (
-                <p className="mt-3 text-sm text-slate-500">No history yet.</p>
+                <p className="mt-3 text-sm text-ink-3">No history yet.</p>
               ) : (
                 <ul className="mt-3 max-h-64 space-y-2 overflow-y-auto text-sm">
                   {data.history.map((h: any) => (
-                    <li key={h.id} className="flex justify-between border-b border-white/5 py-2 text-slate-300">
+                    <li key={h.id} className="flex justify-between border-b border-line py-2 text-ink">
                       <span>₹{Number(h.commissionAmount).toFixed(2)}</span>
-                      <span className="text-slate-500">{new Date(h.createdAt).toLocaleString()}</span>
+                      <span className="text-ink-3">{new Date(h.createdAt).toLocaleString()}</span>
                     </li>
                   ))}
                 </ul>
