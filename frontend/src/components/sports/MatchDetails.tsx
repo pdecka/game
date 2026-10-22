@@ -48,6 +48,11 @@ export default function MatchDetails({ match, onOddsClick }: MatchDetailsProps) 
               {match.home_team} vs {match.away_team}
             </h2>
             <p className="mt-1 text-sm text-ink-3">{formatTime(match.commence_time)}</p>
+            {(match.scoreHome || match.scoreAway) && (
+              <p className="odds-num mt-2 text-sm font-semibold text-brand">
+                {match.scoreHome || '—'} <span className="font-medium text-ink-3">-</span> {match.scoreAway || '—'}
+              </p>
+            )}
           </div>
           <div className={`inline-flex items-center rounded-full border px-4 py-2 text-sm capitalize font-semibold ${status.className}`}>
             {status.text}

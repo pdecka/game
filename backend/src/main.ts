@@ -69,7 +69,9 @@ async function bootstrap() {
   // Known production frontend domains. These are merged with CORS_ORIGIN so a
   // stale env var can never lock the live frontend out of the API.
   const defaultProdOrigins = [
-    'https://lucky-games-777.vercel.app'
+    'https://lucky-games-777.vercel.app',
+    'https://arenabet.poker',
+    'https://www.arenabet.poker',
   ];
   const allowedOrigins = new Set([...corsOrigins, ...defaultProdOrigins]);
 

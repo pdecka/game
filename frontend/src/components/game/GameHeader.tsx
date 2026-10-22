@@ -36,7 +36,7 @@ export default function GameHeader({
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand">
               <span className="text-sm font-bold text-white">G</span>
             </div>
-            <span className="hidden font-semibold text-ink sm:block">Gaming Platform</span>
+            <span className="hidden font-semibold text-ink sm:block">Arena Bet</span>
           </Link>
         </div>
 

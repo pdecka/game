@@ -27,6 +27,14 @@ module.exports = {
           2: '#4B6354',
           3: '#7A8F82',
         },
+        danger: {
+          DEFAULT: '#DC2626',
+          muted: '#FEE2E2',
+        },
+        warn: {
+          DEFAULT: '#D97706',
+          muted: '#FEF3C7',
+        },
         primary: {
           50: '#f0fdf4',
           100: '#dcfce7',
@@ -49,6 +57,14 @@ module.exports = {
       },
       borderRadius: {
         panel: '1rem',
+      },
+      spacing: {
+        header: '4rem',
+        sidebar: '16.5rem',
+        'sidebar-sm': '4.75rem',
+      },
+      maxWidth: {
+        content: '72rem',
       },
       transitionDuration: {
         250: '250ms',

@@ -72,12 +72,12 @@ export default function BetSlip({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/30 p-4">
-      <div className="flex max-h-[80vh] w-full max-w-md flex-col rounded-2xl border border-line bg-card shadow-panel">
-        <div className="flex items-center justify-between border-b border-line p-4">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/30 p-0 sm:items-center sm:p-4">
+      <div className="flex max-h-[78vh] w-full max-w-sm flex-col rounded-t-2xl border border-line bg-card shadow-panel sm:rounded-2xl">
+        <div className="flex items-center justify-between border-b border-line px-4 py-3">
           <div>
-            <h2 className="text-lg font-semibold text-ink">Place bet</h2>
-            <p className="text-xs text-ink-3">What you spend stays as exposure until the bet ends.</p>
+            <h2 className="text-base font-semibold text-ink">Bet</h2>
+            <p className="text-[11px] text-ink-3">Spend becomes exposure until the match settles.</p>
           </div>
           <button type="button" onClick={onClose} className="icon-btn h-8 w-8">
             <svg className="h-4 w-4 text-ink-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -86,7 +86,7 @@ export default function BetSlip({
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto px-4 py-3">
           {items.length === 0 ? (
             <div className="py-8 text-center">
               <p className="text-ink-2">No bet selected</p>
@@ -126,8 +126,8 @@ export default function BetSlip({
                       className="mt-1 w-full rounded-lg border border-line bg-white px-2 py-1 text-sm text-ink outline-none focus:ring-2 focus:ring-brand"
                       min="1"
                     />
-                    <p className="mt-2 text-xs text-ink-2">
-                      If this wins, <span className="odds-num font-semibold text-brand-2">{rupees(winReturn)}</span> is added to your balance.
+                    <p className="mt-1 text-[11px] text-ink-2">
+                      Win credits <span className="odds-num font-semibold text-brand-2">{rupees(winReturn)}</span>
                     </p>
                   </div>
                 )
@@ -137,7 +137,7 @@ export default function BetSlip({
         </div>
 
         {items.length > 0 && (
-          <div className="space-y-3 border-t border-line p-4">
+          <div className="space-y-2 border-t border-line px-4 py-3">
             <div className="flex gap-2">
               {[50, 100, 250, 500, 1000].map((amount) => (
                 <button
@@ -157,7 +157,7 @@ export default function BetSlip({
                 <span className="odds-num font-medium text-ink">{rupees(spend)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-ink-3">Added to balance if you win</span>
+                    <span className="text-ink-3">Win credit</span>
                 <span className="odds-num font-medium text-brand-2">{rupees(returned)}</span>
               </div>
               <div className="flex justify-between border-t border-line pt-2">
@@ -172,7 +172,7 @@ export default function BetSlip({
               type="button"
               onClick={onPlaceBets}
               disabled={isPlacing || spend > balance || spend < 1}
-              className="w-full rounded-xl bg-brand py-3 font-semibold text-white transition-all hover:bg-brand-2 disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full rounded-xl bg-brand py-2.5 text-sm font-semibold text-white transition-all hover:bg-brand-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isPlacing ? 'Placing...' : `Spend ${rupees(spend)}`}
             </button>

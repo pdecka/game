@@ -3,8 +3,9 @@
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { GameLayout } from '@/components/layout/GameLayout'
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'https://lucky-games.onrender.com/api'
+const API = process.env.NEXT_PUBLIC_API_URL || '/api'
 
 type Post = {
   id: string
@@ -44,8 +45,8 @@ export default function BlogDetailPage() {
   if (!slug) return null
 
   return (
-    <main className="min-h-screen bg-bg-2 text-ink">
-      <article className="mx-auto max-w-3xl px-4 py-12">
+    <GameLayout>
+      <article className="page-wrap max-w-3xl">
         <Link href="/blog" className="text-sm text-brand-2 hover:underline">
           ← Back
         </Link>
@@ -65,6 +66,6 @@ export default function BlogDetailPage() {
           </>
         )}
       </article>
-    </main>
+    </GameLayout>
   )
 }

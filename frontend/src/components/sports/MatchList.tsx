@@ -40,14 +40,14 @@ export default function MatchList({ matches, selectedMatchId, onMatchSelect, onO
     return (
       <div className="space-y-3">
         {[...Array(5)].map((_, i) => (
-          <div key={i} className="rounded-2xl border border-white/10 bg-white/5 p-4 animate-pulse">
+          <div key={i} className="animate-pulse rounded-2xl border border-line bg-white p-4">
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1">
-                <div className="h-3 bg-white/10 rounded w-20 mb-2"></div>
-                <div className="h-4 bg-white/10 rounded w-3/4 mb-2"></div>
-                <div className="h-3 bg-white/10 rounded w-32"></div>
+                <div className="mb-2 h-3 w-20 rounded bg-elevated"></div>
+                <div className="mb-2 h-4 w-3/4 rounded bg-elevated"></div>
+                <div className="h-3 w-32 rounded bg-elevated"></div>
               </div>
-              <div className="w-16 h-6 bg-white/10 rounded-full"></div>
+              <div className="h-6 w-16 rounded-full bg-elevated"></div>
             </div>
           </div>
         ))}
@@ -57,9 +57,9 @@ export default function MatchList({ matches, selectedMatchId, onMatchSelect, onO
 
   if (matches.length === 0) {
     return (
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-8 text-center">
-        <p className="text-sm text-slate-300">No matches available right now.</p>
-        <p className="text-xs text-slate-400 mt-1">Check back later for upcoming games.</p>
+      <div className="rounded-2xl border border-line bg-white p-8 text-center shadow-panel">
+        <p className="text-sm text-ink-2">No matches for this sport right now.</p>
+        <p className="mt-1 text-xs text-ink-3">Live and upcoming fixtures appear here when the scoreboard has games.</p>
       </div>
     )
   }

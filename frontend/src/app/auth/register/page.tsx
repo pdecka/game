@@ -90,7 +90,10 @@ function RegisterForm() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-bg-2 p-4">
       <div className="w-full max-w-md rounded-2xl border border-line bg-card p-8 shadow-panel">
-        <h1 className="mb-6 text-center text-3xl font-bold text-ink">Create Account</h1>
+        <div className="mb-6 flex flex-col items-center">
+          <span className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-brand text-lg font-black text-white">G</span>
+          <h1 className="text-center text-2xl font-semibold tracking-tight text-ink sm:text-3xl">Create account</h1>
+        </div>
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <label className="mb-2 block text-sm font-medium text-ink">Username</label>
@@ -132,7 +135,7 @@ function RegisterForm() {
               />
             </div>
             <p className="mt-1 text-xs text-ink-3">
-              We'll send you an OTP to verify your number
+              We&apos;ll send you an OTP to verify your number
             </p>
           </div>
 

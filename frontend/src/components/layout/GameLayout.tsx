@@ -5,6 +5,7 @@ import { Navbar } from './Navbar'
 import { Sidebar } from './Sidebar'
 import { WalletModal } from './WalletModal'
 import { SearchOverlay } from './SearchOverlay'
+import { SiteFooter } from './SiteFooter'
 import { useAuth } from '@/context/AuthContext'
 
 type GameLayoutProps = {
@@ -33,7 +34,7 @@ export function GameLayout({ children }: GameLayoutProps) {
   }
 
   return (
-    <main className="flex h-screen overflow-hidden bg-bg text-ink">
+    <main className="flex h-screen overflow-hidden bg-bg-2 text-ink">
       <Sidebar
         collapsed={isSidebarCollapsed}
         onToggle={() => setIsSidebarCollapsed((prev) => !prev)}
@@ -56,6 +57,7 @@ export function GameLayout({ children }: GameLayoutProps) {
 
         <div className="flex-col flex-1 overflow-y-auto overflow-x-hidden">
           {children}
+          <SiteFooter />
         </div>
       </div>
 

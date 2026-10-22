@@ -15,7 +15,11 @@
   --ink: #0b1f12;
   --ink-2: #4b6354;
   --ink-3: #7a8f82;
+  --danger: #dc2626;
+  --warn: #d97706;
   --radius: 12px;
+  --header-h: 4rem;
+  --sidebar-w: 16.5rem;
 }
 
 html {
@@ -84,6 +88,18 @@ body {
   .odds-num {
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.02em;
+  }
+
+  .page-wrap {
+    @apply mx-auto w-full max-w-content px-3 py-5 sm:px-5 sm:py-6 lg:px-8 lg:py-8;
+  }
+
+  .nav-item {
+    @apply flex w-full items-center gap-3 rounded-xl px-2.5 py-2.5 text-[13px] font-medium text-ink-2 transition duration-200 hover:bg-elevated hover:text-ink;
+  }
+
+  .nav-item-active {
+    @apply bg-brand/10 font-semibold text-brand-2 hover:bg-brand/15 hover:text-brand-2;
   }
 }
 

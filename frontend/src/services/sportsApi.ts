@@ -2,7 +2,8 @@ import { MatchData } from '@/components/sports/MatchCard'
 
 // Odds are fetched through our backend proxy so The Odds API key never
 // reaches the browser (see backend GET /api/sports/odds/upcoming).
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://lucky-games.onrender.com/api'
+const API_BASE =
+  typeof window !== 'undefined' ? '/api' : process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
 
 export interface SportCategory {
   sport_title: string
@@ -63,9 +64,6 @@ class SportsApiService {
     try {
       const response = await fetch(`${API_BASE}/sports/odds/upcoming`, {
         cache: 'no-store',
-        headers: {
-          'Content-Type': 'application/json',
-        },
       })
 
       if (!response.ok) {
@@ -151,15 +149,21 @@ class SportsApiService {
     return response.data.find(match => match.id === matchId) || null
   }
 
-  async fetchBoard(signal?: AbortSignal): Promise<{
+  async fetchBoard(
+    signal?: AbortSignal,
+    query?: { slug?: string; status?: string },
+  ): Promise<{
     matches: BoardMatch[]
     oddsStatus: { configured: boolean; upstreamStatus: number | null; reason: string }
     fetchedAt: string
   }> {
-    const response = await fetch(`${API_BASE}/sports/board`, {
+    const params = new URLSearchParams()
+    if (query?.slug) params.set('slug', query.slug)
+    if (query?.status) params.set('status', query.status)
+    const suffix = params.toString() ? `?${params.toString()}` : ''
+    const response = await fetch(`${API_BASE}/sports/board${suffix}`, {
       signal,
       cache: 'no-store',
-      headers: { 'Content-Type': 'application/json' },
     })
     if (!response.ok) {
       throw new Error(`Sports data is temporarily unavailable (${response.status})`)

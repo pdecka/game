@@ -14,8 +14,8 @@ export class SportsController {
   }
 
   @Get('board')
-  async board() {
-    return this.sportsService.getBoard()
+  async board(@Query('slug') slug?: string, @Query('status') status?: SportsMatchStatus) {
+    return this.sportsService.getBoard(slug, status)
   }
 
   @Get('matches')

@@ -34,6 +34,7 @@ export type NormalizedEvent = {
   completed?: boolean
   homeScore?: number | null
   awayScore?: number | null
+  scoreText?: { home: string; away: string }
 }
 
 type SportRow = {

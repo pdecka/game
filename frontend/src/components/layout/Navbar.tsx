@@ -113,14 +113,14 @@ export function Navbar({
         : `₹${available.toFixed(2)}`
 
   return (
-    <header className="flex h-14 sm:h-16 flex-shrink-0 items-center justify-between gap-2 border-b border-line bg-bg-2/95 px-2 sm:px-4 backdrop-blur">
+    <header className="flex h-14 flex-shrink-0 items-center justify-between gap-2 border-b border-line bg-white/95 px-2 backdrop-blur sm:h-header sm:px-4">
       <div className="flex min-w-0 items-center gap-2 sm:gap-3">
         <button
           type="button"
           onClick={onToggleSidebar}
           className="icon-btn md:hidden"
+          aria-label="Open menu"
         >
-          <span className="sr-only">Toggle sidebar</span>
           <span className="flex flex-col gap-1.5">
             <span className="h-0.5 w-4 rounded bg-ink" />
             <span className="h-0.5 w-4 rounded bg-ink" />
@@ -128,16 +128,8 @@ export function Navbar({
           </span>
         </button>
 
-        <Link href="/" className="flex min-w-0 items-center gap-2">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand text-lg font-black text-white">
-            G
-          </span>
-          <div className="hidden leading-tight sm:block">
-            <p className="text-[10px] font-medium uppercase tracking-[0.28em] text-ink-3">
-              Gaming Platform
-            </p>
-            <p className="text-xs font-semibold text-ink">Casino • Sports • Crypto</p>
-          </div>
+        <Link href="/" className="hidden min-w-0 items-center sm:flex">
+          <p className="text-sm font-semibold text-ink">Casino • Sports</p>
         </Link>
       </div>
 
@@ -158,11 +150,7 @@ export function Navbar({
       </div>
 
       <div className="flex shrink-0 items-center gap-1 sm:gap-2">
-        <button
-          type="button"
-          onClick={onOpenSearch}
-          className="icon-btn"
-        >
+        <button type="button" onClick={onOpenSearch} className="icon-btn" aria-label="Search">
           <Search className="h-4 w-4" />
         </button>
 
@@ -170,17 +158,18 @@ export function Navbar({
           type="button"
           onClick={onToggleNotifications}
           className="icon-btn relative hidden sm:inline-flex"
+          aria-label="Notifications"
+          aria-pressed={showNotifications}
         >
           <Bell className="h-4 w-4" />
-          <span className="absolute -right-0.5 -top-0.5 flex h-3 w-3 items-center justify-center rounded-full bg-brand text-[9px] text-white">
-            3
-          </span>
         </button>
 
         <button
           type="button"
           onClick={onToggleChat}
           className="icon-btn hidden sm:inline-flex"
+          aria-label="Chat"
+          aria-pressed={showChat}
         >
           <MessageCircle className="h-4 w-4" />
         </button>
@@ -189,6 +178,8 @@ export function Navbar({
           type="button"
           onClick={onToggleBetslip}
           className="icon-btn hidden md:inline-flex"
+          aria-label="Bet slip"
+          aria-pressed={showBetslip}
         >
           <Ticket className="h-4 w-4" />
         </button>
@@ -257,7 +248,7 @@ export function Navbar({
                       logout()
                       setIsUserMenuOpen(false)
                     }}
-                    className="flex w-full items-center gap-3 px-4 py-2 text-left text-red-300 hover:bg-red-500/10 transition-colors"
+                    className="flex w-full items-center gap-3 px-4 py-2 text-left text-danger transition-colors hover:bg-danger-muted"
                   >
                     <LogOut className="h-4 w-4" />
                     <span>Logout</span>

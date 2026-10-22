@@ -1,5 +1,6 @@
 import { NormalizedEvent, OddsBookmaker, OddsOutcome } from './odds-api.provider'
 import { EspnProp, goalsFromBoxscore, mapEspnProps } from '../espn-props'
+import { buildCricketMarkets, cricketLiveScore } from '../cricket-markets'
 
 type LeagueTarget = {
   key: string
@@ -50,9 +51,12 @@ const PRIORITY: LeagueTarget[] = [
   ['mma', 'ufc', 'MMA', 'UFC'],
   ['tennis', 'atp', 'Tennis', 'ATP'],
   ['tennis', 'wta', 'Tennis', 'WTA'],
-  ['rugby', '270557', 'Rugby', 'Rugby'],
-  ['rugby', '180659', 'Rugby', 'Rugby'],
-  ['rugby', '164205', 'Rugby', 'Rugby'],
+  ['basketball', 'mens-college-basketball', 'Basketball', 'NCAAB'],
+  ['football', 'college-football', 'American Football', 'NCAAF'],
+  ['rugby', '270557', 'Rugby', 'United Rugby Championship'],
+  ['rugby', '180659', 'Rugby', 'Rugby Championship'],
+  ['rugby', '164205', 'Rugby', 'Six Nations'],
+  ['rugby', '267979', 'Rugby', 'Premiership Rugby'],
 ].map(([sport, league, group, title]) => ({
   key: `${sport}/${league}`,
   sport,
@@ -60,8 +64,6 @@ const PRIORITY: LeagueTarget[] = [
   group,
   title,
 }))
-
-const PRIORITY_KEYS = new Set(PRIORITY.map((item) => item.key))
 
 function americanToDecimal(raw: unknown): number | null {
   if (raw == null || raw === '') return null
@@ -91,17 +93,34 @@ function closeOdds(side: any): { line: number | null; price: number | null } {
   }
 }
 
+const HEADER_SPORTS = ['cricket', 'soccer', 'tennis', 'rugby', 'mma', 'basketball', 'football', 'baseball', 'hockey']
+
+const GROUP_FOR_SPORT: Record<string, string> = {
+  soccer: 'Soccer',
+  cricket: 'Cricket',
+  basketball: 'Basketball',
+  football: 'American Football',
+  baseball: 'Baseball',
+  hockey: 'Ice Hockey',
+  tennis: 'Tennis',
+  rugby: 'Rugby',
+  mma: 'MMA',
+}
+
 export class EspnScoreboardProvider {
   private fetchedAt = new Map<string, number>()
   private soccerSlugs: string[] = []
   private slugsFetchedAt = 0
-  private slugCursor = 0
+  private headerLeagues: LeagueTarget[] = []
+  private headerEvents: NormalizedEvent[] = []
+  private headerFetchedAt = 0
+  private groupCursor = 0
   private rosterNames = new Map<string, Map<string, string>>()
 
   async refresh(batch: number): Promise<{ events: NormalizedEvent[]; priced: Map<string, Set<string>> }> {
-    await this.ensureSoccerSlugs()
+    await Promise.all([this.ensureSoccerSlugs(), this.ensureHeaderLeagues()])
     const targets = this.nextTargets(batch)
-    const events: NormalizedEvent[] = []
+    const events: NormalizedEvent[] = [...this.headerEvents]
     const priced = new Map<string, Set<string>>()
     await this.mapPool(targets, 6, async (target) => {
       const rows = await this.fetchLeague(target)
@@ -116,25 +135,93 @@ export class EspnScoreboardProvider {
     return { events, priced }
   }
 
+  private allTargets(): LeagueTarget[] {
+    const byKey = new Map<string, LeagueTarget>()
+    for (const target of PRIORITY) byKey.set(target.key, target)
+    for (const target of this.headerLeagues) {
+      if (!byKey.has(target.key)) byKey.set(target.key, target)
+    }
+    for (const slug of this.soccerSlugs) {
+      const key = `soccer/${slug}`
+      if (byKey.has(key)) continue
+      byKey.set(key, { key, sport: 'soccer', league: slug, group: 'Soccer', title: this.prettyLeague(slug) })
+    }
+    return [...byKey.values()]
+  }
+
   private nextTargets(batch: number): LeagueTarget[] {
     const now = Date.now()
     const stale = (key: string) => now - (this.fetchedAt.get(key) || 0) > 8 * 60_000
-    const picked: LeagueTarget[] = []
-    for (const target of PRIORITY) {
-      if (picked.length >= batch) return picked
-      if (stale(target.key)) picked.push(target)
+    const all = this.allTargets()
+    const byGroup = new Map<string, LeagueTarget[]>()
+    for (const target of all) {
+      const list = byGroup.get(target.group) || []
+      list.push(target)
+      byGroup.set(target.group, list)
     }
-    const extra = this.soccerSlugs.filter((slug) => !PRIORITY_KEYS.has(`soccer/${slug}`))
-    let guard = 0
-    while (picked.length < batch && extra.length && guard < extra.length) {
-      const slug = extra[this.slugCursor % extra.length]
-      this.slugCursor += 1
-      guard += 1
-      const key = `soccer/${slug}`
-      if (!stale(key)) continue
-      picked.push({ key, sport: 'soccer', league: slug, group: 'Soccer', title: this.prettyLeague(slug) })
+    const groups = [...byGroup.keys()]
+    const picked: LeagueTarget[] = []
+    const seen = new Set<string>()
+    let spins = 0
+    while (picked.length < batch && groups.length && spins < groups.length * 12) {
+      const group = groups[this.groupCursor % groups.length]
+      this.groupCursor += 1
+      spins += 1
+      const next = (byGroup.get(group) || []).find((target) => stale(target.key) && !seen.has(target.key))
+      if (!next) continue
+      seen.add(next.key)
+      picked.push(next)
+    }
+    if (picked.length < batch) {
+      for (const target of all) {
+        if (picked.length >= batch) break
+        if (seen.has(target.key) || !stale(target.key)) continue
+        picked.push(target)
+      }
     }
     return picked
+  }
+
+  private async ensureHeaderLeagues() {
+    if (this.headerLeagues.length && Date.now() - this.headerFetchedAt < 6 * 60 * 60_000) return
+    const found: LeagueTarget[] = []
+    const headerEvents: NormalizedEvent[] = []
+    const queries: Array<{ sport: string; region?: string }> = [
+      ...HEADER_SPORTS.map((sport) => ({ sport })),
+      { sport: 'cricket', region: 'in' },
+      { sport: 'cricket', region: 'gb' },
+      { sport: 'cricket', region: 'au' },
+      { sport: 'cricket', region: 'za' },
+      { sport: 'cricket', region: 'us' },
+    ]
+    await this.mapPool(queries, 4, async ({ sport, region }) => {
+      const extra = region ? `&region=${encodeURIComponent(region)}` : ''
+      const json = await this.fetchJson(
+        `https://site.web.api.espn.com/apis/v2/scoreboard/header?sport=${encodeURIComponent(sport)}${extra}`,
+      )
+      const rows = Array.isArray(json?.sports) ? json.sports : []
+      for (const row of rows) {
+        const espnSport = String(row?.slug || sport)
+        const group = GROUP_FOR_SPORT[espnSport] || String(row?.name || espnSport)
+        for (const league of Array.isArray(row?.leagues) ? row.leagues : []) {
+          const leagueSlug = String(league?.slug || league?.id || '').trim()
+          if (!leagueSlug) continue
+          const title = String(league?.name || league?.abbreviation || leagueSlug)
+          const key = `${espnSport}/${leagueSlug}`
+          const target = { key, sport: espnSport, league: leagueSlug, group, title }
+          found.push(target)
+          for (const event of Array.isArray(league?.events) ? league.events : []) {
+            const mapped = this.mapHeaderEvent(event, target, title)
+            if (mapped) headerEvents.push(mapped)
+          }
+        }
+      }
+    })
+    if (found.length) {
+      this.headerLeagues = found
+      this.headerEvents = headerEvents
+      this.headerFetchedAt = Date.now()
+    }
   }
 
   private prettyLeague(slug: string) {
@@ -171,20 +258,33 @@ export class EspnScoreboardProvider {
   }
 
   private async fetchLeague(target: LeagueTarget): Promise<NormalizedEvent[]> {
-    const url = `https://site.api.espn.com/apis/site/v2/sports/${encodeURIComponent(target.sport)}/${encodeURIComponent(target.league)}/scoreboard?limit=100`
+    const base = `https://site.api.espn.com/apis/site/v2/sports/${encodeURIComponent(target.sport)}/${encodeURIComponent(target.league)}/scoreboard?limit=100`
     try {
-      const res = await fetch(url, {
-        headers: { Accept: 'application/json' },
-        signal: AbortSignal.timeout(8000),
+      const first = await this.fetchJson(base)
+      if (!first) return []
+      const leagueName = first?.leagues?.[0]?.name || first?.leagues?.[0]?.abbreviation || target.title
+      const calendar = Array.isArray(first?.leagues?.[0]?.calendar) ? first.leagues[0].calendar : []
+      const extraDates =
+        target.sport === 'cricket' || target.sport === 'tennis'
+          ? calendar
+              .map((value: string) => String(value).slice(0, 10).replace(/-/g, ''))
+              .filter((value: string) => /^\d{8}$/.test(value))
+              .slice(0, 6)
+          : []
+      const pages = [first]
+      await this.mapPool(extraDates, 3, async (date) => {
+        const json = await this.fetchJson(`${base}&dates=${date}`)
+        if (json) pages.push(json)
       })
-      if (!res.ok) return []
-      const json = (await res.json()) as any
-      const leagueName = json?.leagues?.[0]?.name || json?.leagues?.[0]?.abbreviation || target.title
-      const events = Array.isArray(json?.events) ? json.events : []
+      const seen = new Set<string>()
       const out: NormalizedEvent[] = []
-      for (const event of events) {
-        const mapped = this.mapEvent(event, target, leagueName)
-        if (mapped) out.push(mapped)
+      for (const json of pages) {
+        for (const event of Array.isArray(json?.events) ? json.events : []) {
+          const mapped = this.mapEvent(event, target, leagueName)
+          if (!mapped || seen.has(mapped.externalId)) continue
+          seen.add(mapped.externalId)
+          out.push(mapped)
+        }
       }
       return out
     } catch {
@@ -203,9 +303,15 @@ export class EspnScoreboardProvider {
 
     const state = String(event?.status?.type?.state || '')
     const completed = Boolean(event?.status?.type?.completed) || state === 'post'
-    const homeScore = Number(home?.score)
-    const awayScore = Number(away?.score)
+    const homeRaw = String(home?.score ?? '').trim()
+    const awayRaw = String(away?.score ?? '').trim()
+    const homeScore = Number(homeRaw)
+    const awayScore = Number(awayRaw)
     const bookmakers = this.mapBookmakers(competition?.odds, homeTeam, awayTeam)
+    const scoreText =
+      homeRaw && awayRaw && (!Number.isFinite(homeScore) || !Number.isFinite(awayScore))
+        ? { home: homeRaw, away: awayRaw }
+        : undefined
 
     return {
       externalId: `espn-${event.id}`,
@@ -220,6 +326,50 @@ export class EspnScoreboardProvider {
       completed,
       homeScore: Number.isFinite(homeScore) ? homeScore : null,
       awayScore: Number.isFinite(awayScore) ? awayScore : null,
+      scoreText,
+    }
+  }
+
+  private mapHeaderEvent(event: any, target: LeagueTarget, leagueName: string): NormalizedEvent | null {
+    const id = String(event?.id || event?.competitionId || '')
+    if (!id) return null
+    const competitors = event?.competitors || event?.competitions?.[0]?.competitors || []
+    const home = competitors.find((row: any) => row?.homeAway === 'home') || competitors[0]
+    const away = competitors.find((row: any) => row?.homeAway === 'away') || competitors[1]
+    let homeTeam = String(home?.team?.displayName || home?.team?.name || '').trim()
+    let awayTeam = String(away?.team?.displayName || away?.team?.name || '').trim()
+    if (!homeTeam || !awayTeam) {
+      const parts = String(event?.name || event?.shortName || '')
+        .split(/\s+v(?:s\.?)?\s+/i)
+        .map((part) => part.trim())
+        .filter(Boolean)
+      homeTeam = parts[0] || ''
+      awayTeam = parts[1] || ''
+    }
+    if (!homeTeam || !awayTeam) return null
+    const state = String(event?.fullStatus?.type?.state || event?.status || '')
+    const completed = Boolean(event?.fullStatus?.type?.completed) || state === 'post'
+    const homeRaw = String(home?.score ?? event?.homeScore ?? '').trim()
+    const awayRaw = String(away?.score ?? event?.awayScore ?? '').trim()
+    const homeScore = Number(homeRaw)
+    const awayScore = Number(awayRaw)
+    return {
+      externalId: `espn-${id}`,
+      sportKey: target.key,
+      sportGroup: target.group,
+      sportTitle: leagueName || target.title,
+      homeTeam,
+      awayTeam,
+      commenceTime: event.date || event.startDate || new Date().toISOString(),
+      bookmakers: this.mapBookmakers(event?.odds, homeTeam, awayTeam),
+      source: 'espn',
+      completed,
+      homeScore: Number.isFinite(homeScore) ? homeScore : null,
+      awayScore: Number.isFinite(awayScore) ? awayScore : null,
+      scoreText:
+        homeRaw && awayRaw && (!Number.isFinite(homeScore) || !Number.isFinite(awayScore))
+          ? { home: homeRaw, away: awayRaw }
+          : undefined,
     }
   }
 
@@ -229,9 +379,15 @@ export class EspnScoreboardProvider {
     for (const odds of oddsList) {
       const markets = []
       const h2h: OddsOutcome[] = []
-      const homeMl = americanToDecimal(odds?.moneyline?.home?.close?.odds ?? odds?.homeTeamOdds?.moneyLine)
-      const awayMl = americanToDecimal(odds?.moneyline?.away?.close?.odds ?? odds?.awayTeamOdds?.moneyLine)
-      const drawMl = americanToDecimal(odds?.moneyline?.draw?.close?.odds ?? odds?.drawOdds?.moneyLine)
+      const homeMl = americanToDecimal(
+        odds?.moneyline?.home?.close?.odds ?? odds?.homeTeamOdds?.moneyLine ?? odds?.homeTeamOdds?.odds,
+      )
+      const awayMl = americanToDecimal(
+        odds?.moneyline?.away?.close?.odds ?? odds?.awayTeamOdds?.moneyLine ?? odds?.awayTeamOdds?.odds,
+      )
+      const drawMl = americanToDecimal(
+        odds?.moneyline?.draw?.close?.odds ?? odds?.drawOdds?.moneyLine ?? odds?.drawOdds?.odds,
+      )
       if (homeMl) h2h.push({ name: homeTeam, price: homeMl })
       if (drawMl) h2h.push({ name: 'Draw', price: drawMl })
       if (awayMl) h2h.push({ name: awayTeam, price: awayMl })
@@ -267,45 +423,145 @@ export class EspnScoreboardProvider {
     return books
   }
 
-  async fetchDetailMarkets(sportKey: string, externalId: string): Promise<OddsBookmaker | null> {
+  async fetchDetailMarkets(
+    sportKey: string,
+    externalId: string,
+  ): Promise<{
+    bookmaker: OddsBookmaker | null
+    live?: { teamA: string | null; teamB: string | null; batting?: unknown; lastBallSequence?: number }
+  } | null> {
     const parsed = this.parseEvent(sportKey, externalId)
     if (!parsed) return null
     const { sport, league, eventId } = parsed
-    const [summary, props] = await Promise.all([
+    const isCricket = sport === 'cricket'
+    const [summary, props, coreOdds, playByPlay] = await Promise.all([
       this.fetchJson(
         `https://site.api.espn.com/apis/site/v2/sports/${encodeURIComponent(sport)}/${encodeURIComponent(league)}/summary?event=${encodeURIComponent(eventId)}`,
       ),
-      this.fetchPropItems(sport, league, eventId),
+      isCricket ? Promise.resolve(null) : this.fetchPropItems(sport, league, eventId),
+      isCricket ? Promise.resolve([]) : this.fetchCoreOdds(sport, league, eventId),
+      isCricket
+        ? this.fetchJson(
+            `https://site.api.espn.com/apis/site/v2/sports/${encodeURIComponent(sport)}/${encodeURIComponent(league)}/playbyplay?event=${encodeURIComponent(eventId)}`,
+          )
+        : Promise.resolve(null),
     ])
-    if (!props) return null
     const teams = this.teamsFromSummary(summary)
-    const athletes = new Map<string, string>()
-    const teamIds = new Set<string>(teams.keys())
-    for (const item of props) {
-      const teamId = refId(item?.team?.$ref, 'teams')
-      if (teamId) teamIds.add(teamId)
-    }
-    await this.mapPool([...teamIds], 4, async (teamId) => {
-      if (!teams.has(teamId)) {
-        const name = await this.teamName(sport, league, teamId)
-        if (name) teams.set(teamId, name)
+    const homeTeam = String(summary?.header?.competitions?.[0]?.competitors?.find((row: { homeAway?: string }) => row?.homeAway === 'home')?.team?.displayName || [...teams.values()][0] || '').trim()
+    const awayTeam = String(summary?.header?.competitions?.[0]?.competitors?.find((row: { homeAway?: string }) => row?.homeAway === 'away')?.team?.displayName || [...teams.values()][1] || '').trim()
+    const fromHeader = this.mapBookmakers(
+      summary?.header?.competitions?.[0]?.odds || summary?.pickcenter,
+      homeTeam,
+      awayTeam,
+    )
+    const fromCore = this.mapBookmakers(coreOdds, homeTeam, awayTeam)
+    let propMarkets: OddsBookmaker['markets'] = []
+    if (props?.length) {
+      const athletes = new Map<string, string>()
+      const teamIds = new Set<string>(teams.keys())
+      for (const item of props) {
+        const teamId = refId(item?.team?.$ref, 'teams')
+        if (teamId) teamIds.add(teamId)
       }
-      const roster = await this.teamRoster(sport, league, teamId)
-      for (const [id, name] of roster) athletes.set(id, name)
-    })
-    const missing = new Map<string, string>()
-    for (const item of props) {
-      const athleteId = refId(item?.athlete?.$ref, 'athletes')
-      const ref = String(item?.athlete?.$ref || '').replace(/^http:\/\//, 'https://')
-      if (athleteId && ref && !athletes.has(athleteId)) missing.set(athleteId, ref)
+      await this.mapPool([...teamIds], 4, async (teamId) => {
+        if (!teams.has(teamId)) {
+          const name = await this.teamName(sport, league, teamId)
+          if (name) teams.set(teamId, name)
+        }
+        const roster = await this.teamRoster(sport, league, teamId)
+        for (const [id, name] of roster) athletes.set(id, name)
+      })
+      const missing = new Map<string, string>()
+      for (const item of props) {
+        const athleteId = refId(item?.athlete?.$ref, 'athletes')
+        const ref = String(item?.athlete?.$ref || '').replace(/^http:\/\//, 'https://')
+        if (athleteId && ref && !athletes.has(athleteId)) missing.set(athleteId, ref)
+      }
+      await this.mapPool([...missing.entries()].slice(0, 80), 6, async ([athleteId, ref]) => {
+        const json = await this.fetchJson(ref)
+        const name = String(json?.displayName || json?.fullName || '').trim()
+        if (name) athletes.set(athleteId, name)
+      })
+      propMarkets = mapEspnProps(props, athletes, teams)
     }
-    await this.mapPool([...missing.entries()].slice(0, 80), 6, async ([athleteId, ref]) => {
-      const json = await this.fetchJson(ref)
-      const name = String(json?.displayName || json?.fullName || '').trim()
-      if (name) athletes.set(athleteId, name)
-    })
-    const markets = mapEspnProps(props, athletes, teams)
-    return { key: 'draftkings', title: 'DraftKings', markets }
+    const merged = this.mergeMarketLists([
+      ...fromHeader.flatMap((book) => book.markets),
+      ...fromCore.flatMap((book) => book.markets),
+      ...propMarkets,
+    ])
+    const live = isCricket && summary ? cricketLiveScore(summary, playByPlay) : undefined
+    if (isCricket && summary && homeTeam && awayTeam) {
+      const nested = buildCricketMarkets({
+        summary,
+        playByPlay,
+        homeTeam,
+        awayTeam,
+      })
+      const existing = new Set(merged.map((market) => market.key))
+      for (const market of nested) {
+        if (market.key === 'h2h' && existing.has('h2h')) continue
+        if (market.key === 'totals' && existing.has('totals')) continue
+        const current = merged.find((row) => row.key === market.key)
+        if (!current) merged.push(market)
+        else if (!current.outcomes.length) current.outcomes = market.outcomes
+      }
+    }
+    return {
+      bookmaker: { key: 'espn', title: isCricket && !fromHeader.length && !fromCore.length ? 'Arena' : 'ESPN', markets: merged },
+      live,
+    }
+  }
+
+  async fetchCricketContext(sportKey: string, externalId: string) {
+    const parsed = this.parseEvent(sportKey, externalId)
+    if (!parsed || parsed.sport !== 'cricket') return null
+    const [summary, playByPlay] = await Promise.all([
+      this.fetchJson(
+        `https://site.api.espn.com/apis/site/v2/sports/${encodeURIComponent(parsed.sport)}/${encodeURIComponent(parsed.league)}/summary?event=${encodeURIComponent(parsed.eventId)}`,
+      ),
+      this.fetchJson(
+        `https://site.api.espn.com/apis/site/v2/sports/${encodeURIComponent(parsed.sport)}/${encodeURIComponent(parsed.league)}/playbyplay?event=${encodeURIComponent(parsed.eventId)}`,
+      ),
+    ])
+    return { summary, playByPlay }
+  }
+
+  private mergeMarketLists(markets: OddsBookmaker['markets']): OddsBookmaker['markets'] {
+    const byKey = new Map<string, OddsBookmaker['markets'][number]>()
+    for (const market of markets) {
+      const current = byKey.get(market.key)
+      if (!current) {
+        byKey.set(market.key, { key: market.key, outcomes: [...(market.outcomes || [])] })
+        continue
+      }
+      for (const outcome of market.outcomes || []) {
+        const existing = current.outcomes.find(
+          (row) => row.name === outcome.name && row.point === outcome.point && row.description === outcome.description,
+        )
+        if (!existing) current.outcomes.push(outcome)
+        else if (outcome.price > existing.price) existing.price = outcome.price
+      }
+    }
+    return [...byKey.values()].filter((market) => market.outcomes.length > 0)
+  }
+
+  private async fetchCoreOdds(sport: string, league: string, eventId: string) {
+    const base = `https://sports.core.api.espn.com/v2/sports/${encodeURIComponent(sport)}/leagues/${encodeURIComponent(league)}/events/${eventId}/competitions/${eventId}/odds`
+    const json = await this.fetchJson(`${base}?limit=200`)
+    const items = Array.isArray(json?.items) ? json.items : json ? [json] : []
+    const resolved: unknown[] = []
+    for (const item of items.slice(0, 12)) {
+      const ref = String(item?.$ref || '').replace(/^http:\/\//, 'https://')
+      if (item?.provider || item?.moneyline || item?.homeTeamOdds) {
+        resolved.push(item)
+        continue
+      }
+      if (ref) {
+        const full = await this.fetchJson(ref)
+        if (full) resolved.push(full)
+      }
+    }
+    return resolved
   }
 
   async fetchPlayerGoals(sportKey: string, externalId: string): Promise<Map<string, number> | null> {

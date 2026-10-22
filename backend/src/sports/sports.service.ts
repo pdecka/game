@@ -8,8 +8,11 @@ import { CricketProvider } from './providers/cricket.provider'
 import { SportSrcProvider } from './providers/sportsrc.provider'
 import { NormalizedEvent, OddsApiProvider, OddsBookmaker } from './providers/odds-api.provider'
 import { EspnScoreboardProvider } from './providers/espn-scoreboard.provider'
+import { CricinfoProvider } from './providers/cricinfo.provider'
 import { gradeBookmakerBet } from './odds-grade'
+import { commentaryItems, cricketRuns, firstBallAfter, gradeNextBall, overRuns, overNumber, playerRunsMap } from './cricket-markets'
 import { toNum } from '../common/utils/prisma-decimal'
+import { SPORT_HUB, sportBySlug, matchBelongsToSport } from './sport-hub'
 
 type PlaceBetInput = {
   sport: string
@@ -29,6 +32,7 @@ export class SportsService implements OnModuleInit, OnModuleDestroy {
   private sportSrcProvider = new SportSrcProvider()
   private oddsApi = new OddsApiProvider()
   private espn = new EspnScoreboardProvider()
+  private cricinfo = new CricinfoProvider()
 
   private fetchTimer: any
   private settleTimer: any
@@ -51,7 +55,7 @@ export class SportsService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleInit() {
     await this.ensureDefaultSettings()
-    this.fetchTimer = setInterval(() => this.tickOddsFeed(3).catch(() => {}), 60_000)
+    this.fetchTimer = setInterval(() => this.tickOddsFeed(12).catch(() => {}), 60_000)
     this.settleTimer = setInterval(() => this.settleAll().catch(() => {}), 60_000)
     void this.ensureReady().catch(() => {})
   }
@@ -87,27 +91,64 @@ export class SportsService implements OnModuleInit, OnModuleDestroy {
     return this.oddsApi.toOddsApiShape()
   }
 
-  async getBoard() {
-    await this.ensureReady()
+  async getBoard(slug?: string, status?: SportsMatchStatus) {
+    await Promise.race([
+      this.ensureReady(),
+      new Promise((resolve) => setTimeout(resolve, 4000)),
+    ])
     const since = new Date(Date.now() - 12 * 60 * 60 * 1000)
+    const hub = sportBySlug(slug)
+    const prefixes = hub
+      ? hub.groups.flatMap((group) => {
+          const g = group.toLowerCase()
+          if (g === 'soccer') return ['soccer']
+          if (g === 'cricket') return ['cricket']
+          if (g === 'tennis') return ['tennis']
+          if (g === 'basketball') return ['basketball']
+          if (g === 'baseball') return ['baseball']
+          if (g === 'american football') return ['football']
+          if (g === 'ice hockey') return ['hockey']
+          if (g === 'rugby') return ['rugby']
+          return [g]
+        })
+      : []
     const matches = await this.prisma.sportsMatch.findMany({
       where: {
-        OR: [
-          { startTime: { gte: since } },
-          { status: { in: [SportsMatchStatus.LIVE, SportsMatchStatus.UPCOMING] as any } },
+        AND: [
+          {
+            OR: [
+              { startTime: { gte: since } },
+              { status: { in: [SportsMatchStatus.LIVE, SportsMatchStatus.UPCOMING] as any } },
+            ],
+          },
+          ...(prefixes.length
+            ? [
+                {
+                  OR: prefixes.map((prefix) => ({ sport: { startsWith: prefix } })),
+                },
+              ]
+            : []),
         ],
       },
       orderBy: [{ startTime: 'asc' }],
-      take: 600,
+      take: 800,
     })
     const feed = matches.filter((match) => {
       const source = (match.score as any)?.source
       return source === 'the-odds-api' || source === 'espn'
     })
     const rows = feed.length ? feed : matches
+    const mapped = rows.map((match) => this.toBoardMatch(match))
+    const scoped = hub ? mapped.filter((match) => matchBelongsToSport(match, hub)) : mapped
+    const byStatus = status ? scoped.filter((match) => match.status === status) : scoped
     const odds = this.oddsApi.isConfigured() ? { ...this.oddsFeedMeta, ...this.oddsApi.getMeta() } : this.oddsFeedMeta
     return {
-      matches: rows.map((match) => this.toBoardMatch(match)),
+      matches: byStatus,
+      catalog: SPORT_HUB.map((item) => ({
+        slug: item.slug,
+        name: item.name,
+        count: mapped.filter((match) => matchBelongsToSport(match, item)).length,
+      })),
       odds,
       fetchedAt: new Date().toISOString(),
     }
@@ -116,7 +157,7 @@ export class SportsService implements OnModuleInit, OnModuleDestroy {
   private async ensureReady() {
     if (this.bootstrapped) return
     if (!this.ready) {
-      this.ready = this.tickOddsFeed(8)
+      this.ready = this.tickOddsFeed(24)
         .then(() => {
           this.bootstrapped = true
           void this.backfillOdds()
@@ -149,24 +190,33 @@ export class SportsService implements OnModuleInit, OnModuleDestroy {
       if ((result.catalogUpdated || result.pricedSports.length) && events.length) {
         await this.persistFeed(events, this.oddsApi.getPricedIds())
       }
-      return
     }
 
     try {
-      const espn = await this.espn.refresh(limit >= 8 ? 48 : 8)
+      const espn = await this.espn.refresh(limit >= 12 ? 24 : Math.max(limit, 8))
       if (espn.events.length) {
         await this.persistFeed(espn.events, espn.priced)
-        this.oddsFeedMeta = { configured: true, upstreamStatus: 200, reason: 'ok' }
-      } else if (this.oddsFeedMeta.reason !== 'ok') {
+        if (!this.oddsApi.isConfigured() || this.oddsFeedMeta.reason !== 'ok') {
+          this.oddsFeedMeta = { configured: true, upstreamStatus: 200, reason: 'ok' }
+        }
+      }
+      const cricinfo = await this.cricinfo.refresh()
+      if (cricinfo.length) {
+        await this.persistFeed(cricinfo, new Map())
+        if (!this.oddsApi.isConfigured() || this.oddsFeedMeta.reason !== 'ok') {
+          this.oddsFeedMeta = { configured: true, upstreamStatus: 200, reason: 'ok' }
+        }
+      }
+      if (!espn.events.length && !cricinfo.length && !this.oddsApi.isConfigured() && this.oddsFeedMeta.reason !== 'ok') {
         this.oddsFeedMeta = {
           configured: false,
           upstreamStatus: null,
-          reason: 'ODDS_API_KEY is not set and the public scoreboard returned no matches',
+          reason: 'The public scoreboard returned no matches yet',
         }
       }
     } catch (error) {
       console.error('[sports] scoreboard request failed', error)
-      if (this.oddsFeedMeta.reason !== 'ok') {
+      if (!this.oddsApi.isConfigured() && this.oddsFeedMeta.reason !== 'ok') {
         this.oddsFeedMeta = { configured: false, upstreamStatus: null, reason: 'Sports feed is temporarily unavailable' }
       }
     }
@@ -214,6 +264,9 @@ export class SportsService implements OnModuleInit, OnModuleDestroy {
         event.awayScore != null &&
         (event.completed || (startOk && commence.getTime() <= Date.now()))
           ? { teamA: String(event.homeScore), teamB: String(event.awayScore) }
+          : {}),
+        ...(event.scoreText?.home && event.scoreText?.away
+          ? { teamA: event.scoreText.home, teamB: event.scoreText.away }
           : {}),
       }
       if (!prev) {
@@ -434,31 +487,44 @@ export class SportsService implements OnModuleInit, OnModuleDestroy {
   private async maybeEnrichMatch(match: any) {
     const score = (match.score as any) || {}
     const fetchedAt = Number(score.detailFetchedAt || 0)
-    if (fetchedAt && Date.now() - fetchedAt < 10 * 60_000) return
+    const live = match.status === SportsMatchStatus.LIVE
+    const ttl = live ? 45_000 : 10 * 60_000
+    if (fetchedAt && Date.now() - fetchedAt < ttl) return
 
     if (score.source === 'espn') {
       const sportKey = String(score.sportKey || '')
-      let extra: OddsBookmaker | null = null
+      let extra: Awaited<ReturnType<EspnScoreboardProvider['fetchDetailMarkets']>> = null
       try {
         extra = await this.espn.fetchDetailMarkets(sportKey, match.externalId)
       } catch {
-        return
+        extra = null
       }
-      if (!extra) return
       const current = Array.isArray(score.bookmakers) ? score.bookmakers : []
-      const bookmakers = extra.markets.length ? this.mergeBookmakers(current, [extra]) : current
+      const bookmakers = extra?.bookmaker?.markets?.length
+        ? this.mergeBookmakers(current, [extra.bookmaker])
+        : current
       await this.prisma.sportsMatch.update({
         where: { id: match.id },
-        data: { score: { ...score, bookmakers, detailFetchedAt: Date.now() } },
+        data: {
+          score: {
+            ...score,
+            bookmakers,
+            detailFetchedAt: Date.now(),
+            ...(extra?.live?.teamA ? { teamA: extra.live.teamA } : {}),
+            ...(extra?.live?.teamB ? { teamB: extra.live.teamB } : {}),
+            ...(extra?.live?.batting ? { batting: extra.live.batting } : {}),
+            ...(extra?.live?.lastBallSequence != null ? { lastBallSequence: extra.live.lastBallSequence } : {}),
+          },
+        },
       })
       return
     }
 
     if (score.source !== 'the-odds-api') return
     const sportKey = String(score.sportKey || match.sport || '')
-    if (!sportKey.startsWith('soccer_')) return
+    const extraMarkets = this.extraMarketsFor(sportKey)
     try {
-      const extra = await this.oddsApi.fetchEventOdds(sportKey, match.externalId, 'btts,draw_no_bet')
+      const extra = await this.oddsApi.fetchEventOdds(sportKey, match.externalId, extraMarkets)
       if (!extra.length) {
         await this.prisma.sportsMatch.update({
           where: { id: match.id },
@@ -474,6 +540,13 @@ export class SportsService implements OnModuleInit, OnModuleDestroy {
     } catch {
       // Featured prices already on the match are enough if the extra call fails.
     }
+  }
+
+  private extraMarketsFor(sportKey: string) {
+    if (sportKey.startsWith('soccer_')) return 'btts,draw_no_bet,alternate_totals,alternate_spreads'
+    if (sportKey.startsWith('cricket')) return 'h2h,totals,spreads'
+    if (sportKey.startsWith('tennis')) return 'h2h,h2h_lay,spreads,totals'
+    return 'h2h,spreads,totals,alternate_totals'
   }
 
   private mergeBookmakers(current: OddsBookmaker[], extra: OddsBookmaker[]) {
@@ -608,6 +681,7 @@ export class SportsService implements OnModuleInit, OnModuleDestroy {
           drawOffered,
           commenceTime: match.startTime,
           sportKey: score.sportKey || match.sport,
+          lastBallSequence: score.lastBallSequence ?? 0,
           matchSnapshot: {
             league: match.league,
             teamA: match.teamA,
@@ -666,9 +740,18 @@ export class SportsService implements OnModuleInit, OnModuleDestroy {
   }
 
   private betTypeForMarket(marketKey: string): SportsBetType {
-    if (marketKey === 'totals' || marketKey.startsWith('alternate_totals') || marketKey === 'btts' || marketKey.includes('total')) {
+    if (
+      marketKey === 'totals' ||
+      marketKey.startsWith('alternate_totals') ||
+      marketKey === 'btts' ||
+      marketKey.includes('total') ||
+      marketKey === 'innings_runs' ||
+      marketKey === 'current_over_runs' ||
+      marketKey === 'player_runs'
+    ) {
       return SportsBetType.OVER_UNDER
     }
+    if (marketKey === 'toss') return SportsBetType.TOSS_WINNER
     return SportsBetType.MATCH_WINNER
   }
 
@@ -684,6 +767,18 @@ export class SportsService implements OnModuleInit, OnModuleDestroy {
         return 'Both Teams to Score'
       case 'draw_no_bet':
         return 'Draw No Bet'
+      case 'toss':
+        return 'Toss Winner'
+      case 'innings_runs':
+        return 'Innings runs'
+      case 'current_over_runs':
+        return 'This over'
+      case 'next_ball':
+        return 'Next ball'
+      case 'player_runs':
+        return 'Player runs'
+      case 'player_fifty':
+        return 'To score 50'
       default:
         return marketKey
           .replace(/_/g, ' ')
@@ -772,16 +867,24 @@ export class SportsService implements OnModuleInit, OnModuleDestroy {
 
   private async settleEspnBets(bets: any[]) {
     const goalsCache = new Map<string, Map<string, number> | null>()
+    const cricketCache = new Map<string, { summary: any; playByPlay: any } | null>()
     for (const bet of bets) {
       const match = await this.prisma.sportsMatch.findUnique({ where: { id: bet.matchId } })
-      if (!match || match.status !== SportsMatchStatus.FINISHED) continue
+      if (!match) continue
       const score = (match.score as any) || {}
-      const homeScore = Number(score.teamA)
-      const awayScore = Number(score.teamB)
-      if (!Number.isFinite(homeScore) || !Number.isFinite(awayScore)) continue
       const meta = (bet.meta as any) || {}
       const marketKey = String(meta.marketKey || 'h2h')
+      const liveMarket = marketKey === 'next_ball' || marketKey === 'current_over_runs'
+      if (!liveMarket && match.status !== SportsMatchStatus.FINISHED) continue
+
+      const homeScore = cricketRuns(score.teamA) ?? Number(score.teamA)
+      const awayScore = cricketRuns(score.teamB) ?? Number(score.teamB)
+      if (!liveMarket && (!Number.isFinite(homeScore) || !Number.isFinite(awayScore))) continue
+
       let playerGoals: Map<string, number> | undefined
+      let playerRuns: Map<string, number> | undefined
+      let tossWinner: string | null | undefined
+      let nextBall: any
       if (/goalscorer|to_score_\d+_goals/.test(marketKey)) {
         if (!goalsCache.has(match.id)) {
           goalsCache.set(match.id, await this.espn.fetchPlayerGoals(String(score.sportKey || ''), match.externalId))
@@ -789,16 +892,57 @@ export class SportsService implements OnModuleInit, OnModuleDestroy {
         const parsed = goalsCache.get(match.id)
         if (parsed) playerGoals = parsed
       }
+      if (
+        String(score.sportKey || '').startsWith('cricket') &&
+        /player_|toss|next_ball|current_over|innings_runs/.test(marketKey)
+      ) {
+        if (!cricketCache.has(match.id)) {
+          cricketCache.set(match.id, await this.espn.fetchCricketContext(String(score.sportKey || ''), match.externalId))
+        }
+        const ctx = cricketCache.get(match.id)
+        if (ctx?.summary) {
+          playerRuns = playerRunsMap(ctx.summary)
+          const tossNote = (ctx.summary.notes || []).find((note: any) => /elected/i.test(String(note?.text || '')))
+          const tossName = String(tossNote?.text || '').split(',')[0].trim()
+          tossWinner = tossName || null
+          const items = commentaryItems(ctx.summary, ctx.playByPlay)
+          if (marketKey === 'next_ball') {
+            nextBall = firstBallAfter(items, Number(meta.lastBallSequence || 0))
+            if (nextBall) {
+              const grade = gradeNextBall(nextBall, bet.selection)
+              if (grade !== 'open') await this.applyGrade(bet, grade, { homeScore, awayScore })
+              continue
+            }
+          }
+          if (marketKey === 'current_over_runs') {
+            const start = firstBallAfter(items, Number(meta.lastBallSequence || 0))
+            const over = start ? overNumber(start) : null
+            const period = Number(start?.period || 0)
+            const balls = items.filter((item) => overNumber(item) === over && Number(item?.period || 0) === period)
+            if (over != null && balls.length >= 6) {
+              const total = overRuns(items, over, period)
+              const line = Number(bet.line)
+              const overPick = /\bover\b/i.test(String(bet.selection))
+              const grade = total === line ? 'void' : overPick ? (total > line ? 'won' : 'lost') : total < line ? 'won' : 'lost'
+              await this.applyGrade(bet, grade, { homeScore, awayScore })
+              continue
+            }
+          }
+        }
+      }
       const grade = gradeBookmakerBet({
         marketKey,
         selection: bet.selection,
         line: bet.line != null ? toNum(bet.line) : null,
         homeTeam: match.teamA,
         awayTeam: match.teamB,
-        homeScore,
-        awayScore,
+        homeScore: Number(homeScore),
+        awayScore: Number(awayScore),
         drawOffered: Boolean(meta.drawOffered),
         playerGoals,
+        playerRuns,
+        tossWinner,
+        nextBall,
       })
       if (grade === 'open') continue
       await this.applyGrade(bet, grade, { homeScore, awayScore })

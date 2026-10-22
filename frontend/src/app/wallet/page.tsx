@@ -6,6 +6,8 @@ import toast from 'react-hot-toast'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/context/AuthContext'
 import api from '@/lib/api'
+import { GameLayout } from '@/components/layout/GameLayout'
+import { PageHeader } from '@/components/ui/page-header'
 
 type DepositRow = {
   id: string
@@ -198,12 +200,9 @@ export default function WalletPage() {
   }
 
   return (
-    <main className="min-h-screen bg-bg-2 text-ink">
-      <div className="mx-auto w-full max-w-6xl px-4 py-8">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-ink">Wallet</h1>
-          <p className="mt-1 text-ink-2">Manage deposits, withdrawals, and view request history.</p>
-        </div>
+    <GameLayout>
+      <div className="page-wrap">
+        <PageHeader title="Wallet" description="Manage deposits, withdrawals, and view request history." />
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
           <div className="rounded-xl bg-white border border-line p-5 shadow-sm">
@@ -449,7 +448,7 @@ export default function WalletPage() {
           </div>
         </section>
       </div>
-    </main>
+    </GameLayout>
   )
 }
 

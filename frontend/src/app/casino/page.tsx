@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { GameLayout } from '@/components/layout/GameLayout'
+import { PageHeader } from '@/components/ui/page-header'
 
 const GAMES: { name: string; href: string; desc: string; image?: string }[] = [
   { name: 'Crash', href: '/games/crash', desc: 'Real-time style multiplier cashout.', image: '/games/crash-thumb.jpeg' },
@@ -30,12 +31,9 @@ const GAMES: { name: string; href: string; desc: string; image?: string }[] = [
 export default function CasinoPage() {
   return (
     <GameLayout>
-      <div className="p-3 sm:p-6">
+      <div className="page-wrap">
         <div className="mx-auto max-w-6xl">
-          <div className="mb-4 sm:mb-6">
-            <h1 className="text-2xl font-bold text-ink sm:text-3xl">Casino</h1>
-            <p className="mt-1 text-sm text-ink-2">All games — fully playable with wallet + history.</p>
-          </div>
+          <PageHeader title="Casino" description="All games — fully playable with wallet + history." />
 
           <div className="mx-auto grid max-w-7xl grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5">
             {GAMES.map((g) => (

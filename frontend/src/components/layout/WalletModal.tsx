@@ -21,7 +21,7 @@ export function WalletModal({ open, onClose, balanceLabel }: WalletModalProps) {
             className="icon-btn"
             aria-label="Close wallet"
           >
-            ✕
+            <span aria-hidden>×</span>
           </button>
         </div>
 

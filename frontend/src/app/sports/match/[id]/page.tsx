@@ -10,6 +10,7 @@ import ErrorBoundary from '@/components/sports/ErrorBoundary'
 import { MatchData } from '@/components/sports/MatchCard'
 import { useSportsBetSlip } from '@/components/sports/useSportsBetSlip'
 import { sportsApi } from '@/services/sportsApi'
+import { SPORT_HUB } from '@/lib/sport-hub'
 
 function money(value: number) {
   const amount = Number.isFinite(value) ? value : 0
@@ -92,15 +93,26 @@ export default function MatchDetailsPage() {
   return (
     <ErrorBoundary>
       <GameLayout>
-        <div className="mx-auto w-full max-w-4xl px-3 py-4 sm:px-6 sm:py-6">
-          <Link href="/sports" className="text-sm text-ink-2 hover:text-brand-2">
-            ← All sports
+        <div className="page-wrap max-w-4xl">
+          <Link
+            href={
+              match
+                ? `/sports/${SPORT_HUB.find((item) =>
+                    item.groups.some((group) => group.toLowerCase() === String(match.sport_title || '').toLowerCase()),
+                  )?.slug || 'cricket'}`
+                : '/sports'
+            }
+            className="text-sm text-ink-2 hover:text-brand-2"
+          >
+            ← Back to sport
           </Link>
-          {slip.loggedIn && (
+          {slip.loggedIn ? (
             <p className="mt-3 text-sm text-ink-2">
               Balance <span className="odds-num font-semibold text-ink">{money(slip.balance)}</span>
               <span className="text-ink-3"> ({money(slip.exposure)})</span>
             </p>
+          ) : (
+            <p className="mt-3 text-sm text-ink-3">Log in to place a bet.</p>
           )}
 
           {loading && !match ? (

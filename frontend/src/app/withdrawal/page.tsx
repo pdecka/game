@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import api from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
+import { GameLayout } from '@/components/layout/GameLayout'
+import { PageHeader } from '@/components/ui/page-header'
 
 export default function WithdrawalPage() {
   const { ready, user, wallet, refreshWallet } = useAuth() as any
@@ -84,9 +86,9 @@ export default function WithdrawalPage() {
   }
 
   return (
-    <main className="min-h-screen bg-bg-2 text-ink">
-      <div className="mx-auto max-w-6xl space-y-6 px-4 py-8">
-        <h1 className="text-3xl font-bold text-ink">Withdrawal</h1>
+    <GameLayout>
+      <div className="page-wrap space-y-6">
+        <PageHeader title="Withdrawal" description="Request a payout to a saved account." />
 
         <section className="rounded-2xl border border-line bg-white p-5 shadow-panel">
           <div className="flex items-center justify-between">
@@ -150,6 +152,6 @@ export default function WithdrawalPage() {
           </div>
         </section>
       </div>
-    </main>
+    </GameLayout>
   )
 }

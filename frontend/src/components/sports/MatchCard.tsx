@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
+import Link from 'next/link'
 
 interface Outcome {
   name: string
@@ -116,7 +117,7 @@ export default function MatchCard({ match, onClick, onOddsClick, isSelected }: M
         isSelected ? 'border-brand/40 bg-brand/5' : 'border-line bg-card'
       }`}
     >
-      <button type="button" onClick={() => onClick?.(match)} className="w-full text-left">
+      <Link href={`/sports/match/${match.id}`} onClick={() => onClick?.(match)} className="block w-full text-left">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="text-xs text-ink-3">
@@ -135,12 +136,12 @@ export default function MatchCard({ match, onClick, onOddsClick, isSelected }: M
           </div>
           <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${status.className}`}>{status.text}</span>
         </div>
-      </button>
+      </Link>
 
       <div className={`mt-3 grid gap-2 ${prices.length > 2 ? 'grid-cols-3' : 'grid-cols-2'}`}>
         {prices.length === 0 ? (
           <p className="col-span-2 text-xs text-ink-3">
-            {match.status === 'finished' ? 'Market closed' : 'Prices are updating for this match.'}
+            {match.status === 'finished' ? 'Market closed' : 'Open the match for nested markets.'}
           </p>
         ) : (
           prices.map((price) => (

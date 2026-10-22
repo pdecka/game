@@ -10,6 +10,9 @@ export function gradeBookmakerBet(input: {
   awayScore: number
   drawOffered?: boolean
   playerGoals?: Map<string, number>
+  playerRuns?: Map<string, number>
+  nextBall?: any
+  tossWinner?: string | null
 }): Grade {
   const market = String(input.marketKey || '')
   const selection = String(input.selection || '').trim()
@@ -38,6 +41,18 @@ export function gradeBookmakerBet(input: {
     if (selection.toLowerCase() === 'yes') return both ? 'won' : 'lost'
     if (selection.toLowerCase() === 'no') return both ? 'lost' : 'won'
     return 'void'
+  }
+
+  if (market === 'innings_runs') {
+    const line = Number(input.line)
+    if (!Number.isFinite(line)) return 'void'
+    const total = home
+    if (total === line) return 'void'
+    const over = selection.toLowerCase() === 'over'
+    const under = selection.toLowerCase() === 'under'
+    if (!over && !under) return 'void'
+    if (over) return total > line ? 'won' : 'lost'
+    return total < line ? 'won' : 'lost'
   }
 
   if (market === 'totals' || market.startsWith('alternate_totals')) {
@@ -84,6 +99,37 @@ export function gradeBookmakerBet(input: {
     const goals = input.playerGoals.get(selection.toLowerCase()) ?? 0
     const need = market === 'to_score_3_goals' ? 3 : market === 'to_score_2_goals' ? 2 : 1
     return goals >= need ? 'won' : 'lost'
+  }
+
+  if (market === 'toss') {
+    if (!input.tossWinner) return 'open'
+    return sameTeam(selection, input.tossWinner) ? 'won' : 'lost'
+  }
+
+  if (market === 'player_fifty') {
+    if (!input.playerRuns) return 'open'
+    const runs = input.playerRuns.get(selection.toLowerCase())
+    if (runs == null) return 'open'
+    return runs >= 50 ? 'won' : 'lost'
+  }
+
+  if (market === 'player_runs') {
+    if (!input.playerRuns) return 'open'
+    const line = Number(input.line)
+    if (!Number.isFinite(line)) return 'void'
+    const over = /\bover\b/i.test(selection)
+    const under = /\bunder\b/i.test(selection)
+    const player = selection.replace(/\s+(over|under)\s*$/i, '').trim().toLowerCase()
+    const runs = input.playerRuns.get(player)
+    if (runs == null) return 'open'
+    if (runs === line) return 'void'
+    if (over) return runs > line ? 'won' : 'lost'
+    if (under) return runs < line ? 'won' : 'lost'
+    return 'void'
+  }
+
+  if (market === 'innings_runs' || market === 'current_over_runs') {
+    return 'open'
   }
 
   return 'open'

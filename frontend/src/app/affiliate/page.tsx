@@ -6,6 +6,8 @@ import { useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useAuth } from '@/context/AuthContext'
 import api from '@/lib/api'
+import { GameLayout } from '@/components/layout/GameLayout'
+import { PageHeader } from '@/components/ui/page-header'
 
 export default function AffiliatePage() {
   const router = useRouter()
@@ -48,13 +50,9 @@ export default function AffiliatePage() {
   }
 
   return (
-    <main className="min-h-screen bg-bg-2 text-ink">
-      <div className="mx-auto max-w-3xl px-4 py-12">
-        <Link href="/" className="text-sm text-brand-2 hover:underline">
-          ← Home
-        </Link>
-        <h1 className="mt-6 text-3xl font-bold text-ink">Affiliate</h1>
-        <p className="mt-2 text-ink-2">Share your code and earn commission on referred players&apos; bets.</p>
+    <GameLayout>
+      <div className="page-wrap max-w-3xl">
+        <PageHeader title="Affiliate" description="Share your code and earn commission on referred players' bets." />
 
         {loading ? (
           <p className="mt-8 text-ink-3">Loading…</p>
@@ -108,6 +106,6 @@ export default function AffiliatePage() {
           </div>
         )}
       </div>
-    </main>
+    </GameLayout>
   )
 }

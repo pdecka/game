@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import api from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
+import { GameLayout } from '@/components/layout/GameLayout'
+import { PageHeader } from '@/components/ui/page-header'
 
 type MethodSetting = {
   id: string
@@ -127,9 +129,9 @@ export default function DepositPage() {
   }
 
   return (
-    <main className="min-h-screen bg-bg-2 text-ink">
-      <div className="mx-auto max-w-6xl space-y-6 px-4 py-8">
-        <h1 className="text-3xl font-bold text-ink">Deposit</h1>
+    <GameLayout>
+      <div className="page-wrap space-y-6">
+        <PageHeader title="Deposit" description="Submit payment proof after you transfer." />
         <div className="flex gap-2">
           <button className={`rounded-lg px-4 py-2 ${activeTab === 'INR' ? 'bg-brand text-white' : 'border border-line bg-white text-ink-2'}`} onClick={() => setActiveTab('INR')}>INR</button>
           <button className={`rounded-lg px-4 py-2 ${activeTab === 'CRYPTO' ? 'bg-brand text-white' : 'border border-line bg-white text-ink-2'}`} onClick={() => setActiveTab('CRYPTO')}>Crypto</button>
@@ -260,6 +262,6 @@ export default function DepositPage() {
           </div>
         </section>
       </div>
-    </main>
+    </GameLayout>
   )
 }

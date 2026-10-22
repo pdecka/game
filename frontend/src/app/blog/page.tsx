@@ -2,8 +2,10 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import { GameLayout } from '@/components/layout/GameLayout'
+import { PageHeader } from '@/components/ui/page-header'
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'https://lucky-games.onrender.com/api'
+const API = process.env.NEXT_PUBLIC_API_URL || '/api'
 
 type Post = {
   id: string
@@ -36,10 +38,9 @@ export default function BlogListPage() {
   }, [])
 
   return (
-    <main className="min-h-screen bg-bg-2 text-ink">
-      <div className="mx-auto max-w-4xl px-4 py-12">
-        <h1 className="text-3xl font-bold text-ink">Blog</h1>
-        <p className="mt-2 text-ink-2">News, updates, and guides.</p>
+    <GameLayout>
+      <div className="page-wrap max-w-4xl">
+        <PageHeader title="Blog" description="News, updates, and guides." />
         {loading ? (
           <p className="mt-8 text-ink-3">Loading…</p>
         ) : posts.length === 0 ? (
@@ -64,6 +65,6 @@ export default function BlogListPage() {
           </ul>
         )}
       </div>
-    </main>
+    </GameLayout>
   )
 }
