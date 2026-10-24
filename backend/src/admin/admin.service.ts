@@ -229,6 +229,7 @@ export class AdminService {
         return {
           id: u.id,
           username: u.username,
+          email: u.email || null,
           mobile: u.phone || null,
           balanceINR,
           createdAt: u.createdAt,

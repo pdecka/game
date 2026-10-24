@@ -34,18 +34,18 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-bg-2 p-4">
       <div className="w-full max-w-md rounded-2xl border border-line bg-card p-8 shadow-panel">
         <div className="mb-6 flex flex-col items-center">
-          <span className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-brand text-lg font-black text-white">G</span>
+          <img src="/logo-vertical.png" alt="Arena Bet" className="mb-3 h-16 w-auto object-contain" />
           <h1 className="text-center text-2xl font-semibold tracking-tight text-ink sm:text-3xl">Welcome back</h1>
         </div>
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="mb-2 block text-sm font-medium text-ink">Username or Email</label>
+            <label className="mb-2 block text-sm font-medium text-ink">Email</label>
             <Input
-              type="text"
+              type="email"
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
               required
-              placeholder="Enter your username or email"
+              placeholder="Enter your email"
             />
           </div>
           <div>

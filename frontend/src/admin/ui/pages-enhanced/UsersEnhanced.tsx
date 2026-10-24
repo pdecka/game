@@ -14,21 +14,26 @@ export default function UsersEnhanced() {
 
   useEffect(() => {
     let mounted = true
-    const load = async () => {
+    const load = async (silent = false) => {
       try {
-        setLoadingUsers(true)
+        if (!silent) setLoadingUsers(true)
         const data = await adminAuthService.getUsers()
         if (mounted) setUsers(data)
       } catch (err: any) {
-        toast.error(err?.response?.data?.message || 'Failed to load users')
+        if (!silent) toast.error(err?.response?.data?.message || 'Failed to load users')
       } finally {
-        if (mounted) setLoadingUsers(false)
+        if (mounted && !silent) setLoadingUsers(false)
       }
     }
 
     load()
+    const timer = window.setInterval(() => {
+      if (document.hidden) return
+      void load(true)
+    }, 5000)
     return () => {
       mounted = false
+      window.clearInterval(timer)
     }
   }, [])
 
@@ -46,12 +51,13 @@ export default function UsersEnhanced() {
         { title: 'Pending', value: loadingUsers ? '...' : String(pendingCount), trendUp: false },
         { title: 'Avg Balance', value: loadingUsers ? '...' : `₹${avgBalance.toFixed(2)}` },
       ],
-      columns: ['Username', 'Mobile', 'Balance (INR)', 'Created At', 'Status'],
+      columns: ['Username', 'Email', 'Mobile', 'Balance (INR)', 'Created At', 'Status'],
       rows: users.map((u) => [
         u.username || '-',
+        u.email || '-',
         u.mobile || '-',
         `₹${(Number(u.balanceINR) || 0).toFixed(2)}`,
-        u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '-',
+        u.createdAt ? new Date(u.createdAt).toLocaleString() : '-',
         u.status || '-',
       ]),
     }

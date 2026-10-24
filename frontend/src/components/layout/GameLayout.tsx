@@ -6,6 +6,7 @@ import { Sidebar } from './Sidebar'
 import { WalletModal } from './WalletModal'
 import { SearchOverlay } from './SearchOverlay'
 import { SiteFooter } from './SiteFooter'
+import { SupportWidget } from './SupportWidget'
 import { useAuth } from '@/context/AuthContext'
 
 type GameLayoutProps = {
@@ -26,21 +27,19 @@ export function GameLayout({ children }: GameLayoutProps) {
     walletLoading || !wallet?.INR ? '₹0.00' : `₹${Number(wallet.INR).toFixed(2)}`
 
   const handleToggleSidebar = () => {
-    if (typeof window !== 'undefined' && window.innerWidth < 768) {
-      setMobileNavOpen((prev) => !prev)
-      return
-    }
-    setIsSidebarCollapsed((prev) => !prev)
+    setMobileNavOpen((prev) => !prev)
   }
 
   return (
     <main className="flex h-screen overflow-hidden bg-bg-2 text-ink">
-      <Sidebar
-        collapsed={isSidebarCollapsed}
-        onToggle={() => setIsSidebarCollapsed((prev) => !prev)}
-        mobileOpen={mobileNavOpen}
-        onMobileClose={() => setMobileNavOpen(false)}
-      />
+      <div className="max-lg:contents lg:relative lg:z-40 lg:h-screen lg:shrink-0 lg:overflow-visible">
+        <Sidebar
+          collapsed={isSidebarCollapsed}
+          onToggle={() => setIsSidebarCollapsed((prev) => !prev)}
+          mobileOpen={mobileNavOpen}
+          onMobileClose={() => setMobileNavOpen(false)}
+        />
+      </div>
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <Navbar
@@ -63,6 +62,7 @@ export function GameLayout({ children }: GameLayoutProps) {
 
       <WalletModal open={isWalletOpen} onClose={() => setIsWalletOpen(false)} balanceLabel={walletLabel} />
       <SearchOverlay open={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+      <SupportWidget />
     </main>
   )
 }

@@ -28,8 +28,8 @@ export const authService = {
       email,
       username,
       password,
-      phone,
-      countryCode,
+      ...(phone ? { phone } : {}),
+      ...(countryCode ? { countryCode } : {}),
       referralCode,
     })
     return response.data
@@ -45,6 +45,11 @@ export const authService = {
 
   async verifyOtp(identifier: string, otp: string) {
     const response = await api.post('/auth/verify-otp', { email: identifier, otp })
+    return response.data
+  },
+
+  async resendOtp(email: string) {
+    const response = await api.post('/auth/resend-otp', { email })
     return response.data
   },
 

@@ -29,6 +29,13 @@ export class WalletController {
         return { currency, balance };
       }
 
+      const lifetime = await this.walletService.getLifetimeVolume(req.user.id)
+      const wageredInr = lifetime.wageredInr
+      const wageredUsdt = lifetime.wageredUsdt
+      const inrPerUsd = 83
+      const wagerCredit = 0.5
+      const volumeUsd = ((wageredInr / inrPerUsd) + wageredUsdt) * wagerCredit
+
       const balanceResponse = {
         INR: parseFloat(wallet.inrBalance.toString()),
         USDT: parseFloat(wallet.usdtBalance.toString()),
@@ -38,6 +45,8 @@ export class WalletController {
           USDT: parseFloat(wallet.usdtLocked.toString()),
           BTC: parseFloat(wallet.btcLocked.toString()),
         },
+        volumeUsd,
+        wagered: { INR: wageredInr, USDT: wageredUsdt },
       };
       
       console.log('Balance response:', balanceResponse);

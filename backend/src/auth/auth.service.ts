@@ -36,6 +36,9 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    if (user.status === UserStatus.KYC_PENDING) {
+      throw new UnauthorizedException('Verify the OTP sent to your email before logging in')
+    }
     if (user.status !== UserStatus.ACTIVE) {
       throw new UnauthorizedException('Account is not active');
     }
@@ -62,24 +65,27 @@ export class AuthService {
 
   async register(email: string | undefined, username: string, password: string, phone: string, countryCode: string, referralCode?: string) {
     try {
+      const normalizedEmail = String(email || '').trim().toLowerCase()
+      if (!normalizedEmail || !normalizedEmail.includes('@')) {
+        throw new BadRequestException('A valid email is required')
+      }
+
       // Check if username already exists
       const existingByUsername = await this.usersService.findByUsername(username);
       if (existingByUsername) {
         throw new BadRequestException('Username already exists');
       }
 
-      // Check if phone number already exists
-      const existingByPhone = await this.usersService.findByPhone(phone, countryCode);
-      if (existingByPhone) {
-        throw new BadRequestException('Phone number already registered');
+      if (phone) {
+        const existingByPhone = await this.usersService.findByPhone(phone, countryCode || '');
+        if (existingByPhone) {
+          throw new BadRequestException('Phone number already registered');
+        }
       }
 
-      // Check email uniqueness only if provided
-      if (email) {
-        const existingUser = await this.usersService.findByEmail(email);
-        if (existingUser) {
-          throw new BadRequestException('Email already registered');
-        }
+      const existingUser = await this.usersService.findByEmail(normalizedEmail);
+      if (existingUser) {
+        throw new BadRequestException('Email already registered');
       }
 
       let referredByUserId: string | undefined;
@@ -92,27 +98,25 @@ export class AuthService {
 
       const hashedPassword = await bcrypt.hash(password, 10);
       const user = await this.usersService.create({
-        email: email || null,
+        email: normalizedEmail,
         username,
         password: hashedPassword,
-        phone,
-        countryCode,
+        phone: phone || null,
+        countryCode: countryCode || null,
         referredByUserId,
-        // Require OTP verification before the account becomes active.
         status: UserStatus.KYC_PENDING,
       });
 
-      // Send OTP for verification to phone number
-      const otpResult = await this.otpService.sendOtp(user.email, user.phone, user.countryCode);
+      const otpResult = await this.otpService.sendOtp(normalizedEmail, user.phone || undefined, user.countryCode || undefined);
 
       const { password: _, ...result } = user;
-      // Dev-only: expose OTP so it can be received without an SMS gateway.
-      // This keeps the signup -> verifyOtp -> login flow working in local environments.
-      if (process.env.NODE_ENV !== 'production') {
-        return { ...result, devOtp: otpResult.otp, expiresAt: otpResult.expiresAt };
+      return {
+        ...result,
+        email: normalizedEmail,
+        mailed: otpResult.mailed,
+        expiresAt: otpResult.expiresAt,
+        ...(process.env.NODE_ENV !== 'production' ? { devOtp: otpResult.otp } : {}),
       }
-
-      return result;
     } catch (err: any) {
       // Re-throw known HTTP errors as-is.
       if (err instanceof UnauthorizedException || err instanceof BadRequestException) {
@@ -124,16 +128,20 @@ export class AuthService {
 
   async verifyOtp(identifier: string, otp: string) {
     try {
-      const isValid = await this.otpService.verifyOtp(identifier, otp);
+      const lookup = String(identifier || '').trim()
+      const isValid = this.otpService.verifyOtp(lookup, otp);
       if (!isValid) {
-        throw new BadRequestException('Invalid OTP');
+        throw new BadRequestException('Invalid or expired OTP');
       }
 
-      // Activate user only after OTP verification.
-      // Try to find user by email first (for backward compatibility), then by phone
-      let user = await this.usersService.findByEmail(identifier);
+      let user = lookup.includes('@')
+        ? await this.usersService.findByEmail(lookup.toLowerCase())
+        : null
       if (!user) {
-        user = await this.usersService.findByPhone(identifier, '') || await this.usersService.findByUsername(identifier);
+        user = await this.usersService.findByEmail(lookup)
+      }
+      if (!user) {
+        user = await this.usersService.findByPhone(lookup, '') || await this.usersService.findByUsername(lookup);
       }
       
       if (!user) {
@@ -141,10 +149,26 @@ export class AuthService {
       }
 
       await this.usersService.update(user.id, { status: UserStatus.ACTIVE });
-      return { verified: true };
+      return { verified: true, email: user.email };
     } catch (err: any) {
       if (err instanceof BadRequestException) throw err;
       throw new BadRequestException(err?.message || 'OTP verification failed');
+    }
+  }
+
+  async resendOtp(email: string) {
+    const normalized = String(email || '').trim().toLowerCase()
+    const user = await this.usersService.findByEmail(normalized)
+    if (!user) throw new BadRequestException('User not found')
+    if (user.status === UserStatus.ACTIVE) {
+      throw new BadRequestException('This account is already verified. Please log in.')
+    }
+    const otpResult = await this.otpService.sendOtp(normalized, user.phone || undefined, user.countryCode || undefined)
+    return {
+      sent: true,
+      mailed: otpResult.mailed,
+      expiresAt: otpResult.expiresAt,
+      ...(process.env.NODE_ENV !== 'production' ? { devOtp: otpResult.otp } : {}),
     }
   }
 

@@ -35,6 +35,24 @@ export class WalletService {
     return this.getOrCreateWallet(userId);
   }
 
+  async getLifetimeVolume(userId: string) {
+    const [inrBets, usdtBets] = await Promise.all([
+      this.prisma.ledgerEntry.aggregate({
+        where: { userId, type: TransactionType.bet, status: TransactionStatus.completed, currency: Currency.INR },
+        _sum: { amount: true },
+      }),
+      this.prisma.ledgerEntry.aggregate({
+        where: { userId, type: TransactionType.bet, status: TransactionStatus.completed, currency: Currency.USDT },
+        _sum: { amount: true },
+      }),
+    ])
+
+    return {
+      wageredInr: toNum(inrBets._sum.amount),
+      wageredUsdt: toNum(usdtBets._sum.amount),
+    }
+  }
+
   async getBalance(userId: string, currency: Currency | string): Promise<number> {
     const wallet = await this.getOrCreateWallet(userId);
     return this.getCurrencyBalance(wallet, currency as Currency);
@@ -215,9 +233,24 @@ export class WalletService {
         throw new BadRequestException(`Unsupported transaction type: ${type}`);
     }
 
+    const lifetime: Prisma.WalletUpdateInput = {}
+    if (type === TransactionType.bet) {
+      if (currency === Currency.INR) lifetime.totalWageredINR = { increment: amount }
+      if (currency === Currency.USDT) lifetime.totalWageredUSDT = { increment: amount }
+      if (currency === Currency.BTC) lifetime.totalWageredBTC = { increment: amount }
+    }
+    if (type === TransactionType.deposit) {
+      if (currency === Currency.INR) lifetime.totalDepositedINR = { increment: amount }
+      if (currency === Currency.USDT) lifetime.totalDepositedUSDT = { increment: amount }
+      if (currency === Currency.BTC) lifetime.totalDepositedBTC = { increment: amount }
+    }
+
     await db.wallet.update({
       where: { id: wallet.id },
-      data: this.balanceUpdateData(currency, balanceAfter, lockedAfter),
+      data: {
+        ...this.balanceUpdateData(currency, balanceAfter, lockedAfter),
+        ...lifetime,
+      },
     });
 
     return db.ledgerEntry.create({

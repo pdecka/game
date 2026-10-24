@@ -1,3 +1,5 @@
+'use client'
+
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState, useEffect, useRef } from 'react'
@@ -7,11 +9,11 @@ import { useAuth } from '@/context/AuthContext'
 import api from '@/lib/api'
 import {
   Bell,
+  Home,
   MessageCircle,
   Search,
   User,
   Wallet2,
-  MessageSquareText,
   Ticket,
   ChevronDown,
   LogOut,
@@ -52,11 +54,10 @@ export function Navbar({
   const buttonRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node) &&
-          buttonRef.current && !buttonRef.current.contains(event.target as Node)) {
-        setIsUserMenuOpen(false)
-      }
+    const handleClickOutside = (event: Event) => {
+      const target = event.target as Node
+      if (buttonRef.current?.contains(target) || dropdownRef.current?.contains(target)) return
+      setIsUserMenuOpen(false)
     }
 
     const updatePosition = () => {
@@ -72,12 +73,12 @@ export function Navbar({
     if (isUserMenuOpen) {
       updatePosition()
       window.addEventListener('resize', updatePosition)
-      document.addEventListener('mousedown', handleClickOutside)
+      document.addEventListener('pointerdown', handleClickOutside, true)
     }
 
     return () => {
       window.removeEventListener('resize', updatePosition)
-      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('pointerdown', handleClickOutside, true)
     }
   }, [isUserMenuOpen])
 
@@ -87,20 +88,28 @@ export function Navbar({
       return
     }
     let cancelled = false
-    api
-      .get('/sports/bets/my')
-      .then((response) => {
-        const rows = Array.isArray(response.data) ? response.data : []
-        const openStake = rows
-          .filter((bet: { status?: string; stake?: number }) => String(bet?.status || '').toLowerCase() === 'pending')
-          .reduce((sum: number, bet: { stake?: number }) => sum + Number(bet?.stake || 0), 0)
-        if (!cancelled) setExposure(openStake)
-      })
-      .catch(() => {
-        if (!cancelled) setExposure(0)
-      })
+    const loadExposure = () => {
+      api
+        .get('/sports/bets/my')
+        .then((response) => {
+          const rows = Array.isArray(response.data) ? response.data : []
+          const openStake = rows
+            .filter((bet: { status?: string; stake?: number }) => String(bet?.status || '').toLowerCase() === 'pending')
+            .reduce((sum: number, bet: { stake?: number }) => sum + Number(bet?.stake || 0), 0)
+          if (!cancelled) setExposure(openStake)
+        })
+        .catch(() => {
+          if (!cancelled) setExposure(0)
+        })
+    }
+    loadExposure()
+    const timer = window.setInterval(() => {
+      if (document.hidden || cancelled) return
+      loadExposure()
+    }, 15000)
     return () => {
       cancelled = true
+      window.clearInterval(timer)
     }
   }, [onSports, user, wallet?.INR])
 
@@ -108,28 +117,34 @@ export function Navbar({
   const balance =
     onSports && user
       ? `₹${available.toFixed(2)} (₹${exposure.toFixed(2)})`
-      : walletLoading || !wallet?.INR
-        ? '₹0.00'
-        : `₹${available.toFixed(2)}`
+      : `₹${available.toFixed(2)}`
+  const topIcon =
+    'inline-flex h-10 w-10 items-center justify-center rounded-xl border border-brand/35 bg-white text-brand-2 transition duration-200 hover:border-brand hover:bg-brand hover:text-white'
+  const topIconOn = 'border-brand bg-brand text-white hover:bg-brand-2 hover:text-white'
 
   return (
-    <header className="flex h-14 flex-shrink-0 items-center justify-between gap-2 border-b border-line bg-white/95 px-2 backdrop-blur sm:h-header sm:px-4">
+    <header className="flex h-14 flex-shrink-0 items-center justify-between gap-2 border-b border-brand/30 bg-gradient-to-r from-white via-[#f0fdf4] to-[#dcfce7] px-2 sm:h-header sm:px-4">
       <div className="flex min-w-0 items-center gap-2 sm:gap-3">
         <button
           type="button"
           onClick={onToggleSidebar}
-          className="icon-btn md:hidden"
+          className={`${topIcon} lg:hidden`}
           aria-label="Open menu"
         >
           <span className="flex flex-col gap-1.5">
-            <span className="h-0.5 w-4 rounded bg-ink" />
-            <span className="h-0.5 w-4 rounded bg-ink" />
-            <span className="h-0.5 w-4 rounded bg-ink" />
+            <span className="h-0.5 w-4 rounded bg-brand-2" />
+            <span className="h-0.5 w-4 rounded bg-brand-2" />
+            <span className="h-0.5 w-4 rounded bg-brand-2" />
           </span>
         </button>
 
-        <Link href="/" className="hidden min-w-0 items-center sm:flex">
-          <p className="text-sm font-semibold text-ink">Casino • Sports</p>
+        <Link
+          href="/"
+          className={topIcon}
+          aria-label="Home"
+          title="Home"
+        >
+          <Home className="h-4 w-4" />
         </Link>
       </div>
 
@@ -137,27 +152,31 @@ export function Navbar({
         <button
           type="button"
           onClick={onOpenWallet}
-          className="flex max-w-full items-center gap-1.5 rounded-full border border-brand/30 bg-brand/10 px-2.5 py-1.5 text-xs text-brand-2 transition hover:bg-brand/20 sm:gap-3 sm:px-4"
+          className="flex max-w-full items-center gap-1.5 rounded-full border border-brand/40 bg-white px-2.5 py-1.5 text-xs text-brand-2 shadow-[0_2px_8px_rgba(22,163,74,0.12)] transition hover:bg-brand hover:text-white sm:gap-3 sm:px-4"
         >
-          <Wallet2 className="h-4 w-4 shrink-0" />
-          <span className="odds-num truncate font-semibold text-ink" title={onSports && user ? 'Balance (exposure)' : 'Balance'}>
-            {balance}
+          <span className="relative flex h-2 w-2 shrink-0">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand opacity-60" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-brand" />
           </span>
-          <span className="hidden rounded-full bg-brand/20 px-2 py-0.5 text-[10px] uppercase tracking-wide text-brand sm:inline">
-            Wallet
+          <Wallet2 className="h-4 w-4 shrink-0" />
+          <span className="odds-num truncate font-semibold" title={onSports && user ? 'Live balance (exposure)' : 'Live balance'}>
+            {walletLoading && !wallet ? '₹0.00' : balance}
+          </span>
+          <span className="hidden rounded-full bg-brand/15 px-2 py-0.5 text-[10px] uppercase tracking-wide text-brand-2 sm:inline">
+            Live
           </span>
         </button>
       </div>
 
       <div className="flex shrink-0 items-center gap-1 sm:gap-2">
-        <button type="button" onClick={onOpenSearch} className="icon-btn" aria-label="Search">
+        <button type="button" onClick={onOpenSearch} className={topIcon} aria-label="Search">
           <Search className="h-4 w-4" />
         </button>
 
         <button
           type="button"
           onClick={onToggleNotifications}
-          className="icon-btn relative hidden sm:inline-flex"
+          className={`${topIcon} relative hidden sm:inline-flex ${showNotifications ? topIconOn : ''}`}
           aria-label="Notifications"
           aria-pressed={showNotifications}
         >
@@ -167,7 +186,7 @@ export function Navbar({
         <button
           type="button"
           onClick={onToggleChat}
-          className="icon-btn hidden sm:inline-flex"
+          className={`${topIcon} hidden sm:inline-flex ${showChat ? topIconOn : ''}`}
           aria-label="Chat"
           aria-pressed={showChat}
         >
@@ -177,7 +196,7 @@ export function Navbar({
         <button
           type="button"
           onClick={onToggleBetslip}
-          className="icon-btn hidden md:inline-flex"
+          className={`${topIcon} hidden md:inline-flex ${showBetslip ? topIconOn : ''}`}
           aria-label="Bet slip"
           aria-pressed={showBetslip}
         >
@@ -190,9 +209,9 @@ export function Navbar({
               ref={buttonRef}
               type="button"
               onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-              className="flex items-center gap-2 rounded-full border border-line bg-elevated px-2 py-1 text-xs text-ink hover:bg-brand/10"
+              className="flex items-center gap-2 rounded-full border border-brand/40 bg-white px-2 py-1 text-xs text-brand-2 hover:bg-brand hover:text-white"
             >
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand/15 text-brand">
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand text-white">
                 {String(user?.username || 'U').slice(0, 1).toUpperCase()}
               </span>
               <span className="hidden max-w-[120px] truncate sm:inline">
@@ -203,6 +222,7 @@ export function Navbar({
             {isUserMenuOpen &&
               createPortal(
                 <div
+                  ref={dropdownRef}
                   className="fixed right-4 top-16 z-[99999] w-56 rounded-xl border border-line bg-card py-2 text-sm text-ink shadow-panel"
                   style={{ top: dropdownPosition.top, right: dropdownPosition.right }}
                 >
@@ -211,7 +231,7 @@ export function Navbar({
                     className="flex items-center gap-3 px-4 py-2 transition-colors hover:bg-brand/10"
                     onClick={() => setIsUserMenuOpen(false)}
                   >
-                    <User className="h-4 w-4" />
+                    <User className="h-4 w-4 text-brand-2" />
                     <span>Profile</span>
                   </Link>
                   <button
@@ -222,7 +242,7 @@ export function Navbar({
                     }}
                     className="flex w-full items-center gap-3 px-4 py-2 text-left transition-colors hover:bg-brand/10"
                   >
-                    <Wallet2 className="h-4 w-4" />
+                    <Wallet2 className="h-4 w-4 text-brand-2" />
                     <span>Wallet</span>
                   </button>
                   <Link
@@ -230,7 +250,7 @@ export function Navbar({
                     className="flex items-center gap-3 px-4 py-2 transition-colors hover:bg-brand/10"
                     onClick={() => setIsUserMenuOpen(false)}
                   >
-                    <History className="h-4 w-4" />
+                    <History className="h-4 w-4 text-brand-2" />
                     <span>History</span>
                   </Link>
                   <Link
@@ -238,7 +258,7 @@ export function Navbar({
                     className="flex items-center gap-3 px-4 py-2 transition-colors hover:bg-brand/10"
                     onClick={() => setIsUserMenuOpen(false)}
                   >
-                    <Settings className="h-4 w-4" />
+                    <Settings className="h-4 w-4 text-brand-2" />
                     <span>Settings</span>
                   </Link>
                   <div className="my-1 border-t border-line"></div>

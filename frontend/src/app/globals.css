@@ -48,6 +48,12 @@ body {
   outline-offset: 2px;
 }
 
+.home-live-search:focus,
+.home-live-search:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
 @layer base {
   h1 {
     @apply text-2xl font-semibold tracking-tight text-ink sm:text-3xl;
@@ -91,15 +97,15 @@ body {
   }
 
   .page-wrap {
-    @apply mx-auto w-full max-w-content px-3 py-5 sm:px-5 sm:py-6 lg:px-8 lg:py-8;
+    @apply mx-auto w-full px-2 py-4 sm:py-5 sm:px-6;
   }
 
   .nav-item {
-    @apply flex w-full items-center gap-3 rounded-xl px-2.5 py-2.5 text-[13px] font-medium text-ink-2 transition duration-200 hover:bg-elevated hover:text-ink;
+    @apply flex w-full items-center gap-3 rounded-xl border border-transparent bg-white px-2.5 py-2 text-[13px] font-medium text-ink-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_2px_rgba(11,31,18,0.04)] transition duration-300 ease-out hover:border-brand/25 hover:bg-elevated hover:text-ink hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_6px_14px_rgba(34,197,94,0.1)];
   }
 
   .nav-item-active {
-    @apply bg-brand/10 font-semibold text-brand-2 hover:bg-brand/15 hover:text-brand-2;
+    @apply border-brand/30 bg-gradient-to-r from-brand/15 to-brand/5 font-semibold text-brand-2 shadow-[inset_3px_0_0_var(--brand),inset_0_1px_0_rgba(255,255,255,0.7),0_6px_14px_rgba(34,197,94,0.12)] hover:border-brand/40 hover:bg-brand/15 hover:text-brand-2;
   }
 }
 
@@ -122,6 +128,48 @@ body {
     100% {
       transform: translateX(-100%);
     }
+  }
+}
+
+.site-sidebar {
+  background: #16a34a;
+  border-right-color: #15803d;
+  transform: translate3d(-100%, 0, 0);
+  transition:
+    width 500ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 500ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.site-sidebar.is-open {
+  transform: translate3d(0, 0, 0);
+}
+
+.site-sidebar .nav-item {
+  border-color: transparent;
+  background: #ffffff;
+  color: #14532d;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.site-sidebar .nav-item:hover {
+  border-color: transparent;
+  background: #f0fdf4;
+  color: #14532d;
+}
+
+.site-sidebar .nav-item-active,
+.site-sidebar .nav-item-active:hover {
+  border-color: transparent;
+  background: #14532d;
+  color: #ffffff;
+  box-shadow: none;
+}
+
+@media (min-width: 1024px) {
+  .site-sidebar {
+    transform: none;
   }
 }
 

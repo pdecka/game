@@ -1,19 +1,18 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  Menu,
-  X,
   Users,
   FileText,
   TrendingUp,
   Shield,
-  MessageCircle,
   Star,
   Dices,
   Trophy,
+  ChevronsLeft,
+  ChevronsRight,
 } from 'lucide-react'
 import { clsx } from 'clsx'
 
@@ -30,17 +29,27 @@ const secondaryItems = [
   { label: 'Blog', href: '/blog', icon: FileText },
   { label: 'Sponsorships', comingSoon: true, icon: TrendingUp },
   { label: 'Responsible Gambling', comingSoon: true, icon: Shield },
-  { label: 'Live Support', comingSoon: true, icon: MessageCircle },
 ]
+
+function itemClass(active: boolean, collapsed: boolean) {
+  return clsx(
+    'nav-item',
+    active && 'nav-item-active',
+    collapsed ? 'justify-center px-0' : 'px-3',
+  )
+}
 
 export function Sidebar({ collapsed, onToggle, mobileOpen = false, onMobileClose }: SidebarProps) {
   const pathname = usePathname()
+  const pathRef = useRef(pathname)
   const isCollapsed = mobileOpen ? false : collapsed
+  const showCloseRail = mobileOpen || !isCollapsed
 
   useEffect(() => {
-    if (mobileOpen) onMobileClose?.()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname])
+    if (pathRef.current === pathname) return
+    pathRef.current = pathname
+    onMobileClose?.()
+  }, [pathname, onMobileClose])
 
   useEffect(() => {
     if (!mobileOpen) return
@@ -55,6 +64,11 @@ export function Sidebar({ collapsed, onToggle, mobileOpen = false, onMobileClose
     if (mobileOpen) onMobileClose?.()
   }
 
+  const handleRailToggle = () => {
+    if (mobileOpen) onMobileClose?.()
+    else onToggle()
+  }
+
   const casinoActive = pathname === '/casino' || Boolean(pathname?.startsWith('/games'))
   const sportsActive = Boolean(pathname?.startsWith('/sports'))
 
@@ -62,7 +76,7 @@ export function Sidebar({ collapsed, onToggle, mobileOpen = false, onMobileClose
     <>
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-40 bg-ink/30 backdrop-blur-sm md:hidden"
+          className="fixed inset-0 z-40 bg-ink/35 backdrop-blur-[6px] lg:hidden"
           onClick={onMobileClose}
           aria-hidden
         />
@@ -70,88 +84,118 @@ export function Sidebar({ collapsed, onToggle, mobileOpen = false, onMobileClose
 
       <aside
         className={clsx(
-          'flex h-screen flex-col border-r border-line bg-sidebar transition-[width,transform] duration-300 ease-in-out',
-          'fixed inset-y-0 left-0 z-50 max-md:w-sidebar',
-          mobileOpen ? 'max-md:translate-x-0' : 'max-md:-translate-x-full',
-          'md:static md:z-auto md:translate-x-0',
-          isCollapsed ? 'md:w-sidebar-sm' : 'md:w-sidebar',
+          'site-sidebar flex h-screen flex-col overflow-visible border-r',
+          'max-lg:fixed max-lg:inset-y-0 max-lg:left-0 max-lg:z-50 w-[min(18rem,88vw)]',
+          mobileOpen && 'is-open',
+          'lg:relative lg:z-40',
+          isCollapsed ? 'lg:w-sidebar-sm' : 'lg:w-sidebar',
         )}
       >
-        <div className={clsx('relative border-b border-line px-3', isCollapsed ? 'py-3' : 'py-4')}>
-          <button
-            type="button"
-            onClick={() => {
-              if (mobileOpen) onMobileClose?.()
-              else onToggle()
-            }}
-            className="icon-btn absolute right-2 top-2 h-9 w-9"
-            aria-label={mobileOpen || !isCollapsed ? 'Collapse sidebar' : 'Expand sidebar'}
-          >
-            {mobileOpen || !isCollapsed ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-          </button>
-          <Link
-            href="/"
-            onClick={handleNavClick}
-            className={clsx('flex items-center justify-center', !isCollapsed && 'pr-8')}
-          >
+        <div
+          className={clsx(
+            'flex items-center justify-center border-b border-line bg-white',
+            isCollapsed ? 'px-2 py-4' : 'px-4 py-5',
+          )}
+        >
+          <Link href="/" onClick={handleNavClick} className="flex items-center justify-center">
             <img
               src="/logo-vertical.png"
               alt="Arena Bet"
               className={clsx(
-                'w-auto object-contain',
-                isCollapsed ? 'h-12' : 'h-20',
+                'w-auto object-contain transition-[height] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]',
+                isCollapsed ? 'h-11' : 'h-20',
               )}
             />
           </Link>
         </div>
 
-        <div className={clsx('flex-1 overflow-y-auto py-4', isCollapsed ? 'px-2' : 'px-3')}>
-          {!isCollapsed && (
-            <p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-3">Play</p>
+        <button
+          type="button"
+          onClick={handleRailToggle}
+          className={clsx(
+            'absolute top-[4rem] z-[90] flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full',
+            'border-2 border-[#16a34a] bg-white text-[#16a34a]',
+            'shadow-[0_6px_16px_rgba(11,31,18,0.22)]',
+            'transition-all duration-300 hover:bg-[#14532d] hover:text-white',
+            'right-0 translate-x-1/2',
+            !mobileOpen && 'max-lg:hidden',
           )}
-          <nav className="space-y-1">
+          aria-label={showCloseRail ? 'Collapse sidebar' : 'Expand sidebar'}
+          title={showCloseRail ? 'Collapse' : 'Expand'}
+        >
+          {showCloseRail ? <ChevronsLeft className="h-4 w-4" strokeWidth={2.5} /> : <ChevronsRight className="h-4 w-4" strokeWidth={2.5} />}
+        </button>
+
+        <div className={clsx('flex-1 overflow-y-auto overflow-x-hidden py-4', isCollapsed ? 'px-2' : 'px-3')}>
+          {!isCollapsed && (
+            <p className="mb-2.5 px-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/80">Play</p>
+          )}
+          <nav className="space-y-2">
             <Link
               href="/casino"
               onClick={handleNavClick}
               title="Casino"
-              className={clsx('nav-item', casinoActive && 'nav-item-active', isCollapsed && 'justify-center px-0')}
+              className={itemClass(casinoActive, isCollapsed)}
             >
-              <Dices className="h-4 w-4 shrink-0" />
+              <span
+                className={clsx(
+                  'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg',
+                  casinoActive ? 'bg-white/15 text-white' : 'bg-brand/10 text-brand-2',
+                )}
+              >
+                <Dices className="h-4 w-4" />
+              </span>
               {!isCollapsed && <span>Casino</span>}
             </Link>
             <Link
               href="/sports"
               onClick={handleNavClick}
               title="Sports"
-              className={clsx('nav-item', sportsActive && 'nav-item-active', isCollapsed && 'justify-center px-0')}
+              className={itemClass(sportsActive, isCollapsed)}
             >
-              <Trophy className="h-4 w-4 shrink-0" />
+              <span
+                className={clsx(
+                  'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg',
+                  sportsActive ? 'bg-white/15 text-white' : 'bg-brand/10 text-brand-2',
+                )}
+              >
+                <Trophy className="h-4 w-4" />
+              </span>
               {!isCollapsed && <span>Sports</span>}
             </Link>
           </nav>
 
-          <div className="my-4 h-px bg-line" />
+          <div className="my-4 h-px bg-white/25" />
 
           {!isCollapsed && (
-            <p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-3">More</p>
+            <p className="mb-2.5 px-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/80">More</p>
           )}
-          <nav className="space-y-1">
+          <nav className="space-y-1.5">
             {secondaryItems.map((item) => {
               const Icon = item.icon
               const active = Boolean(item.href && pathname?.startsWith(item.href))
-              const className = clsx(
-                'nav-item',
-                active && 'nav-item-active',
-                isCollapsed && 'justify-center px-0',
-              )
               const content = (
                 <>
-                  <Icon className="h-4 w-4 shrink-0" />
+                  <span
+                    className={clsx(
+                      'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg',
+                      active ? 'bg-white/15 text-white' : 'bg-brand/10 text-brand-2',
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                  </span>
                   {!isCollapsed && (
-                    <span className="flex min-w-0 flex-col items-start">
-                      <span>{item.label}</span>
+                    <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
+                      <span className="truncate">{item.label}</span>
                       {item.comingSoon ? (
-                        <span className="text-[10px] font-medium normal-case tracking-normal text-ink-3">Coming soon</span>
+                        <span
+                          className={clsx(
+                            'shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide',
+                            active ? 'bg-white/20 text-white' : 'bg-brand/10 text-brand-2',
+                          )}
+                        >
+                          Soon
+                        </span>
                       ) : null}
                     </span>
                   )}
@@ -160,14 +204,26 @@ export function Sidebar({ collapsed, onToggle, mobileOpen = false, onMobileClose
 
               if (item.href) {
                 return (
-                  <Link key={item.label} href={item.href} className={className} onClick={handleNavClick} title={item.label}>
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    className={itemClass(active, isCollapsed)}
+                    onClick={handleNavClick}
+                    title={item.label}
+                  >
                     {content}
                   </Link>
                 )
               }
 
               return (
-                <button key={item.label} type="button" className={className} onClick={handleNavClick} title={item.label}>
+                <button
+                  key={item.label}
+                  type="button"
+                  className={itemClass(active, isCollapsed)}
+                  onClick={handleNavClick}
+                  title={`${item.label} — coming soon`}
+                >
                   {content}
                 </button>
               )

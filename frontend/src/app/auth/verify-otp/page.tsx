@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { authService } from '@/lib/auth'
 import { Button } from '@/components/ui/button'
@@ -8,25 +8,38 @@ import { Input } from '@/components/ui/input'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
 
-export default function VerifyOtpPage() {
+function VerifyOtpForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const phoneParam = searchParams.get('phone') || ''
-  const countryCodeParam = searchParams.get('countryCode') || ''
+  const emailParam = searchParams.get('email') || ''
 
+  const [email, setEmail] = useState(emailParam)
   const [otp, setOtp] = useState('')
   const [loading, setLoading] = useState(false)
   const [devOtp, setDevOtp] = useState<string | null>(null)
-  const [showOtpPopup, setShowOtpPopup] = useState(false)
+
+  useEffect(() => {
+    if (!emailParam && typeof window !== 'undefined') {
+      setEmail(localStorage.getItem('pendingEmail') || '')
+    }
+    if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
+      const storedOtp = localStorage.getItem('devOtp')
+      if (storedOtp) setDevOtp(storedOtp)
+    }
+  }, [emailParam])
 
   const handleResendOtp = async () => {
+    if (!email) return toast.error('Enter the email used at registration')
     try {
       setLoading(true)
-      // For development, we can't easily resend without backend changes
-      // This is a placeholder for future implementation
-      toast.success('OTP resent successfully!')
+      const res: any = await authService.resendOtp(email)
+      if (res?.devOtp) {
+        setDevOtp(res.devOtp)
+        localStorage.setItem('devOtp', res.devOtp)
+      }
+      toast.success(res?.mailed ? 'A new OTP was sent to your email.' : 'OTP regenerated. Check your inbox.')
     } catch (error: any) {
-      toast.error('Failed to resend OTP')
+      toast.error(error.response?.data?.message || 'Failed to resend OTP')
     } finally {
       setLoading(false)
     }
@@ -35,26 +48,17 @@ export default function VerifyOtpPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-
     try {
-      // Use phone number as identifier for OTP verification
-      const identifier = phoneParam || (localStorage.getItem('phone') || '')
-      if (!identifier) {
-        toast.error('Missing phone number for OTP verification')
+      if (!email) {
+        toast.error('Missing email for OTP verification')
         setLoading(false)
         return
       }
-
-      await authService.verifyOtp(identifier, otp)
-      toast.success('OTP verified successfully!')
-      
-      // Clear localStorage after successful verification
+      await authService.verifyOtp(email, otp)
+      toast.success('Email verified. Log in with your email and password.')
       localStorage.removeItem('devOtp')
-      localStorage.removeItem('phone')
-      localStorage.removeItem('countryCode')
-      
-      // Redirect to dashboard after successful verification
-      router.push('/dashboard')
+      localStorage.removeItem('pendingEmail')
+      router.push('/auth/login')
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'OTP verification failed')
     } finally {
@@ -62,50 +66,41 @@ export default function VerifyOtpPage() {
     }
   }
 
-  // For local development testing - auto-fill OTP from localStorage if available
-  useEffect(() => {
-    if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
-      const storedOtp = localStorage.getItem('devOtp')
-      if (storedOtp) {
-        setDevOtp(storedOtp)
-        setShowOtpPopup(true)
-      }
-    }
-  }, [])
-
   return (
     <div className="flex min-h-screen items-center justify-center bg-bg-2 p-4">
       <div className="w-full max-w-md rounded-2xl border border-line bg-card p-8 shadow-panel">
-        <h1 className="mb-6 text-center text-3xl font-bold text-ink">Verify OTP</h1>
-        
-        {phoneParam && (
-          <div className="mb-6 rounded-md border border-line bg-elevated p-4 text-sm text-ink-2">
-            <p className="text-center">
-              Enter the OTP sent to your mobile number
-            </p>
-            <p className="mt-1 text-center font-medium text-ink">
-              {countryCodeParam ? `${countryCodeParam} ` : ''}{phoneParam}
-            </p>
-          </div>
-        )}
-
+        <div className="mb-6 flex flex-col items-center">
+          <img src="/logo-vertical.png" alt="Arena Bet" className="mb-3 h-16 w-auto object-contain" />
+          <h1 className="text-center text-2xl font-semibold text-ink">Verify email</h1>
+        </div>
+        <div className="mb-6 rounded-xl border border-line bg-elevated p-4 text-sm text-ink-2">
+          <p className="text-center">Enter the 6-digit OTP sent to</p>
+          <p className="mt-1 text-center font-medium text-ink">{email || 'your email'}</p>
+          <p className="mt-2 text-center text-xs text-ink-3">The code is valid for 12 minutes.</p>
+        </div>
+        {devOtp ? (
+          <p className="mb-4 rounded-lg bg-amber-50 px-3 py-2 text-center text-sm text-amber-800">
+            Development code: <span className="font-mono font-bold">{devOtp}</span>
+          </p>
+        ) : null}
         <form onSubmit={handleSubmit} className="space-y-5">
+          <div>
+            <label className="mb-2 block text-sm font-medium text-ink">Email</label>
+            <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          </div>
           <div>
             <label className="mb-2 block text-sm font-medium text-ink">OTP Code</label>
             <Input
               type="text"
+              inputMode="numeric"
               value={otp}
-              onChange={(e) => setOtp(e.target.value)}
-              placeholder="Enter 6-digit OTP"
+              onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              placeholder="6-digit code"
               maxLength={6}
               required
             />
           </div>
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={loading}
-          >
+          <Button type="submit" className="w-full" disabled={loading || otp.length !== 6}>
             {loading ? 'Verifying...' : 'Verify OTP'}
           </Button>
           <button
@@ -123,39 +118,14 @@ export default function VerifyOtpPage() {
           </Link>
         </p>
       </div>
-
-      {/* OTP Popup for Local Development */}
-      {showOtpPopup && devOtp && (
-        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-[#fef3c7] border-2 border-[#f59e0b] rounded-lg p-4 shadow-lg z-50 max-w-sm">
-          <div className="flex items-start justify-between">
-            <div>
-              <h3 className="font-bold text-[#92400e] mb-1">Development OTP</h3>
-              <p className="text-[#b45309] text-sm mb-2">Your OTP code:</p>
-              <p className="text-2xl font-mono font-bold text-[#92400e] bg-[#fffbeb] p-2 rounded border border-[#fcd34d]">
-                {devOtp}
-              </p>
-              <button
-                onClick={() => {
-                  setOtp(devOtp)
-                  setShowOtpPopup(false)
-                }}
-                className="mt-2 w-full bg-[#f59e0b] text-white py-1 px-3 rounded text-sm hover:bg-[#d97706]"
-              >
-                Auto-fill OTP
-              </button>
-            </div>
-            <button
-              onClick={() => setShowOtpPopup(false)}
-              className="text-[#92400e] hover:text-[#78350f] ml-4"
-            >
-              ✕
-            </button>
-          </div>
-          <p className="text-xs text-[#b45309] mt-2">
-            This is for development only. In production, OTP will be sent via SMS.
-          </p>
-        </div>
-      )}
     </div>
+  )
+}
+
+export default function VerifyOtpPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-bg-2 text-ink-2">Loading…</div>}>
+      <VerifyOtpForm />
+    </Suspense>
   )
 }

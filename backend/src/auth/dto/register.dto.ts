@@ -1,9 +1,8 @@
-import { IsString, MinLength, IsOptional, IsPhoneNumber } from 'class-validator';
+import { IsString, MinLength, IsOptional, IsEmail } from 'class-validator';
 
 export class RegisterDto {
-  @IsOptional()
-  @IsString()
-  email?: string;
+  @IsEmail()
+  email: string;
 
   @IsString()
   @MinLength(3)
@@ -13,13 +12,13 @@ export class RegisterDto {
   @MinLength(8)
   password: string;
 
+  @IsOptional()
   @IsString()
-  @MinLength(10)
-  phone: string;
+  phone?: string;
 
+  @IsOptional()
   @IsString()
-  @MinLength(2)
-  countryCode: string;
+  countryCode?: string;
 
   /** Optional affiliate / referral code (normalized server-side). */
   @IsOptional()

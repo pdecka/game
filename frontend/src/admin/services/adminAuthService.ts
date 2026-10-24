@@ -2,7 +2,8 @@
 
 import axios from 'axios'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://lucky-games.onrender.com/api'
+const API_URL =
+  typeof window !== 'undefined' ? '/api' : process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
 const ADMIN_TOKEN_KEY = 'admin_token'
 const ADMIN_USER_KEY = 'admin_user'
 
@@ -12,6 +13,7 @@ export interface AdminUser {
   username: string
   role: string
   status: string
+  email?: string | null
   mobile?: string | null
   balanceINR?: number
   createdAt?: string | Date

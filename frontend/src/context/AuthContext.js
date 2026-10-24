@@ -25,21 +25,26 @@ export function AuthProvider({ children }) {
     }
 
     let cancelled = false
-    const loadWallet = async () => {
+    const loadWallet = async (silent = false) => {
       try {
-        setWalletLoading(true)
+        if (!silent) setWalletLoading(true)
         const response = await api.get('/wallet/balance')
         if (!cancelled) setWallet(response.data)
       } catch {
         // 401 handling happens via api interceptor.
       } finally {
-        if (!cancelled) setWalletLoading(false)
+        if (!cancelled && !silent) setWalletLoading(false)
       }
     }
 
     loadWallet()
+    const timer = window.setInterval(() => {
+      if (document.hidden || cancelled) return
+      void loadWallet(true)
+    }, 15000)
     return () => {
       cancelled = true
+      window.clearInterval(timer)
     }
   }, [user?.id])
 

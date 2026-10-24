@@ -10,7 +10,7 @@ import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { RegisterDto, VerifyOtpDto, Verify2FADto, Enable2FADto } from './dto';
+import { RegisterDto, VerifyOtpDto, ResendOtpDto, Verify2FADto, Enable2FADto } from './dto';
 
 @Controller('auth')
 export class AuthController {
@@ -75,6 +75,12 @@ export class AuthController {
       console.log('[auth/verify-otp] ERROR:', error);
       throw error;
     }
+  }
+
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
+  @Post('resend-otp')
+  async resendOtp(@Body() body: ResendOtpDto) {
+    return this.authService.resendOtp(body.email)
   }
 
   @UseGuards(JwtAuthGuard)

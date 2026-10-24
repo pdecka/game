@@ -6,6 +6,8 @@ import api from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import { GameLayout } from '@/components/layout/GameLayout'
 import { PageHeader } from '@/components/ui/page-header'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 type MethodSetting = {
   id: string
@@ -20,7 +22,7 @@ type MethodSetting = {
 }
 
 export default function DepositPage() {
-  const { ready, user } = useAuth() as any
+  const { ready, user, refreshWallet } = useAuth() as any
   const [activeTab, setActiveTab] = useState<'INR' | 'CRYPTO'>('INR')
   const [settings, setSettings] = useState<MethodSetting[]>([])
   const [rows, setRows] = useState<any[]>([])
@@ -39,7 +41,11 @@ export default function DepositPage() {
       api.get('/payments/deposits', { params: { limit: 100, offset: 0 } }),
     ])
     setSettings(Array.isArray(m.data) ? m.data : [])
-    setRows(d.data?.items ?? [])
+    const items = d.data?.items ?? []
+    setRows(items)
+    if (items.some((row: any) => row.status === 'completed')) {
+      void refreshWallet?.()
+    }
     try {
       const b = await api.get('/wallet/bank-default')
       setBankDefault(b.data ?? null)
@@ -131,10 +137,13 @@ export default function DepositPage() {
   return (
     <GameLayout>
       <div className="page-wrap space-y-6">
-        <PageHeader title="Deposit" description="Submit payment proof after you transfer." />
+        <PageHeader
+          title="Deposit"
+          description="Send the payment with the details below, then submit amount, reference, and screenshot. Balance is credited after admin approval."
+        />
         <div className="flex gap-2">
-          <button className={`rounded-lg px-4 py-2 ${activeTab === 'INR' ? 'bg-brand text-white' : 'border border-line bg-white text-ink-2'}`} onClick={() => setActiveTab('INR')}>INR</button>
-          <button className={`rounded-lg px-4 py-2 ${activeTab === 'CRYPTO' ? 'bg-brand text-white' : 'border border-line bg-white text-ink-2'}`} onClick={() => setActiveTab('CRYPTO')}>Crypto</button>
+          <button type="button" className={`rounded-xl px-4 py-2 text-sm font-medium ${activeTab === 'INR' ? 'bg-brand text-white' : 'border border-line bg-white text-ink-2'}`} onClick={() => setActiveTab('INR')}>INR</button>
+          <button type="button" className={`rounded-xl px-4 py-2 text-sm font-medium ${activeTab === 'CRYPTO' ? 'bg-brand text-white' : 'border border-line bg-white text-ink-2'}`} onClick={() => setActiveTab('CRYPTO')}>Crypto</button>
         </div>
 
         <section className="rounded-2xl border border-line bg-white p-5 shadow-panel">
@@ -194,30 +203,35 @@ export default function DepositPage() {
             </div>
           )}
 
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <input value={amount} onChange={(e) => setAmount(e.target.value)} type="number" placeholder="Amount" className="rounded-lg border border-line bg-white px-3 py-2 text-ink" />
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-xs font-medium text-ink-2">Amount</label>
+              <Input value={amount} onChange={(e) => setAmount(e.target.value)} type="number" placeholder="Amount" />
+            </div>
             {activeTab === 'INR' ? (
-              <input value={reference} onChange={(e) => setReference(e.target.value)} placeholder="UTR / Reference" className="rounded-lg border border-line bg-white px-3 py-2 text-ink" />
+              <div>
+                <label className="mb-1 block text-xs font-medium text-ink-2">UTR / Reference</label>
+                <Input value={reference} onChange={(e) => setReference(e.target.value)} placeholder="Bank UTR" />
+              </div>
             ) : (
-              <input value={txHash} onChange={(e) => setTxHash(e.target.value)} placeholder="Transaction hash" className="rounded-lg border border-line bg-white px-3 py-2 text-ink" />
+              <div>
+                <label className="mb-1 block text-xs font-medium text-ink-2">Transaction hash</label>
+                <Input value={txHash} onChange={(e) => setTxHash(e.target.value)} placeholder="On-chain hash" />
+              </div>
             )}
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => setScreenshotFile(e.target.files?.[0] ?? null)}
-              className="rounded-lg border border-line bg-white px-3 py-2 text-ink sm:col-span-2"
-            />
-            <input
-              value={screenshotUrl}
-              onChange={(e) => setScreenshotUrl(e.target.value)}
-              placeholder="Or paste screenshot URL"
-              className="rounded-lg border border-line bg-white px-3 py-2 text-ink sm:col-span-2"
-            />
+            <div className="sm:col-span-2">
+              <label className="mb-1 block text-xs font-medium text-ink-2">Payment screenshot</label>
+              <Input type="file" accept="image/*" onChange={(e) => setScreenshotFile(e.target.files?.[0] ?? null)} />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="mb-1 block text-xs font-medium text-ink-2">Or paste screenshot URL</label>
+              <Input value={screenshotUrl} onChange={(e) => setScreenshotUrl(e.target.value)} placeholder="https://..." />
+            </div>
           </div>
 
-          <button disabled={busy} onClick={() => void submit()} className="mt-4 rounded-lg bg-brand px-4 py-2 font-semibold text-white disabled:opacity-50">
-            {busy ? 'Submitting...' : 'Submit Deposit'}
-          </button>
+          <Button disabled={busy} onClick={() => void submit()} className="mt-4">
+            {busy ? 'Submitting...' : 'Submit deposit'}
+          </Button>
         </section>
 
         <section className="rounded-2xl border border-line bg-white p-5 shadow-panel">
