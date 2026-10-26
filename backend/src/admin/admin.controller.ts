@@ -56,6 +56,11 @@ export class AdminController {
     return this.adminService.getUsers();
   }
 
+  @Post('users')
+  async createPlayer(@Body() body: { username: string; password: string; email?: string }) {
+    return this.adminService.createPlayer(body);
+  }
+
   @Get('game-settings')
   async getGameSettings() {
     return this.adminService.getGameSettings();

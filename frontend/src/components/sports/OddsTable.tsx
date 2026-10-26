@@ -2,6 +2,7 @@
 
 const MARKET_TITLES: Record<string, string> = {
   h2h: 'Match Winner',
+  outrights: 'Winner',
   spreads: 'Handicap',
   totals: 'Total',
   btts: 'Both Teams to Score',

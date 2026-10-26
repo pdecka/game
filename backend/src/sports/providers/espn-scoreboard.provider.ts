@@ -57,6 +57,23 @@ const PRIORITY: LeagueTarget[] = [
   ['rugby', '180659', 'Rugby', 'Rugby Championship'],
   ['rugby', '164205', 'Rugby', 'Six Nations'],
   ['rugby', '267979', 'Rugby', 'Premiership Rugby'],
+  ['golf', 'pga', 'Golf', 'PGA TOUR'],
+  ['golf', 'lpga', 'Golf', 'LPGA'],
+  ['golf', 'liv', 'Golf', 'LIV Golf'],
+  ['golf', 'eur', 'Golf', 'DP World Tour'],
+  ['golf', 'ntw', 'Golf', 'Korn Ferry Tour'],
+  ['golf', 'champions-tour', 'Golf', 'PGA TOUR Champions'],
+  ['racing', 'f1', 'Racing', 'Formula 1'],
+  ['racing', 'irl', 'Racing', 'IndyCar'],
+  ['racing', 'nascar-premier', 'Racing', 'NASCAR Cup'],
+  ['racing', 'nascar-secondary', 'Racing', 'NASCAR Xfinity'],
+  ['racing', 'nascar-truck', 'Racing', 'NASCAR Truck'],
+  ['mma', 'ufc', 'MMA', 'UFC'],
+  ['mma', 'bellator', 'MMA', 'Bellator'],
+  ['mma', 'ksw', 'MMA', 'KSW'],
+  ['mma', 'cage-warriors', 'MMA', 'Cage Warriors'],
+  ['mma', 'k1', 'MMA', 'K-1'],
+  ['mma', 'lfa', 'MMA', 'LFA'],
 ].map(([sport, league, group, title]) => ({
   key: `${sport}/${league}`,
   sport,
@@ -93,7 +110,7 @@ function closeOdds(side: any): { line: number | null; price: number | null } {
   }
 }
 
-const HEADER_SPORTS = ['cricket', 'soccer', 'tennis', 'rugby', 'mma', 'basketball', 'football', 'baseball', 'hockey']
+const HEADER_SPORTS = ['cricket', 'soccer', 'tennis', 'rugby', 'mma', 'basketball', 'football', 'baseball', 'hockey', 'golf', 'racing']
 
 const GROUP_FOR_SPORT: Record<string, string> = {
   soccer: 'Soccer',
@@ -105,6 +122,9 @@ const GROUP_FOR_SPORT: Record<string, string> = {
   tennis: 'Tennis',
   rugby: 'Rugby',
   mma: 'MMA',
+  golf: 'Golf',
+  racing: 'Racing',
+  boxing: 'Boxing',
 }
 
 export class EspnScoreboardProvider {
@@ -265,7 +285,7 @@ export class EspnScoreboardProvider {
       const leagueName = first?.leagues?.[0]?.name || first?.leagues?.[0]?.abbreviation || target.title
       const calendar = Array.isArray(first?.leagues?.[0]?.calendar) ? first.leagues[0].calendar : []
       const extraDates =
-        target.sport === 'cricket' || target.sport === 'tennis'
+        target.sport === 'cricket' || target.sport === 'tennis' || target.sport === 'mma' || target.sport === 'golf' || target.sport === 'racing'
           ? calendar
               .map((value: string) => String(value).slice(0, 10).replace(/-/g, ''))
               .filter((value: string) => /^\d{8}$/.test(value))
@@ -280,10 +300,12 @@ export class EspnScoreboardProvider {
       const out: NormalizedEvent[] = []
       for (const json of pages) {
         for (const event of Array.isArray(json?.events) ? json.events : []) {
-          const mapped = this.mapEvent(event, target, leagueName)
-          if (!mapped || seen.has(mapped.externalId)) continue
-          seen.add(mapped.externalId)
-          out.push(mapped)
+          const mappedEvents = this.mapEvent(event, target, leagueName)
+          for (const mapped of mappedEvents) {
+            if (!mapped || seen.has(mapped.externalId)) continue
+            seen.add(mapped.externalId)
+            out.push(mapped)
+          }
         }
       }
       return out
@@ -292,42 +314,74 @@ export class EspnScoreboardProvider {
     }
   }
 
-  private mapEvent(event: any, target: LeagueTarget, leagueName: string): NormalizedEvent | null {
-    const competition = event?.competitions?.[0]
-    const competitors = competition?.competitors || []
-    const home = competitors.find((row: any) => row?.homeAway === 'home') || competitors[0]
-    const away = competitors.find((row: any) => row?.homeAway === 'away') || competitors[1]
-    const homeTeam = String(home?.team?.displayName || home?.team?.name || '').trim()
-    const awayTeam = String(away?.team?.displayName || away?.team?.name || '').trim()
-    if (!event?.id || !homeTeam || !awayTeam) return null
+  private numericScore(raw: unknown): number | null {
+    const text = String(raw ?? '').trim()
+    if (!text) return null
+    const direct = Number(text)
+    if (Number.isFinite(direct)) return direct
+    const match = text.match(/-?\d+(\.\d+)?/)
+    if (!match) return null
+    const value = Number(match[0])
+    return Number.isFinite(value) ? value : null
+  }
 
-    const state = String(event?.status?.type?.state || '')
-    const completed = Boolean(event?.status?.type?.completed) || state === 'post'
-    const homeRaw = String(home?.score ?? '').trim()
-    const awayRaw = String(away?.score ?? '').trim()
-    const homeScore = Number(homeRaw)
-    const awayScore = Number(awayRaw)
-    const bookmakers = this.mapBookmakers(competition?.odds, homeTeam, awayTeam)
-    const scoreText =
-      homeRaw && awayRaw && (!Number.isFinite(homeScore) || !Number.isFinite(awayScore))
-        ? { home: homeRaw, away: awayRaw }
-        : undefined
+  private competitorName(row: any): string {
+    return String(
+      row?.athlete?.displayName ||
+        row?.athlete?.fullName ||
+        row?.team?.displayName ||
+        row?.team?.name ||
+        '',
+    ).trim()
+  }
 
-    return {
-      externalId: `espn-${event.id}`,
-      sportKey: target.key,
-      sportGroup: target.group,
-      sportTitle: leagueName || target.title,
-      homeTeam,
-      awayTeam,
-      commenceTime: event.date || event?.competitions?.[0]?.date || new Date().toISOString(),
-      bookmakers,
-      source: 'espn',
-      completed,
-      homeScore: Number.isFinite(homeScore) ? homeScore : null,
-      awayScore: Number.isFinite(awayScore) ? awayScore : null,
-      scoreText,
-    }
+  private mapEvent(event: any, target: LeagueTarget, leagueName: string): NormalizedEvent[] {
+    if (!event?.id) return []
+    const competitions = Array.isArray(event?.competitions) && event.competitions.length ? event.competitions : [event]
+    const manyCards = competitions.length > 1
+    const out: NormalizedEvent[] = []
+    competitions.forEach((competition: any) => {
+      const competitors = competition?.competitors || []
+      const home = competitors.find((row: any) => row?.homeAway === 'home') || competitors[0]
+      const away = competitors.find((row: any) => row?.homeAway === 'away') || competitors[1]
+      let homeTeam = this.competitorName(home)
+      let awayTeam = this.competitorName(away)
+      if (competitors.length > 2) {
+        homeTeam = String(event?.shortName || event?.name || leagueName || 'Event').trim()
+        awayTeam = 'Field'
+      }
+      if (!homeTeam || !awayTeam) return
+      const state = String(competition?.status?.type?.state || event?.status?.type?.state || '')
+      const completed = Boolean(competition?.status?.type?.completed || event?.status?.type?.completed) || state === 'post'
+      const homeRaw = String(home?.score ?? '').trim()
+      const awayRaw = String(away?.score ?? '').trim()
+      const homeScore = Number(homeRaw)
+      const awayScore = Number(awayRaw)
+      const bookmakers = this.mapBookmakers(competition?.odds || event?.competitions?.[0]?.odds, homeTeam, awayTeam)
+      const compId = String(competition?.id || '')
+      const externalId =
+        manyCards && compId && compId !== String(event.id) ? `espn-${event.id}-c${compId}` : `espn-${event.id}`
+      const scoreText =
+        homeRaw && awayRaw && (!Number.isFinite(homeScore) || !Number.isFinite(awayScore))
+          ? { home: homeRaw, away: awayRaw }
+          : undefined
+      out.push({
+        externalId,
+        sportKey: target.key,
+        sportGroup: target.group,
+        sportTitle: leagueName || target.title,
+        homeTeam,
+        awayTeam,
+        commenceTime: competition?.date || event.date || new Date().toISOString(),
+        bookmakers,
+        source: 'espn',
+        completed,
+        homeScore: Number.isFinite(homeScore) ? homeScore : null,
+        awayScore: Number.isFinite(awayScore) ? awayScore : null,
+        scoreText,
+      })
+    })
+    return out
   }
 
   private mapHeaderEvent(event: any, target: LeagueTarget, leagueName: string): NormalizedEvent | null {
@@ -336,8 +390,8 @@ export class EspnScoreboardProvider {
     const competitors = event?.competitors || event?.competitions?.[0]?.competitors || []
     const home = competitors.find((row: any) => row?.homeAway === 'home') || competitors[0]
     const away = competitors.find((row: any) => row?.homeAway === 'away') || competitors[1]
-    let homeTeam = String(home?.team?.displayName || home?.team?.name || '').trim()
-    let awayTeam = String(away?.team?.displayName || away?.team?.name || '').trim()
+    let homeTeam = this.competitorName(home)
+    let awayTeam = this.competitorName(away)
     if (!homeTeam || !awayTeam) {
       const parts = String(event?.name || event?.shortName || '')
         .split(/\s+v(?:s\.?)?\s+/i)
@@ -575,9 +629,74 @@ export class EspnScoreboardProvider {
 
   private parseEvent(sportKey: string, externalId: string) {
     const [sport, league] = String(sportKey || '').split('/')
-    const eventId = String(externalId || '').replace(/^espn-/, '')
-    if (!sport || !league || !/^\d+$/.test(eventId)) return null
-    return { sport, league, eventId }
+    const raw = String(externalId || '').replace(/^espn-/, '')
+    const match = raw.match(/^(\d+)(?:-c(\d+))?$/)
+    const eventId = match?.[1] || ''
+    if (!sport || !league || !eventId) return null
+    return { sport, league, eventId, competitionId: match?.[2] || null }
+  }
+
+  async fetchEventResult(
+    sportKey: string,
+    externalId: string,
+    commenceTime?: Date | string | null,
+  ): Promise<{
+    completed: boolean
+    homeName: string
+    awayName: string
+    homeScore: number | null
+    awayScore: number | null
+  } | null> {
+    const parsed = this.parseEvent(sportKey, externalId)
+    if (!parsed) return null
+    const { sport, league, eventId, competitionId } = parsed
+    const summary = await this.fetchJson(
+      `https://site.api.espn.com/apis/site/v2/sports/${encodeURIComponent(sport)}/${encodeURIComponent(league)}/summary?event=${encodeURIComponent(eventId)}`,
+    )
+    let fromSummary = this.resultFromCompetitions(
+      summary?.header?.competitions || summary?.competitions || [],
+      competitionId,
+    )
+    if (fromSummary) return fromSummary
+
+    const date = commenceTime ? new Date(commenceTime) : null
+    const ymd =
+      date && Number.isFinite(date.getTime())
+        ? date.toISOString().slice(0, 10).replace(/-/g, '')
+        : ''
+    if (ymd) {
+      const board = await this.fetchJson(
+        `https://site.api.espn.com/apis/site/v2/sports/${encodeURIComponent(sport)}/${encodeURIComponent(league)}/scoreboard?dates=${ymd}&limit=100`,
+      )
+      const event = (board?.events || []).find((row: any) => String(row?.id) === eventId)
+      fromSummary = this.resultFromCompetitions(event?.competitions || [], competitionId)
+      if (fromSummary) return fromSummary
+    }
+    return null
+  }
+
+  private resultFromCompetitions(competitions: any[], competitionId: string | null) {
+    if (!Array.isArray(competitions) || !competitions.length) return null
+    const competition =
+      (competitionId && competitions.find((row) => String(row?.id) === competitionId)) || competitions[0]
+    const competitors = competition?.competitors || []
+    if (competitors.length !== 2) return null
+    const home = competitors.find((row: any) => row?.homeAway === 'home') || competitors[0]
+    const away = competitors.find((row: any) => row?.homeAway === 'away') || competitors[1]
+    const homeName = this.competitorName(home)
+    const awayName = this.competitorName(away)
+    if (!homeName || !awayName) return null
+    const state = String(competition?.status?.type?.state || '')
+    const completed = Boolean(competition?.status?.type?.completed) || state === 'post'
+    const homeScore = this.numericScore(home?.score)
+    const awayScore = this.numericScore(away?.score)
+    return {
+      completed,
+      homeName,
+      awayName,
+      homeScore,
+      awayScore,
+    }
   }
 
   private async fetchPropItems(sport: string, league: string, eventId: string): Promise<EspnProp[] | null> {

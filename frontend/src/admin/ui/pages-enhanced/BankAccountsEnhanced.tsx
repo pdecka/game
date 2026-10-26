@@ -99,7 +99,7 @@ export default function BankAccountsEnhanced() {
   return (
     <section className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-[#ffffff]">Bank Accounts</h1>
+        <h1 className="text-2xl font-semibold text-[#14532d]">Bank Accounts</h1>
         <p className="text-[#64748b] mt-1">Admin-managed payout accounts used for user withdrawals.</p>
       </div>
 

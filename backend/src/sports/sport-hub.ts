@@ -14,6 +14,11 @@ export const SPORT_HUB: SportHubItem[] = [
   { slug: 'american-football', name: 'American Football', groups: ['American Football'] },
   { slug: 'ice-hockey', name: 'Ice Hockey', groups: ['Ice Hockey'] },
   { slug: 'rugby', name: 'Rugby', groups: ['Rugby'] },
+  { slug: 'golf', name: 'Golf', groups: ['Golf'] },
+  { slug: 'boxing', name: 'Boxing', groups: ['Boxing', 'MMA'] },
+  { slug: 'f1-racing', name: 'F1 Racing', groups: ['Racing'] },
+  { slug: 'horse-racing', name: 'Horse Racing', groups: ['Horse Racing'] },
+  { slug: 'election', name: 'Election', groups: ['Politics'] },
 ]
 
 export function sportBySlug(slug: string | undefined) {

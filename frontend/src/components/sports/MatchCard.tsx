@@ -65,7 +65,7 @@ function bestH2h(bookmakers: Bookmaker[]): PriceButton[] {
   const best = new Map<string, PriceButton>()
   bookmakers.forEach((bookmaker) => {
     bookmaker.markets.forEach((market) => {
-      if (market.key !== 'h2h') return
+      if (market.key !== 'h2h' && market.key !== 'outrights') return
       market.outcomes.forEach((outcome) => {
         const current = best.get(outcome.name)
         if (!current || outcome.price > current.price) {
@@ -86,7 +86,7 @@ export default function MatchCard({ match, onClick, onOddsClick, isSelected }: M
   const prices = useMemo(() => {
     const rows = bestH2h(match.bookmakers || [])
     const order = [match.home_team, 'Draw', match.away_team]
-    return rows.sort((a, b) => {
+    return rows.slice(0, 8).sort((a, b) => {
       const ai = order.findIndex((name) => name.toLowerCase() === a.name.toLowerCase())
       const bi = order.findIndex((name) => name.toLowerCase() === b.name.toLowerCase())
       return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi)
@@ -113,7 +113,7 @@ export default function MatchCard({ match, onClick, onOddsClick, isSelected }: M
 
   return (
     <article
-      className={`rounded-2xl border p-4 transition-colors ${
+      className={`rounded-2xl border p-4 py-5 transition-colors sm:p-5 sm:py-6 ${
         isSelected ? 'border-brand/40 bg-brand/5' : 'border-line bg-card'
       }`}
     >

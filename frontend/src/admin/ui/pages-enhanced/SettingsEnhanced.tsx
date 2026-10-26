@@ -15,7 +15,7 @@ export default function SettingsEnhanced() {
   return (
     <section className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-[#ffffff]">Settings</h1>
+        <h1 className="text-2xl font-semibold text-[#14532d]">Settings</h1>
         <p className="text-[#64748b] mt-1">Configure admin profile and platform-level controls.</p>
       </div>
 

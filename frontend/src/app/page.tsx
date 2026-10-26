@@ -235,7 +235,7 @@ export default function Home() {
               {/* Sports Thumbnail */}
               <div className="min-w-0">
                 <Link href="/sports" className="group relative block overflow-hidden rounded-2xl border border-line bg-white shadow-panel transition-all duration-300 hover:shadow-lift">
-                  <div className="aspect-video lg:aspect-[16/10]">
+                  <div className="aspect-[4/3] lg:aspect-[5/4]">
                     <img 
                       src="/games/sports-thumb.jpeg" 
                       alt="Sports"
@@ -335,7 +335,7 @@ export default function Home() {
                         >
                           <Link
                             href={sport.href}
-                            className="group relative block h-40 w-40 overflow-hidden rounded-xl border border-line bg-white shadow-panel transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-brand"
+                            className="group relative block h-52 w-40 overflow-hidden rounded-xl border border-line bg-white shadow-panel transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-brand"
                           >
                             <img
                               src={sport.image}

@@ -2,8 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import EnhancedPage from './EnhancedPage'
-import ModalComponent from '../components/ModalComponent'
-import FormComponent from '../components/FormComponent'
+import CreatePlayerModal from '../components/CreatePlayerModal'
 import { adminAuthService } from '../../services/adminAuthService'
 import toast from 'react-hot-toast'
 
@@ -67,33 +66,15 @@ export default function UsersEnhanced() {
     <>
       <EnhancedPage
         title="Users Management"
-        description="Search, filter, and manage casino users with action-ready controls."
-        ctaLabel="Create User"
+        description="Live player accounts. Create a username and password so a client can log in immediately."
+        ctaLabel="Add User"
+        onPrimaryAction={() => setOpen(true)}
+        showFilters={false}
         cards={cards}
         columns={columns}
         rows={rows}
       />
-
-      <div className="mt-4">
-        <button
-          onClick={() => setOpen(true)}
-          className="rounded-lg bg-[#22c55e] hover:opacity-90 text-[#ffffff] font-medium px-4 py-2 transition-all duration-200"
-        >
-          Open Create User Modal
-        </button>
-      </div>
-
-      <ModalComponent open={open} title="Create User" onClose={() => setOpen(false)}>
-        <FormComponent
-          fields={[
-            { label: 'Name', placeholder: 'Enter full name' },
-            { label: 'Email', type: 'email', placeholder: 'name@example.com' },
-            { label: 'Initial Balance', type: 'number', placeholder: '0' },
-            { label: 'Status', placeholder: 'Active / Pending / VIP' },
-          ]}
-        />
-      </ModalComponent>
+      <CreatePlayerModal open={open} onClose={() => setOpen(false)} />
     </>
   )
 }
-

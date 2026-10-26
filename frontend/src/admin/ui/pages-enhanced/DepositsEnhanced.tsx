@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import StatCard from '../components/StatCard'
+import DateRangeCalendar, { useAdminDateRange } from '../components/DateRangeCalendar'
+import { istDayBounds } from '../../lib/istDates'
 import { adminFinanceService, type PaymentRequestRow } from '../../services/adminFinanceService'
 
 type DepositFilter = {
@@ -21,7 +23,8 @@ export default function DepositsEnhanced() {
   const [loading, setLoading] = useState(false)
   const [rows, setRows] = useState<PaymentRequestRow[]>([])
 
-  const [filter, setFilter] = useState<DepositFilter>({ status: 'pending' })
+  const { range, setRange } = useAdminDateRange()
+  const [filter, setFilter] = useState<DepositFilter>({})
 
   const stats = useMemo(() => {
     const total = rows.length
@@ -40,12 +43,13 @@ export default function DepositsEnhanced() {
   const load = async () => {
     try {
       setLoading(true)
+      const bounds = istDayBounds(range.from, range.to)
       const data = await adminFinanceService.getDeposits({
         status: filter.status,
         username: filter.username,
-        from: filter.from,
-        to: filter.to,
-        limit: 30,
+        from: bounds.from,
+        to: bounds.to,
+        limit: 100,
         offset: 0,
       })
       setRows(data.items || [])
@@ -63,7 +67,7 @@ export default function DepositsEnhanced() {
     }, 12000)
     return () => clearInterval(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filter.status, filter.from, filter.to, filter.username])
+  }, [filter.status, filter.username, range.from, range.to])
 
   const canReview = (status: string) => status === 'pending' || status === 'processing'
 
@@ -90,8 +94,8 @@ export default function DepositsEnhanced() {
   return (
     <section className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-[#ffffff]">Deposits</h1>
-        <p className="text-[#64748b] mt-1">Approve or reject deposit requests stored in the database.</p>
+        <h1 className="text-2xl font-semibold text-[#14532d]">Deposits</h1>
+        <p className="text-[#64748b] mt-1">Approve or reject deposit requests. Default view is the last 2 IST days and resets at midnight India time.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -102,29 +106,12 @@ export default function DepositsEnhanced() {
 
       <div className="rounded-xl bg-[#ffffff] border border-[#e2e8f0] p-4 shadow-sm">
         <div className="flex flex-col lg:flex-row gap-3 lg:items-end lg:justify-between">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="min-w-[170px]">
-              <label className="text-xs text-[#64748b]">From</label>
-              <input
-                type="date"
-                className="mt-1 w-full rounded-md bg-[#e2e8f0] border border-[#e2e8f0] px-3 py-2 text-[#020617] focus:ring-2 focus:ring-[#22c55e] focus:border-[#22c55e]"
-                value={filter.from ?? ''}
-                onChange={(e) => setFilter((f) => ({ ...f, from: e.target.value || undefined }))}
-              />
-            </div>
-            <div className="min-w-[170px]">
-              <label className="text-xs text-[#64748b]">To</label>
-              <input
-                type="date"
-                className="mt-1 w-full rounded-md bg-[#e2e8f0] border border-[#e2e8f0] px-3 py-2 text-[#020617] focus:ring-2 focus:ring-[#22c55e] focus:border-[#22c55e]"
-                value={filter.to ?? ''}
-                onChange={(e) => setFilter((f) => ({ ...f, to: e.target.value || undefined }))}
-              />
-            </div>
+          <div className="flex flex-col xl:flex-row gap-3">
+            <DateRangeCalendar from={range.from} to={range.to} onChange={setRange} />
             <div className="min-w-[220px]">
               <label className="text-xs text-[#64748b]">User (username)</label>
               <input
-                className="mt-1 w-full rounded-md bg-[#e2e8f0] border border-[#e2e8f0] px-3 py-2 text-[#020617] placeholder:text-[#64748b] focus:ring-2 focus:ring-[#22c55e] focus:border-[#22c55e]"
+                className="mt-1 w-full rounded-md bg-[#f0fdf4] border border-[#bbf7d0] px-3 py-2 text-[#020617] placeholder:text-[#64748b] focus:ring-2 focus:ring-[#22c55e] focus:border-[#22c55e]"
                 placeholder="e.g. romil"
                 value={filter.username ?? ''}
                 onChange={(e) => setFilter((f) => ({ ...f, username: e.target.value || undefined }))}
@@ -133,18 +120,27 @@ export default function DepositsEnhanced() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <button onClick={() => setFilter((f) => ({ ...f, status: undefined }))} className="rounded-lg border border-[#e2e8f0] bg-[#ffffff] hover:bg-[#e2e8f0]/40 text-[#020617] px-4 py-2 text-xs font-semibold transition-all">
-              All
-            </button>
-            <button onClick={() => setFilter((f) => ({ ...f, status: 'pending' }))} className="rounded-lg bg-[#22c55e] hover:opacity-90 text-[#ffffff] px-4 py-2 text-xs font-semibold shadow-sm">
-              Pending
-            </button>
-            <button onClick={() => setFilter((f) => ({ ...f, status: 'completed' }))} className="rounded-lg border border-[#e2e8f0] bg-[#ffffff] hover:bg-[#e2e8f0]/40 text-[#020617] px-4 py-2 text-xs font-semibold transition-all">
-              Approved
-            </button>
-            <button onClick={() => setFilter((f) => ({ ...f, status: 'failed' }))} className="rounded-lg border border-[#e2e8f0] bg-[#ffffff] hover:bg-[#e2e8f0]/40 text-[#020617] px-4 py-2 text-xs font-semibold transition-all">
-              Rejected
-            </button>
+            {[
+              { id: undefined, label: 'All' },
+              { id: 'pending', label: 'Pending' },
+              { id: 'completed', label: 'Approved' },
+              { id: 'failed', label: 'Rejected' },
+            ].map((opt) => {
+              const active = filter.status === opt.id
+              return (
+                <button
+                  key={opt.label}
+                  onClick={() => setFilter((f) => ({ ...f, status: opt.id }))}
+                  className={
+                    active
+                      ? 'rounded-lg bg-[#16a34a] text-white px-4 py-2 text-xs font-semibold shadow-sm'
+                      : 'rounded-lg border border-[#bbf7d0] bg-white hover:bg-[#f0fdf4] text-[#14532d] px-4 py-2 text-xs font-semibold'
+                  }
+                >
+                  {opt.label}
+                </button>
+              )
+            })}
           </div>
         </div>
       </div>

@@ -9,11 +9,10 @@ const ADMIN_USER_KEY = 'admin_user'
 
 export interface AdminUser {
   id: string
-  email: string
+  email?: string | null
   username: string
   role: string
   status: string
-  email?: string | null
   mobile?: string | null
   balanceINR?: number
   createdAt?: string | Date
@@ -87,6 +86,11 @@ export const adminAuthService = {
   async getUsers(): Promise<AdminUser[]> {
     const response = await adminApi.get('/admin/users')
     return response.data
+  },
+
+  async createPlayer(payload: { username: string; password: string; email?: string }) {
+    const response = await adminApi.post('/admin/users', payload)
+    return response.data as { id: string; username: string; email: string | null; status: string }
   },
 
   async listBlogs() {

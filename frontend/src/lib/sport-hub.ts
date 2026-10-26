@@ -64,6 +64,41 @@ export const SPORT_HUB: SportHubItem[] = [
     image: '/sports/rugby-thumb.png',
     groups: ['Rugby'],
   },
+  {
+    slug: 'golf',
+    name: 'Golf',
+    desc: 'PGA, LPGA, LIV, DP World Tour and major championships.',
+    image: '/sports/golf-thumb.png',
+    groups: ['Golf'],
+  },
+  {
+    slug: 'boxing',
+    name: 'Boxing',
+    desc: 'Boxing, MMA, UFC and other one-on-one fight cards.',
+    image: '/sports/boxing-thumb.png',
+    groups: ['Boxing', 'MMA'],
+  },
+  {
+    slug: 'f1-racing',
+    name: 'F1 Racing',
+    desc: 'Formula 1, IndyCar and NASCAR worldwide.',
+    image: '/sports/F1-Racing-thumb.png',
+    groups: ['Racing'],
+  },
+  {
+    slug: 'horse-racing',
+    name: 'Horse Racing',
+    desc: 'Race cards and outright fields when bookmakers list them.',
+    image: '/sports/horse-racing-thumb.png',
+    groups: ['Horse Racing'],
+  },
+  {
+    slug: 'election',
+    name: 'Election',
+    desc: 'Listed election markets and winner possibilities.',
+    image: '/sports/election-thumb.png',
+    groups: ['Politics'],
+  },
 ]
 
 export function sportBySlug(slug: string | undefined) {

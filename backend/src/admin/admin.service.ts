@@ -9,6 +9,7 @@ import { UpdateGameSettingDto } from './dto';
 import { BankAccountStatus } from './bank-account.enums';
 import { SportType } from '../sports/sports.enums';
 import { AffiliateService } from '../affiliate/affiliate.service';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AdminService {
@@ -239,6 +240,50 @@ export class AdminService {
     );
 
     return usersWithWallet;
+  }
+
+  async createPlayer(dto: { username: string; password: string; email?: string }) {
+    const username = String(dto.username || '').trim();
+    const password = String(dto.password || '');
+    const email = String(dto.email || '').trim().toLowerCase();
+
+    if (username.length < 3) {
+      throw new BadRequestException('Username must be at least 3 characters');
+    }
+    if (password.length < 6) {
+      throw new BadRequestException('Password must be at least 6 characters');
+    }
+
+    const existingByUsername = await this.usersService.findByUsername(username);
+    if (existingByUsername) {
+      throw new BadRequestException('Username already exists');
+    }
+
+    if (email) {
+      if (!email.includes('@')) {
+        throw new BadRequestException('A valid email is required');
+      }
+      const existingByEmail = await this.usersService.findByEmail(email);
+      if (existingByEmail) {
+        throw new BadRequestException('Email already registered');
+      }
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = await this.usersService.create({
+      username,
+      password: hashedPassword,
+      email: email || null,
+      status: UserStatus.ACTIVE as any,
+    });
+    await this.walletService.getOrCreateWallet(user.id);
+
+    return {
+      id: user.id,
+      username: user.username,
+      email: user.email || null,
+      status: user.status,
+    };
   }
 
   async getGameSettings() {

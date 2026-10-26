@@ -109,6 +109,12 @@ export class SportsService implements OnModuleInit, OnModuleDestroy {
           if (g === 'american football') return ['football']
           if (g === 'ice hockey') return ['hockey']
           if (g === 'rugby') return ['rugby']
+          if (g === 'golf') return ['golf']
+          if (g === 'boxing') return ['boxing']
+          if (g === 'mma') return ['mma']
+          if (g === 'racing') return ['racing']
+          if (g === 'horse racing') return ['horse']
+          if (g === 'politics') return ['politics']
           return [g]
         })
       : []
@@ -333,7 +339,7 @@ export class SportsService implements OnModuleInit, OnModuleDestroy {
   private bestH2h(bookmakers: OddsBookmaker[]) {
     const best = new Map<string, { name: string; price: number; bookmaker: string; bookmakerKey: string }>()
     for (const book of bookmakers) {
-      const market = book.markets?.find((item) => item.key === 'h2h')
+      const market = book.markets?.find((item) => item.key === 'h2h' || item.key === 'outrights')
       for (const outcome of market?.outcomes || []) {
         const current = best.get(outcome.name)
         if (!current || outcome.price > current.price) {
@@ -546,6 +552,8 @@ export class SportsService implements OnModuleInit, OnModuleDestroy {
     if (sportKey.startsWith('soccer_')) return 'btts,draw_no_bet,alternate_totals,alternate_spreads'
     if (sportKey.startsWith('cricket')) return 'h2h,totals,spreads'
     if (sportKey.startsWith('tennis')) return 'h2h,h2h_lay,spreads,totals'
+    if (sportKey.startsWith('golf_') || sportKey.startsWith('politics_')) return 'outrights'
+    if (sportKey.startsWith('boxing') || sportKey.startsWith('mma')) return 'h2h'
     return 'h2h,spreads,totals,alternate_totals'
   }
 
@@ -759,6 +767,8 @@ export class SportsService implements OnModuleInit, OnModuleDestroy {
     switch (marketKey) {
       case 'h2h':
         return 'Match Winner'
+      case 'outrights':
+        return 'Winner'
       case 'spreads':
         return 'Handicap'
       case 'totals':
@@ -869,12 +879,17 @@ export class SportsService implements OnModuleInit, OnModuleDestroy {
     const goalsCache = new Map<string, Map<string, number> | null>()
     const cricketCache = new Map<string, { summary: any; playByPlay: any } | null>()
     for (const bet of bets) {
-      const match = await this.prisma.sportsMatch.findUnique({ where: { id: bet.matchId } })
+      let match = await this.prisma.sportsMatch.findUnique({ where: { id: bet.matchId } })
       if (!match) continue
-      const score = (match.score as any) || {}
       const meta = (bet.meta as any) || {}
       const marketKey = String(meta.marketKey || 'h2h')
       const liveMarket = marketKey === 'next_ball' || marketKey === 'current_over_runs'
+      const kickedOff = match.startTime ? new Date(match.startTime).getTime() <= Date.now() : false
+      const staleBet = Date.now() - new Date(bet.createdAt).getTime() > 6 * 60 * 60_000
+      if (!liveMarket && match.status !== SportsMatchStatus.FINISHED && (kickedOff || staleBet)) {
+        match = (await this.refreshEspnMatchOutcome(match)) || match
+      }
+      const score = (match.score as any) || {}
       if (!liveMarket && match.status !== SportsMatchStatus.FINISHED) continue
 
       const homeScore = cricketRuns(score.teamA) ?? Number(score.teamA)
@@ -975,11 +990,13 @@ export class SportsService implements OnModuleInit, OnModuleDestroy {
 
     for (const [sportKey, bets] of bySport) {
       const last = this.scoreFetchedAt.get(sportKey) || 0
-      if (Date.now() - last < this.scoreTtlMs()) continue
+      const oldest = Math.min(...bets.map((bet) => new Date(bet.createdAt).getTime() || Date.now()))
+      const stuck = Number.isFinite(oldest) && Date.now() - oldest > 6 * 60 * 60_000
+      if (!stuck && Date.now() - last < this.scoreTtlMs()) continue
       this.scoreFetchedAt.set(sportKey, Date.now())
       let scores: Awaited<ReturnType<OddsApiProvider['fetchScores']>> = []
       try {
-        scores = await this.oddsApi.fetchScores(sportKey)
+        scores = await this.oddsApi.fetchScores(sportKey, stuck ? 7 : 3)
       } catch {
         continue
       }
@@ -1023,8 +1040,49 @@ export class SportsService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  private async refreshEspnMatchOutcome(match: any) {
+    const score = (match.score as any) || {}
+    let result: Awaited<ReturnType<EspnScoreboardProvider['fetchEventResult']>> = null
+    try {
+      result = await this.espn.fetchEventResult(
+        String(score.sportKey || match.sport || ''),
+        match.externalId,
+        match.startTime,
+      )
+    } catch {
+      return match
+    }
+    if (!result?.completed || result.homeScore == null || result.awayScore == null) return match
+    const nextScore = {
+      ...score,
+      teamA: String(result.homeScore),
+      teamB: String(result.awayScore),
+      bettingClosed: true,
+    }
+    return this.prisma.sportsMatch.update({
+      where: { id: match.id },
+      data: {
+        status: SportsMatchStatus.FINISHED as any,
+        teamA: result.homeName || match.teamA,
+        teamB: result.awayName || match.teamB,
+        score: nextScore,
+        result: {
+          winner:
+            result.homeScore === result.awayScore ? 'draw' : result.homeScore > result.awayScore ? 'teamA' : 'teamB',
+        },
+      },
+    })
+  }
+
   private readSideScore(scores: Array<{ name: string; score: string }>, team: string) {
-    const row = scores.find((item) => item.name?.toLowerCase() === team.toLowerCase())
+    const needle = String(team || '').trim().toLowerCase()
+    if (!needle) return null
+    const row =
+      scores.find((item) => String(item.name || '').toLowerCase() === needle) ||
+      scores.find((item) => {
+        const name = String(item.name || '').toLowerCase()
+        return name.includes(needle) || needle.includes(name)
+      })
     const value = Number(row?.score)
     return Number.isFinite(value) ? value : null
   }

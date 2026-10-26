@@ -3,12 +3,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import StatCard from '../components/StatCard'
+import DateRangeCalendar, { useAdminDateRange } from '../components/DateRangeCalendar'
+import { istDayBounds } from '../../lib/istDates'
 import { adminFinanceService } from '../../services/adminFinanceService'
 
 export default function ReportsEnhanced() {
   const [loading, setLoading] = useState(false)
-  const [from, setFrom] = useState<string>('')
-  const [to, setTo] = useState<string>('')
+  const { range, setRange } = useAdminDateRange()
   const [userId, setUserId] = useState<string>('')
 
   const [report, setReport] = useState<{
@@ -27,9 +28,10 @@ export default function ReportsEnhanced() {
   const load = async () => {
     try {
       setLoading(true)
+      const bounds = istDayBounds(range.from, range.to)
       const data = await adminFinanceService.getFinancialReport({
-        from: from || undefined,
-        to: to || undefined,
+        from: bounds.from,
+        to: bounds.to,
         userId: userId || undefined,
       })
       setReport(data)
@@ -41,9 +43,14 @@ export default function ReportsEnhanced() {
   }
 
   useEffect(() => {
-    load()
+    void load()
+    const t = window.setInterval(() => {
+      if (document.hidden) return
+      void load()
+    }, 12000)
+    return () => window.clearInterval(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [range.from, range.to, userId])
 
   const cards = useMemo(() => {
     return [
@@ -77,8 +84,8 @@ export default function ReportsEnhanced() {
   return (
     <section className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-[#ffffff]">Reports</h1>
-        <p className="text-[#64748b] mt-1">Financial summary computed from ledger entries (no mock data).</p>
+        <h1 className="text-2xl font-semibold text-[#14532d]">Reports</h1>
+        <p className="text-[#64748b] mt-1">Financial summary from ledger entries. Default last 2 IST days, reset at 12:00 AM India time.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -89,32 +96,15 @@ export default function ReportsEnhanced() {
 
       <div className="rounded-xl bg-[#ffffff] border border-[#e2e8f0] p-4 shadow-sm">
         <div className="flex flex-col md:flex-row gap-3 md:items-end md:justify-between">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="min-w-[170px]">
-              <label className="text-xs text-[#64748b]">From</label>
-              <input
-                type="date"
-                value={from}
-                onChange={(e) => setFrom(e.target.value)}
-                className="mt-1 w-full rounded-md bg-[#e2e8f0] border border-[#e2e8f0] px-3 py-2 text-[#020617] focus:ring-2 focus:ring-[#22c55e] focus:border-[#22c55e]"
-              />
-            </div>
-            <div className="min-w-[170px]">
-              <label className="text-xs text-[#64748b]">To</label>
-              <input
-                type="date"
-                value={to}
-                onChange={(e) => setTo(e.target.value)}
-                className="mt-1 w-full rounded-md bg-[#e2e8f0] border border-[#e2e8f0] px-3 py-2 text-[#020617] focus:ring-2 focus:ring-[#22c55e] focus:border-[#22c55e]"
-              />
-            </div>
+          <div className="flex flex-col xl:flex-row gap-3">
+            <DateRangeCalendar from={range.from} to={range.to} onChange={setRange} />
             <div className="min-w-[220px]">
               <label className="text-xs text-[#64748b]">User ID (optional)</label>
               <input
                 value={userId}
                 onChange={(e) => setUserId(e.target.value)}
                 placeholder="User UUID"
-                className="mt-1 w-full rounded-md bg-[#e2e8f0] border border-[#e2e8f0] px-3 py-2 text-[#020617] placeholder:text-[#64748b] focus:ring-2 focus:ring-[#22c55e] focus:border-[#22c55e]"
+                className="mt-1 w-full rounded-md bg-[#f0fdf4] border border-[#bbf7d0] px-3 py-2 text-[#020617] placeholder:text-[#64748b] focus:ring-2 focus:ring-[#22c55e] focus:border-[#22c55e]"
               />
             </div>
           </div>

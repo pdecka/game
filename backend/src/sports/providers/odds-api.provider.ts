@@ -83,7 +83,45 @@ export function regionForSport(sportKey: string, group: string): 'us' | 'uk' | '
   }
   if (key.startsWith('aussierules') || key.startsWith('rugbyleague') || g.includes('aussie')) return 'au'
   if (key.startsWith('cricket') || g === 'cricket') return 'uk'
+  if (key.includes('horse') || g.includes('horse')) return 'uk'
+  if (
+    key.startsWith('boxing') ||
+    key.startsWith('mma') ||
+    key.startsWith('golf') ||
+    key.startsWith('politics') ||
+    g === 'boxing' ||
+    g === 'mixed martial arts' ||
+    g === 'golf' ||
+    g === 'politics'
+  ) {
+    return 'us'
+  }
   return 'eu'
+}
+
+function normalizeGroup(group: string) {
+  const value = String(group || '').trim()
+  const lower = value.toLowerCase()
+  if (lower.includes('mixed martial')) return 'MMA'
+  if (lower.includes('horse')) return 'Horse Racing'
+  if (lower === 'politics') return 'Politics'
+  return value
+}
+
+function isOutrightSport(sport: SportRow) {
+  if (sport.has_outrights) {
+    const group = String(sport.group || '').toLowerCase()
+    const key = String(sport.key || '').toLowerCase()
+    return (
+      group === 'golf' ||
+      group === 'politics' ||
+      group.includes('horse') ||
+      key.startsWith('golf_') ||
+      key.startsWith('politics_') ||
+      key.includes('horse')
+    )
+  }
+  return false
 }
 
 function cacheFilePath() {
@@ -120,18 +158,23 @@ export class OddsApiProvider {
     const out: NormalizedEvent[] = []
     for (const [sportKey, bucket] of this.events) {
       const priced = new Map((this.odds.get(sportKey)?.rows || []).map((row) => [row.id, row]))
+      const sportMeta = this.sports.find((s) => s.key === sportKey)
       for (const row of bucket.rows) {
-        if (!row?.id || !row.home_team || !row.away_team) continue
+        if (!row?.id) continue
+        const title = row.sport_title || sportMeta?.title || sportKey
+        const homeTeam = row.home_team || title
+        const awayTeam = row.away_team || 'Field'
+        if (!homeTeam) continue
         const withOdds = priced.get(row.id)
         out.push({
           externalId: row.id,
           sportKey,
-          sportGroup: groupByKey.get(sportKey) || row.sport_title || sportKey,
-          sportTitle: row.sport_title || this.sports.find((s) => s.key === sportKey)?.title || sportKey,
-          homeTeam: row.home_team,
-          awayTeam: row.away_team,
+          sportGroup: normalizeGroup(groupByKey.get(sportKey) || row.sport_title || sportKey),
+          sportTitle: title,
+          homeTeam,
+          awayTeam,
           commenceTime: row.commence_time,
-          bookmakers: this.cleanBookmakers(withOdds?.bookmakers || []),
+          bookmakers: this.cleanBookmakers(withOdds?.bookmakers || row.bookmakers || []),
         })
       }
     }
@@ -211,7 +254,7 @@ export class OddsApiProvider {
     return this.cleanBookmakers((json as RawEvent).bookmakers || [])
   }
 
-  async fetchScores(sportKey: string): Promise<Array<{
+  async fetchScores(sportKey: string, daysFrom = 3): Promise<Array<{
     id: string
     completed: boolean
     home_team: string
@@ -222,7 +265,7 @@ export class OddsApiProvider {
     if (this.quotaRemaining != null && this.quotaRemaining < 8) return []
     const url =
       `${HOST}/sports/${encodeURIComponent(sportKey)}/scores/` +
-      `?daysFrom=3&dateFormat=iso&apiKey=${this.apiKey()}`
+      `?daysFrom=${Math.min(Math.max(daysFrom, 1), 7)}&dateFormat=iso&apiKey=${this.apiKey()}`
     const { status, json } = await this.request(url)
     if (status !== 200 || !Array.isArray(json)) return []
     return json as any
@@ -249,11 +292,19 @@ export class OddsApiProvider {
         const rows = Array.isArray(res.json) ? (res.json as RawEvent[]) : []
         this.events.set(sport.key, {
           fetchedAt: Date.now(),
-          rows: rows.filter((row) => row?.id && row.home_team && row.away_team),
+          rows: rows.filter((row) => row?.id && (row.home_team || row.away_team)),
         })
       } catch {
         // Keep the previous catalog slice for this sport.
       }
+    })
+
+    const futures = this.sports.filter((sport) => isOutrightSport(sport))
+    await this.mapPool(futures, 3, async (sport) => {
+      const ok = await this.fetchSportOdds(sport)
+      if (!ok) return
+      const rows = this.odds.get(sport.key)?.rows || []
+      this.events.set(sport.key, { fetchedAt: Date.now(), rows })
     })
   }
 
@@ -273,7 +324,12 @@ export class OddsApiProvider {
     const ttl = this.oddsTtlMs()
     const lowQuota = (this.quotaRemaining ?? 10_000) < 800
     const ranked = this.sports
-      .filter((sport) => !sport.has_outrights && (this.events.get(sport.key)?.rows.length || 0) > 0)
+      .filter((sport) => {
+        const hasEvents = (this.events.get(sport.key)?.rows.length || 0) > 0
+        if (!hasEvents) return false
+        if (!sport.has_outrights) return true
+        return isOutrightSport(sport)
+      })
       .map((sport) => ({ sport, soonest: this.soonestKickoff(sport.key) }))
       .filter((row) => row.soonest != null)
       .sort((a, b) => (a.soonest as number) - (b.soonest as number))
@@ -314,9 +370,10 @@ export class OddsApiProvider {
 
   private async fetchSportOdds(sport: SportRow): Promise<boolean> {
     const region = regionForSport(sport.key, sport.group)
+    const markets = isOutrightSport(sport) ? 'outrights' : FEATURED_MARKETS
     const url =
       `${HOST}/sports/${encodeURIComponent(sport.key)}/odds/` +
-      `?regions=${region}&markets=${FEATURED_MARKETS}&oddsFormat=decimal&dateFormat=iso&apiKey=${this.apiKey()}`
+      `?regions=${region}&markets=${markets}&oddsFormat=decimal&dateFormat=iso&apiKey=${this.apiKey()}`
     const { status, json } = await this.request(url)
     if (status !== 200 || !Array.isArray(json)) return false
     this.odds.set(sport.key, { fetchedAt: Date.now(), rows: json as RawEvent[] })
@@ -343,6 +400,16 @@ export class OddsApiProvider {
               })),
           }))
           .filter((market) => market.key && market.outcomes.length > 0),
+      }))
+      .map((book) => ({
+        ...book,
+        markets: book.markets.flatMap((market) => {
+          if (market.key !== 'outrights') return [market]
+          return [
+            market,
+            { ...market, key: 'h2h' },
+          ]
+        }),
       }))
       .filter((book) => book.key && book.markets.length > 0)
   }

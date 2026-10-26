@@ -89,6 +89,7 @@ export default function GameManagementPage() {
         title="Game Management"
         description="Configure enablement, RTP, bet limits, and admin overrides for every casino game."
         ctaLabel="Manage"
+        showFilters={false}
         cards={cards as any}
         columns={['Game', 'Enabled', 'RTP', 'House Edge', 'Min Bet', 'Max Bet', 'Max Win', 'Override']}
         rows={settings

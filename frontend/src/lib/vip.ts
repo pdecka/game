@@ -12,7 +12,7 @@ export function vipFromVolume(volumeUsd: number) {
   const volume = Math.max(0, Number(volumeUsd) || 0)
   let currentName: VipLayerName | 'Member' = 'Member'
   let currentMin = 0
-  let next = VIP_LAYERS[0]
+  let next: (typeof VIP_LAYERS)[number] | null = VIP_LAYERS[0]
 
   for (let i = 0; i < VIP_LAYERS.length; i += 1) {
     const layer = VIP_LAYERS[i]

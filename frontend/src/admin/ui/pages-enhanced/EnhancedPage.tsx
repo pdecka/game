@@ -10,6 +10,8 @@ interface EnhancedPageProps {
   rows: string[][]
   ctaLabel: string
   onEditRow?: (row: string[], rowIndex: number) => void
+  onPrimaryAction?: () => void
+  showFilters?: boolean
 }
 
 export default function EnhancedPage({
@@ -20,12 +22,14 @@ export default function EnhancedPage({
   rows,
   ctaLabel,
   onEditRow,
+  onPrimaryAction,
+  showFilters = true,
 }: EnhancedPageProps) {
   return (
     <section className="space-y-6">
       {title || description ? (
         <div>
-          {title ? <h1 className="text-2xl font-semibold text-[#ffffff]">{title}</h1> : null}
+          {title ? <h1 className="text-2xl font-semibold text-[#14532d]">{title}</h1> : null}
           {description ? <p className="text-[#64748b] mt-1">{description}</p> : null}
         </div>
       ) : null}
@@ -36,7 +40,12 @@ export default function EnhancedPage({
         ))}
       </div>
 
-      <ActionBar searchPlaceholder={`Search ${title.toLowerCase()}...`} primaryLabel={ctaLabel} />
+      <ActionBar
+        searchPlaceholder={`Search ${title.toLowerCase() || 'records'}...`}
+        primaryLabel={ctaLabel}
+        onPrimaryAction={onPrimaryAction}
+        showFilters={showFilters}
+      />
       <TableComponent columns={columns} rows={rows} onEditRow={onEditRow} />
     </section>
   )

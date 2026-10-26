@@ -33,7 +33,7 @@ export default function SportsHubPage() {
                   href={`/sports/${sport.slug}`}
                   className="group relative overflow-hidden rounded-2xl border border-line bg-white shadow-panel transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lift"
                 >
-                  <div className="relative h-36 overflow-hidden sm:h-48">
+                  <div className="relative h-48 overflow-hidden sm:h-64">
                     <img
                       src={sport.image}
                       alt={sport.name}
