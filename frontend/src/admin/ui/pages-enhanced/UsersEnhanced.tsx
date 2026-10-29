@@ -1,12 +1,15 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import EnhancedPage from './EnhancedPage'
 import CreatePlayerModal from '../components/CreatePlayerModal'
 import { adminAuthService } from '../../services/adminAuthService'
 import toast from 'react-hot-toast'
 
 export default function UsersEnhanced() {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [users, setUsers] = useState<any[]>([])
   const [loadingUsers, setLoadingUsers] = useState(false)
@@ -64,6 +67,14 @@ export default function UsersEnhanced() {
 
   return (
     <>
+      <div className="mb-4 flex justify-end">
+        <Link
+          href="/admin/bet-history"
+          className="rounded-lg border border-[#16a34a] bg-white px-4 py-2 text-sm font-medium text-[#14532d] hover:bg-[#f0fdf4]"
+        >
+          All bet history
+        </Link>
+      </div>
       <EnhancedPage
         title="Users Management"
         description="Live player accounts. Create a username and password so a client can log in immediately."
@@ -73,6 +84,17 @@ export default function UsersEnhanced() {
         cards={cards}
         columns={columns}
         rows={rows}
+        extraAction={{
+          label: 'Bets',
+          onClick: (row) => {
+            const match = users.find((user) => user.username === row[0])
+            if (!match?.id) {
+              toast.error('Could not open this player')
+              return
+            }
+            router.push(`/admin/bet-history?userId=${match.id}`)
+          },
+        }}
       />
       <CreatePlayerModal open={open} onClose={() => setOpen(false)} />
     </>

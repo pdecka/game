@@ -118,6 +118,7 @@ export default function WalletPage() {
     loadHistory()
 
     const t = setInterval(() => {
+      loadDefaults()
       loadHistory()
       refreshWallet?.()
     }, 10000)

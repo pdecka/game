@@ -1,5 +1,7 @@
 'use client'
 
+import { getPlayCurrency } from '@/lib/playCurrency'
+
 import { useState, useCallback, useRef, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import api from '@/lib/api'
@@ -123,7 +125,7 @@ export function useKenoGame(): UseKenoGameReturn {
     try {
       const response = await api.post('/games/keno', {
         betAmount,
-        currency: 'INR',
+        currency: getPlayCurrency(),
         picks,
         clientSeed: Date.now().toString()
       })

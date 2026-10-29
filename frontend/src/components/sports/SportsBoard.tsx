@@ -11,11 +11,7 @@ import { useSportsBetSlip } from '@/components/sports/useSportsBetSlip'
 import { sportsApi, BoardMatch } from '@/services/sportsApi'
 import { SportHubItem } from '@/lib/sport-hub'
 import { PageHeader } from '@/components/ui/page-header'
-
-function money(value: number) {
-  const amount = Number.isFinite(value) ? value : 0
-  return `₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-}
+import { formatPlayMoney, usePlayCurrency } from '@/lib/playCurrency'
 
 function mapBoardMatch(match: BoardMatch): MatchData {
   return {
@@ -54,6 +50,7 @@ type SportsBoardProps = {
 export function SportsBoard({ sport, liveOnly }: SportsBoardProps) {
   const router = useRouter()
   const slip = useSportsBetSlip()
+  const { currency } = usePlayCurrency()
   const [matches, setMatches] = useState<MatchData[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -180,8 +177,8 @@ export function SportsBoard({ sport, liveOnly }: SportsBoardProps) {
 
         {slip.loggedIn ? (
           <p className="mb-4 text-sm text-ink-2">
-            Balance <span className="odds-num font-semibold text-ink">{money(slip.balance)}</span>
-            <span className="text-ink-3"> ({money(slip.exposure)})</span>
+            Balance <span className="odds-num font-semibold text-ink">{formatPlayMoney(slip.balance, currency)}</span>
+            <span className="text-ink-3"> ({formatPlayMoney(slip.exposure, currency)})</span>
           </p>
         ) : (
           <p className="mb-4 text-sm text-ink-3">Log in to place a bet. Prices stay visible either way.</p>
@@ -249,7 +246,7 @@ export function SportsBoard({ sport, liveOnly }: SportsBoardProps) {
           onClick={() => slip.setIsOpen(true)}
           className="fixed bottom-4 right-4 z-40 rounded-full bg-brand px-4 py-3 text-sm font-semibold text-white shadow-lift"
         >
-          Bet · {slip.items.length} · {money(slip.items.reduce((sum, item) => sum + Number(item.stake || 0), 0))}
+          Bet · {slip.items.length} · {formatPlayMoney(slip.items.reduce((sum, item) => sum + Number(item.stake || 0), 0), currency)}
         </button>
       )}
 

@@ -7,6 +7,7 @@ import { createPortal } from 'react-dom'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/context/AuthContext'
 import api from '@/lib/api'
+import { formatPlayMoney, usePlayCurrency } from '@/lib/playCurrency'
 import {
   Bell,
   Home,
@@ -45,6 +46,7 @@ export function Navbar({
   showBetslip,
 }: NavbarProps) {
   const { user, wallet, walletLoading, logout } = useAuth() as any
+  const { currency, setCurrency, options } = usePlayCurrency(wallet)
   const pathname = usePathname()
   const onSports = Boolean(pathname?.startsWith('/sports'))
   const [exposure, setExposure] = useState(0)
@@ -94,7 +96,8 @@ export function Navbar({
         .then((response) => {
           const rows = Array.isArray(response.data) ? response.data : []
           const openStake = rows
-            .filter((bet: { status?: string; stake?: number }) => String(bet?.status || '').toLowerCase() === 'pending')
+            .filter((bet: { status?: string; stake?: number; currency?: string }) => String(bet?.status || '').toLowerCase() === 'pending')
+            .filter((bet: { currency?: string }) => String(bet?.currency || 'INR').toUpperCase() === currency)
             .reduce((sum: number, bet: { stake?: number }) => sum + Number(bet?.stake || 0), 0)
           if (!cancelled) setExposure(openStake)
         })
@@ -111,13 +114,13 @@ export function Navbar({
       cancelled = true
       window.clearInterval(timer)
     }
-  }, [onSports, user, wallet?.INR])
+  }, [onSports, user, currency, wallet?.INR, wallet?.USDT, wallet?.BTC])
 
-  const available = Number(wallet?.INR ?? 0)
+  const available = Number(wallet?.[currency] ?? 0)
   const balance =
     onSports && user
-      ? `₹${available.toFixed(2)} (₹${exposure.toFixed(2)})`
-      : `₹${available.toFixed(2)}`
+      ? `${formatPlayMoney(available, currency)} (${formatPlayMoney(exposure, currency)})`
+      : formatPlayMoney(available, currency)
   const topIcon =
     'inline-flex h-10 w-10 items-center justify-center rounded-xl border border-brand/35 bg-white text-brand-2 transition duration-200 hover:border-brand hover:bg-brand hover:text-white'
   const topIconOn = 'border-brand bg-brand text-white hover:bg-brand-2 hover:text-white'
@@ -148,7 +151,21 @@ export function Navbar({
         </Link>
       </div>
 
-      <div className="flex min-w-0 flex-1 items-center justify-center px-1 sm:px-4">
+      <div className="flex min-w-0 flex-1 items-center justify-center gap-2 px-1 sm:px-4">
+        {user ? (
+          <select
+            aria-label="Play currency"
+            value={currency}
+            onChange={(event) => setCurrency(event.target.value === 'USDT' || event.target.value === 'BTC' ? event.target.value : 'INR')}
+            className="h-9 rounded-full border border-brand/40 bg-white px-2 text-xs font-semibold text-brand-2"
+          >
+            {options.map((code) => (
+              <option key={code} value={code}>
+                {code}
+              </option>
+            ))}
+          </select>
+        ) : null}
         <button
           type="button"
           onClick={onOpenWallet}
@@ -160,7 +177,7 @@ export function Navbar({
           </span>
           <Wallet2 className="h-4 w-4 shrink-0" />
           <span className="odds-num truncate font-semibold" title={onSports && user ? 'Live balance (exposure)' : 'Live balance'}>
-            {walletLoading && !wallet ? '₹0.00' : balance}
+            {walletLoading && !wallet ? formatPlayMoney(0, currency) : balance}
           </span>
           <span className="hidden rounded-full bg-brand/15 px-2 py-0.5 text-[10px] uppercase tracking-wide text-brand-2 sm:inline">
             Live
@@ -246,12 +263,12 @@ export function Navbar({
                     <span>Wallet</span>
                   </button>
                   <Link
-                    href="/dashboard"
+                    href="/bet-history"
                     className="flex items-center gap-3 px-4 py-2 transition-colors hover:bg-brand/10"
                     onClick={() => setIsUserMenuOpen(false)}
                   >
                     <History className="h-4 w-4 text-brand-2" />
-                    <span>History</span>
+                    <span>Bet History</span>
                   </Link>
                   <Link
                     href="/dashboard"

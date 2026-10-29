@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { usePlayCurrency } from '@/lib/playCurrency'
 import { Wallet, TrendingUp, Users } from 'lucide-react'
 
 interface CrashControlsProps {
@@ -29,6 +30,7 @@ export default function CrashControls({
   onPlaceBet,
   onCashout
 }: CrashControlsProps) {
+  const { currency } = usePlayCurrency()
   const [activeTab, setActiveTab] = useState<'manual' | 'auto'>('manual')
   
   const canBet = gameState === 'waiting' && !hasActiveBet
@@ -67,7 +69,7 @@ export default function CrashControls({
           {/* Bet Amount */}
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
-              Bet Amount (INR)
+              Bet Amount ({currency})
             </label>
             <div className="flex gap-2">
               <input
@@ -136,7 +138,7 @@ export default function CrashControls({
           {/* Auto Mode Settings */}
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
-              Bet Amount (INR)
+              Bet Amount ({currency})
             </label>
             <input
               type="number"

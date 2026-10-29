@@ -1,3 +1,4 @@
+import { sameTossSide, tossWinnerFromNotes } from './cricket-markets'
 import { gradeBookmakerBet } from './odds-grade'
 
 describe('gradeBookmakerBet', () => {
@@ -39,6 +40,50 @@ describe('gradeBookmakerBet', () => {
     expect(gradeBookmakerBet({ ...base, marketKey: 'btts', selection: 'No', homeScore: 1, awayScore: 0 })).toBe('won')
     expect(gradeBookmakerBet({ ...base, marketKey: 'draw_no_bet', selection: 'India', homeScore: 1, awayScore: 1 })).toBe('void')
     expect(gradeBookmakerBet({ ...base, marketKey: 'draw_no_bet', selection: 'India', homeScore: 2, awayScore: 0 })).toBe('won')
+  })
+
+  it('settles a toss when the winner is known, before the match has a score', () => {
+    expect(
+      gradeBookmakerBet({
+        ...base,
+        marketKey: 'toss',
+        selection: 'India',
+        homeScore: Number.NaN,
+        awayScore: Number.NaN,
+        tossWinner: 'India',
+      }),
+    ).toBe('won')
+    expect(
+      gradeBookmakerBet({ ...base, marketKey: 'toss', selection: 'Pakistan', homeScore: 0, awayScore: 0, tossWinner: 'India' }),
+    ).toBe('lost')
+    expect(gradeBookmakerBet({ ...base, marketKey: 'toss', selection: 'India', homeScore: 10, awayScore: 4, tossWinner: null })).toBe(
+      'open',
+    )
+    expect(
+      tossWinnerFromNotes(
+        [{ type: 'toss', text: 'Sikkim , elected to field first' }],
+        'Sikkim',
+        'Nagaland',
+      ),
+    ).toBe('Sikkim')
+    expect(
+      tossWinnerFromNotes([{ type: 'toss', text: 'Hyderabad , elected to bat first' }], 'Hyderabad (India)', 'Punjab'),
+    ).toBe('Hyderabad (India)')
+    expect(
+      tossWinnerFromNotes(
+        [{ type: 'toss', text: 'Jammu and Kashmir , elected to field first' }],
+        'Jammu & Kashmir',
+        'Mumbai',
+      ),
+    ).toBe('Jammu & Kashmir')
+    expect(tossWinnerFromNotes([{ type: 'toss', text: 'India , elected to bat first' }], 'West Indies', 'India')).toBe('India')
+    expect(tossWinnerFromNotes([{ type: 'toss', text: 'West Indies , elected to field first' }], 'West Indies', 'India')).toBe(
+      'West Indies',
+    )
+    expect(sameTossSide('India', 'West Indies')).toBe(false)
+    expect(gradeBookmakerBet({ ...base, marketKey: 'toss', selection: 'teamA', homeScore: Number.NaN, awayScore: Number.NaN, tossWinner: 'India' })).toBe(
+      'lost',
+    )
   })
 
   it('grades a team goal total and leaves unnamed markets open', () => {

@@ -1,5 +1,7 @@
 'use client'
 
+import { getPlayCurrency, playBalance } from '@/lib/playCurrency'
+
 import { useState, useCallback, useRef } from 'react'
 import toast from 'react-hot-toast'
 import api from '@/lib/api'
@@ -83,7 +85,7 @@ export function useWheelGame(): UseWheelGameReturn {
       return
     }
     
-    if (betAmount > Number(wallet?.INR ?? 0)) {
+    if (betAmount > playBalance(wallet)) {
       toast.error('Insufficient balance')
       return
     }
@@ -102,7 +104,7 @@ export function useWheelGame(): UseWheelGameReturn {
     try {
       const response = await api.post('/games/wheel', {
         betAmount,
-        currency: 'INR',
+        currency: getPlayCurrency(),
         clientSeed: Date.now().toString(),
       })
       session = response.data

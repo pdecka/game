@@ -405,7 +405,12 @@ export class AdminService {
   }
 
   async listBankAccounts() {
-    return this.prisma.bankAccount.findMany({ orderBy: { createdAt: 'desc' } });
+    await this.walletService.ensureInitialBankAccount();
+    const rows = await this.prisma.bankAccount.findMany({
+      orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
+    });
+    const shownId = rows.find((row) => row.status === BankAccountStatus.ACTIVE)?.id ?? null;
+    return rows.map((row) => ({ ...row, shownToUsers: row.id === shownId }));
   }
 
   async upsertBankAccount(dto: {
@@ -428,8 +433,8 @@ export class AdminService {
           accountHolder: dto.accountHolder,
           accountNumber: dto.accountNumber,
           ifsc: dto.ifsc,
-          upiId: dto.upiId ?? existing.upiId ?? null,
-          qrImageUrl: dto.qrImageUrl ?? existing.qrImageUrl ?? null,
+          upiId: dto.upiId === undefined ? existing.upiId ?? null : dto.upiId.trim() || null,
+          qrImageUrl: dto.qrImageUrl === undefined ? existing.qrImageUrl ?? null : dto.qrImageUrl.trim() || null,
           status: (dto.status ?? existing.status ?? BankAccountStatus.ACTIVE) as any,
         },
       });
@@ -441,8 +446,8 @@ export class AdminService {
         accountHolder: dto.accountHolder,
         accountNumber: dto.accountNumber,
         ifsc: dto.ifsc,
-        upiId: dto.upiId ?? null,
-        qrImageUrl: dto.qrImageUrl ?? null,
+        upiId: dto.upiId?.trim() || null,
+        qrImageUrl: dto.qrImageUrl?.trim() || null,
         status: (dto.status ?? BankAccountStatus.ACTIVE) as any,
       },
     });

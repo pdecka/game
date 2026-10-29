@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ADMIN_NAV_ITEMS } from '../routes/AdminRoutes'
-import { FiHome, FiUsers, FiDollarSign, FiSettings, FiShield, FiBarChart2, FiFileText, FiActivity } from 'react-icons/fi'
+import { FiHome, FiUsers, FiDollarSign, FiSettings, FiShield, FiBarChart2, FiFileText, FiActivity, FiClock } from 'react-icons/fi'
 
 type SidebarProps = {
   collapsed?: boolean
@@ -16,6 +16,7 @@ export default function Sidebar({ collapsed = false, onNavigate }: SidebarProps)
   const iconMap: Record<string, React.ElementType> = {
     Dashboard: FiHome,
     Users: FiUsers,
+    'Bet History': FiClock,
     Payments: FiDollarSign,
     Games: FiActivity,
     Settings: FiSettings,

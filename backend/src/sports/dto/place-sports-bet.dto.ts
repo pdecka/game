@@ -1,4 +1,5 @@
 import { IsEnum, IsNumber, IsOptional, IsString, Min, MinLength } from 'class-validator'
+import { Currency } from '@gaming-platform/shared'
 import { SportsBetType } from '../sports.enums'
 
 export class PlaceSportsBetDto {
@@ -38,5 +39,10 @@ export class PlaceSportsBetDto {
   @IsOptional()
   @IsNumber()
   odds?: number
+
+  /** Wallet the stake is taken from. Missing values stay on local currency. */
+  @IsOptional()
+  @IsEnum(Currency)
+  currency?: Currency
 }
 

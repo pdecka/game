@@ -1,5 +1,7 @@
 'use client'
 
+import { getPlayCurrency, playBalance } from '@/lib/playCurrency'
+
 import { useState, useEffect, useRef, useCallback } from 'react'
 import toast from 'react-hot-toast'
 import api from '@/lib/api'
@@ -180,7 +182,7 @@ export function useCrashGame(): UseCrashGameReturn {
       return
     }
     
-    if (betAmount > Number(wallet?.INR ?? 0)) {
+    if (betAmount > playBalance(wallet)) {
       toast.error('Insufficient balance')
       return
     }
@@ -191,7 +193,7 @@ export function useCrashGame(): UseCrashGameReturn {
     try {
       const response = await api.post('/games/crash', {
         betAmount,
-        currency: 'INR',
+        currency: getPlayCurrency(),
         cashOutAt: autoCashout,
         clientSeed: Date.now().toString(),
       })

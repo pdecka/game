@@ -80,6 +80,37 @@ export const adminFinanceService = {
     return res.data
   },
 
+  async uploadBankQr(file: File) {
+    const body = new FormData()
+    body.append('file', file)
+    const res = await adminApi.post('/admin/bank-accounts/qr', body, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    return res.data as { url: string }
+  },
+
+  async getDepositCurrencies() {
+    const res = await adminApi.get('/admin/payments/method-settings')
+    const rows = Array.isArray(res.data) ? res.data : []
+    return rows.filter((row: { purpose?: string }) => row.purpose === 'deposit')
+  },
+
+  async saveDepositCurrency(payload: {
+    method: string
+    currency: string
+    network?: string
+    displayName?: string
+    depositAddress?: string
+    qrImageUrl?: string
+    enabled?: boolean
+  }) {
+    const res = await adminApi.post('/admin/payments/method-settings', {
+      purpose: 'deposit',
+      ...payload,
+    })
+    return res.data
+  },
+
   async getBankAccounts() {
     const res = await adminApi.get('/admin/bank-accounts')
     return res.data
@@ -91,6 +122,8 @@ export const adminFinanceService = {
     accountHolder: string
     accountNumber: string
     ifsc: string
+    upiId?: string
+    qrImageUrl?: string
     status?: string
   }) {
     if (payload.id) {
@@ -98,6 +131,11 @@ export const adminFinanceService = {
       return res.data
     }
     const res = await adminApi.post('/admin/bank-accounts', payload)
+    return res.data
+  },
+
+  async getReportDetail(params?: { from?: string; to?: string; username?: string }) {
+    const res = await adminApi.get('/admin/reports/detail', { params })
     return res.data
   },
 

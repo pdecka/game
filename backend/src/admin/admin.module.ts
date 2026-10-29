@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AdminService } from './admin.service';
+import { AdminReportsService } from './admin-reports.service';
 import { AdminController } from './admin.controller';
 import { UsersModule } from '../users/users.module';
 import { WalletModule } from '../wallet/wallet.module';
@@ -16,7 +17,7 @@ import { AffiliateModule } from '../affiliate/affiliate.module';
     AffiliateModule,
   ],
   controllers: [AdminController],
-  providers: [AdminService],
+  providers: [AdminService, AdminReportsService],
   exports: [AdminService],
 })
 export class AdminModule {}

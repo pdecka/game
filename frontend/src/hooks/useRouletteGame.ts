@@ -1,5 +1,7 @@
 'use client'
 
+import { getPlayCurrency } from '@/lib/playCurrency'
+
 import { useState, useEffect, useCallback, useRef } from 'react'
 import toast from 'react-hot-toast'
 import api from '@/lib/api'
@@ -170,7 +172,7 @@ export function useRouletteGame(): UseRouletteGameReturn {
     const bet = bets[0]
     const payload: Record<string, unknown> = {
       betAmount: bet.amount,
-      currency: 'INR',
+      currency: getPlayCurrency(),
       betType: bet.type === 'straight' ? 'number' : bet.type,
       clientSeed: Date.now().toString()
     }

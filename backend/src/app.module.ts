@@ -16,6 +16,7 @@ import { FraudModule } from './fraud/fraud.module';
 import { SportsModule } from './sports/sports.module';
 import { AffiliateModule } from './affiliate/affiliate.module';
 import { BlogModule } from './blog/blog.module';
+import { BetHistoryModule } from './bet-history/bet-history.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { BlogModule } from './blog/blog.module';
     SportsModule,
     AffiliateModule,
     BlogModule,
+    BetHistoryModule,
   ],
   providers: [
     {

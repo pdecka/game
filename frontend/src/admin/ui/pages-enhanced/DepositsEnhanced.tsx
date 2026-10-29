@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import StatCard from '../components/StatCard'
-import DateRangeCalendar, { useAdminDateRange } from '../components/DateRangeCalendar'
-import { istDayBounds } from '../../lib/istDates'
+import { useAdminDateRange } from '../components/DateRangeCalendar'
+import DateRangePicker from '../components/DateRangePicker'
+import { formatIstRangeLabel, istDayBounds } from '../../lib/istDates'
 import { adminFinanceService, type PaymentRequestRow } from '../../services/adminFinanceService'
 
 type DepositFilter = {
@@ -93,9 +94,14 @@ export default function DepositsEnhanced() {
 
   return (
     <section className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-[#14532d]">Deposits</h1>
-        <p className="text-[#64748b] mt-1">Approve or reject deposit requests. Default view is the last 2 IST days and resets at midnight India time.</p>
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-[#14532d]">Deposits</h1>
+          <p className="mt-1 text-sm text-[#64748b]">
+            {formatIstRangeLabel(range.from, range.to)}. Use the arrows for one day, or open the calendar and drag for more days.
+          </p>
+        </div>
+        <DateRangePicker from={range.from} to={range.to} onChange={setRange} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -106,17 +112,14 @@ export default function DepositsEnhanced() {
 
       <div className="rounded-xl bg-[#ffffff] border border-[#e2e8f0] p-4 shadow-sm">
         <div className="flex flex-col lg:flex-row gap-3 lg:items-end lg:justify-between">
-          <div className="flex flex-col xl:flex-row gap-3">
-            <DateRangeCalendar from={range.from} to={range.to} onChange={setRange} />
-            <div className="min-w-[220px]">
-              <label className="text-xs text-[#64748b]">User (username)</label>
-              <input
-                className="mt-1 w-full rounded-md bg-[#f0fdf4] border border-[#bbf7d0] px-3 py-2 text-[#020617] placeholder:text-[#64748b] focus:ring-2 focus:ring-[#22c55e] focus:border-[#22c55e]"
-                placeholder="e.g. romil"
-                value={filter.username ?? ''}
-                onChange={(e) => setFilter((f) => ({ ...f, username: e.target.value || undefined }))}
-              />
-            </div>
+          <div className="min-w-[220px]">
+            <label className="text-xs text-[#64748b]">User (username)</label>
+            <input
+              className="mt-1 w-full rounded-md bg-[#f0fdf4] border border-[#bbf7d0] px-3 py-2 text-[#020617] placeholder:text-[#64748b] focus:ring-2 focus:ring-[#22c55e] focus:border-[#22c55e]"
+              placeholder="e.g. romil"
+              value={filter.username ?? ''}
+              onChange={(e) => setFilter((f) => ({ ...f, username: e.target.value || undefined }))}
+            />
           </div>
 
           <div className="flex flex-wrap gap-2">

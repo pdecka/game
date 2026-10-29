@@ -10,7 +10,7 @@ import { NormalizedEvent, OddsApiProvider, OddsBookmaker } from './providers/odd
 import { EspnScoreboardProvider } from './providers/espn-scoreboard.provider'
 import { CricinfoProvider } from './providers/cricinfo.provider'
 import { gradeBookmakerBet } from './odds-grade'
-import { commentaryItems, cricketRuns, firstBallAfter, gradeNextBall, overRuns, overNumber, playerRunsMap } from './cricket-markets'
+import { commentaryItems, cricketRuns, firstBallAfter, gradeNextBall, overRuns, overNumber, playerRunsMap, tossWinnerFromNotes } from './cricket-markets'
 import { toNum } from '../common/utils/prisma-decimal'
 import { SPORT_HUB, sportBySlug, matchBelongsToSport } from './sport-hub'
 
@@ -24,6 +24,14 @@ type PlaceBetInput = {
   marketKey?: string
   bookmaker?: string
   odds?: number
+  currency?: string
+}
+
+function betCurrency(value?: string): Currency {
+  const code = String(value || Currency.INR).toUpperCase()
+  if (code === Currency.USDT) return Currency.USDT
+  if (code === Currency.BTC) return Currency.BTC
+  return Currency.INR
 }
 
 @Injectable()
@@ -36,6 +44,8 @@ export class SportsService implements OnModuleInit, OnModuleDestroy {
 
   private fetchTimer: any
   private settleTimer: any
+  private tossTimer: any
+  private settlingIds = new Set<string>()
   private refreshing = false
   private bootstrapped = false
   private ready: Promise<void> | null = null
@@ -57,12 +67,14 @@ export class SportsService implements OnModuleInit, OnModuleDestroy {
     await this.ensureDefaultSettings()
     this.fetchTimer = setInterval(() => this.tickOddsFeed(12).catch(() => {}), 60_000)
     this.settleTimer = setInterval(() => this.settleAll().catch(() => {}), 60_000)
+    this.tossTimer = setInterval(() => this.settlePendingToss().catch(() => {}), 2_000)
     void this.ensureReady().catch(() => {})
   }
 
   onModuleDestroy() {
     clearInterval(this.fetchTimer)
     clearInterval(this.settleTimer)
+    clearInterval(this.tossTimer)
   }
 
   private async ensureDefaultSettings() {
@@ -660,6 +672,7 @@ export class SportsService implements OnModuleInit, OnModuleDestroy {
 
     const stake = Number(input.stake)
     if (!stake || stake <= 0) throw new BadRequestException('Invalid stake')
+    const currency = betCurrency(input.currency)
     const h2h = bookmakers.flatMap((book) => book.markets || []).find((market) => market.key === 'h2h')
     const drawOffered = Boolean(h2h?.outcomes?.some((outcome) => outcome.name.toLowerCase() === 'draw'))
 
@@ -675,7 +688,7 @@ export class SportsService implements OnModuleInit, OnModuleDestroy {
         stake,
         odds: quoted.outcome.price,
         payoutAmount: 0,
-        currency: Currency.INR,
+        currency,
         status: SportsBetStatus.PENDING as any,
         meta: {
           source: score.source || 'the-odds-api',
@@ -699,7 +712,7 @@ export class SportsService implements OnModuleInit, OnModuleDestroy {
       },
     })
     try {
-      await this.walletService.createTransaction(userId, Currency.INR, stake, TransactionType.BET, savedBet.id, {
+      await this.walletService.createTransaction(userId, currency, stake, TransactionType.BET, savedBet.id, {
         domain: 'sports',
       })
     } catch (err) {
@@ -813,7 +826,7 @@ export class SportsService implements OnModuleInit, OnModuleDestroy {
       if (Number(option.line) !== Number(input.line)) throw new BadRequestException('Line changed, refresh odds')
     }
 
-    const currency = Currency.INR
+    const currency = betCurrency(input.currency)
     const stake = Number(input.stake)
     if (!stake || stake <= 0) throw new BadRequestException('Invalid stake')
 
@@ -864,8 +877,73 @@ export class SportsService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async settleAll() {
+    await this.settlePendingToss()
     await this.settleBookmakerBets()
     await this.settleFinishedMatches()
+  }
+
+  private async settlePendingToss() {
+    const pending = await this.prisma.sportsBet.findMany({
+      where: { status: SportsBetStatus.PENDING as any, betType: SportsBetType.TOSS_WINNER as any },
+      orderBy: { createdAt: 'asc' },
+      take: 200,
+    })
+    if (!pending.length) return
+    const winnerByMatch = new Map<string, string | null>()
+    for (const bet of pending) {
+      if (this.settlingIds.has(bet.id)) continue
+      const match = await this.prisma.sportsMatch.findUnique({ where: { id: bet.matchId } })
+      if (!match) continue
+      if (!winnerByMatch.has(match.id)) {
+        const startMs = match.startTime ? new Date(match.startTime).getTime() : 0
+        const due =
+          !startMs ||
+          startMs - Date.now() <= 15 * 60_000 ||
+          match.status === SportsMatchStatus.LIVE ||
+          match.status === SportsMatchStatus.FINISHED
+        winnerByMatch.set(match.id, due ? await this.resolveTossWinner(match) : null)
+      }
+      const tossWinner = winnerByMatch.get(match.id)
+      if (!tossWinner) continue
+      const selection =
+        bet.selection === 'teamA' ? match.teamA : bet.selection === 'teamB' ? match.teamB : bet.selection
+      const grade = gradeBookmakerBet({
+        marketKey: 'toss',
+        selection,
+        homeTeam: match.teamA,
+        awayTeam: match.teamB,
+        homeScore: Number.NaN,
+        awayScore: Number.NaN,
+        tossWinner,
+      })
+      if (grade === 'open') continue
+      await this.applyGrade(bet, grade, { tossWinner })
+    }
+  }
+
+  private async resolveTossWinner(match: any): Promise<string | null> {
+    const fromResult = this.resolveMatchOutcome(match)?.tossWinnerKey
+    if (fromResult === 'teamA') return match.teamA
+    if (fromResult === 'teamB') return match.teamB
+    const score = (match.score as any) || {}
+    const sportKey = String(score.sportKey || match.sport || '')
+    if (!sportKey.startsWith('cricket') && !String(match.sport || '').toLowerCase().includes('cricket')) return null
+    let summary: any = null
+    try {
+      summary = await this.espn.fetchCricketSummary(sportKey, match.externalId)
+    } catch {
+      summary = null
+    }
+    if (!summary) return null
+    const competitionNotes = (summary?.header?.competitions || []).flatMap((row: any) =>
+      Array.isArray(row?.notes) ? row.notes : [],
+    )
+    const notes = [
+      ...(Array.isArray(summary?.notes) ? summary.notes : []),
+      ...(Array.isArray(summary?.header?.notes) ? summary.header.notes : []),
+      ...competitionNotes,
+    ]
+    return tossWinnerFromNotes(notes, match.teamA, match.teamB)
   }
 
   private scoreTtlMs() {
@@ -884,17 +962,18 @@ export class SportsService implements OnModuleInit, OnModuleDestroy {
       const meta = (bet.meta as any) || {}
       const marketKey = String(meta.marketKey || 'h2h')
       const liveMarket = marketKey === 'next_ball' || marketKey === 'current_over_runs'
+      const settlesBeforeFinish = liveMarket || marketKey === 'toss'
       const kickedOff = match.startTime ? new Date(match.startTime).getTime() <= Date.now() : false
       const staleBet = Date.now() - new Date(bet.createdAt).getTime() > 6 * 60 * 60_000
-      if (!liveMarket && match.status !== SportsMatchStatus.FINISHED && (kickedOff || staleBet)) {
+      if (!settlesBeforeFinish && match.status !== SportsMatchStatus.FINISHED && (kickedOff || staleBet)) {
         match = (await this.refreshEspnMatchOutcome(match)) || match
       }
       const score = (match.score as any) || {}
-      if (!liveMarket && match.status !== SportsMatchStatus.FINISHED) continue
+      if (!settlesBeforeFinish && match.status !== SportsMatchStatus.FINISHED) continue
 
       const homeScore = cricketRuns(score.teamA) ?? Number(score.teamA)
       const awayScore = cricketRuns(score.teamB) ?? Number(score.teamB)
-      if (!liveMarket && (!Number.isFinite(homeScore) || !Number.isFinite(awayScore))) continue
+      if (!settlesBeforeFinish && (!Number.isFinite(homeScore) || !Number.isFinite(awayScore))) continue
 
       let playerGoals: Map<string, number> | undefined
       let playerRuns: Map<string, number> | undefined
@@ -917,9 +996,7 @@ export class SportsService implements OnModuleInit, OnModuleDestroy {
         const ctx = cricketCache.get(match.id)
         if (ctx?.summary) {
           playerRuns = playerRunsMap(ctx.summary)
-          const tossNote = (ctx.summary.notes || []).find((note: any) => /elected/i.test(String(note?.text || '')))
-          const tossName = String(tossNote?.text || '').split(',')[0].trim()
-          tossWinner = tossName || null
+          tossWinner = tossWinnerFromNotes(ctx.summary.notes, match.teamA, match.teamB)
           const items = commentaryItems(ctx.summary, ctx.playByPlay)
           if (marketKey === 'next_ball') {
             nextBall = firstBallAfter(items, Number(meta.lastBallSequence || 0))
@@ -1088,6 +1165,16 @@ export class SportsService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async applyGrade(bet: any, grade: 'won' | 'lost' | 'void', outcome: any) {
+    if (this.settlingIds.has(bet.id)) return
+    this.settlingIds.add(bet.id)
+    try {
+      await this.applyGradeOnce(bet, grade, outcome)
+    } finally {
+      this.settlingIds.delete(bet.id)
+    }
+  }
+
+  private async applyGradeOnce(bet: any, grade: 'won' | 'lost' | 'void', outcome: any) {
     const fresh = await this.prisma.sportsBet.findUnique({ where: { id: bet.id } })
     if (!fresh || fresh.status !== SportsBetStatus.PENDING) return
     const stake = toNum(fresh.stake)
@@ -1135,24 +1222,24 @@ export class SportsService implements OnModuleInit, OnModuleDestroy {
 
     const tossRaw = String(r.tossWinner ?? r.toss_winner ?? r.toss ?? '').toLowerCase()
     let tossWinnerKey: 'teamA' | 'teamB' | undefined
-    if (tossRaw.includes('draw') || tossRaw.includes('tie')) {
-      tossWinnerKey = undefined
-    } else if (
-      tossRaw === 'teama' ||
-      tossRaw === 'team_a' ||
-      tossRaw === 'a' ||
-      tossRaw.includes('home') ||
-      (tossRaw.includes('team') && tossRaw.includes('a'))
-    ) {
-      tossWinnerKey = 'teamA'
-    } else if (
+    const isTeamB =
       tossRaw === 'teamb' ||
       tossRaw === 'team_b' ||
       tossRaw === 'b' ||
       tossRaw.includes('away') ||
-      (tossRaw.includes('team') && tossRaw.includes('b'))
-    ) {
+      /\bteam\s*b\b/.test(tossRaw)
+    const isTeamA =
+      tossRaw === 'teama' ||
+      tossRaw === 'team_a' ||
+      tossRaw === 'a' ||
+      tossRaw.includes('home') ||
+      /\bteam\s*a\b/.test(tossRaw)
+    if (tossRaw.includes('draw') || tossRaw.includes('tie')) {
+      tossWinnerKey = undefined
+    } else if (isTeamB && !isTeamA) {
       tossWinnerKey = 'teamB'
+    } else if (isTeamA && !isTeamB) {
+      tossWinnerKey = 'teamA'
     }
 
     const winner = String(r.winner ?? r.winnerKey ?? r.winner_team ?? '').toLowerCase()
@@ -1218,8 +1305,23 @@ export class SportsService implements OnModuleInit, OnModuleDestroy {
 
         if (bet.betType === SportsBetType.TOSS_WINNER) {
           const t = outcome.tossWinnerKey
-          if (!t) voided = true
-          else won = bet.selection === t
+          if (!t) {
+            await this.applyGrade(bet, 'void', { outcome })
+          } else {
+            const picked = bet.selection === 'teamA' ? match.teamA : bet.selection === 'teamB' ? match.teamB : bet.selection
+            const winnerName = t === 'teamA' ? match.teamA : match.teamB
+            const grade = gradeBookmakerBet({
+              marketKey: 'toss',
+              selection: picked,
+              homeTeam: match.teamA,
+              awayTeam: match.teamB,
+              homeScore: Number.NaN,
+              awayScore: Number.NaN,
+              tossWinner: winnerName,
+            })
+            if (grade !== 'open') await this.applyGrade(bet, grade, { outcome })
+          }
+          continue
         }
 
         if (bet.betType === SportsBetType.FIRST_GOAL) {

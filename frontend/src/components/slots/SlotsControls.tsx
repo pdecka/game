@@ -1,6 +1,7 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
+import { usePlayCurrency } from '@/lib/playCurrency'
 import { Wallet, TrendingUp, Zap, Coins } from 'lucide-react'
 
 interface SlotsControlsProps {
@@ -22,6 +23,7 @@ export default function SlotsControls({
   onBetAmountChange,
   onSpin
 }: SlotsControlsProps) {
+  const { currency } = usePlayCurrency()
   const canSpin = gameState === 'idle'
   const isPlaying = gameState === 'spinning' || gameState === 'evaluating'
   
@@ -39,7 +41,7 @@ export default function SlotsControls({
       <div className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-slate-300 mb-2">
-            Bet Amount (INR)
+            Bet Amount ({currency})
           </label>
           <div className="flex gap-2">
             <input

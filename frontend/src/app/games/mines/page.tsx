@@ -6,6 +6,7 @@ import { Navbar } from '@/components/layout/Navbar'
 import { WalletModal } from '@/components/layout/WalletModal'
 import { SearchOverlay } from '@/components/layout/SearchOverlay'
 import { useAuth } from '@/context/AuthContext'
+import { formatPlayMoney, playBalance, usePlayCurrency } from '@/lib/playCurrency'
 import MinesGrid from '@/components/game/MinesGrid'
 import GameControls from '@/components/game/GameControls'
 import HistoryTable, { dummyHistory } from '@/components/game/HistoryTable'
@@ -17,6 +18,7 @@ import { Shield, RefreshCw, Trophy, MessageSquare, Phone, Facebook, Twitter, Ins
 
 export default function MinesPage() {
   const { user, wallet, walletLoading, refreshWallet } = useAuth() as any
+  const { currency } = usePlayCurrency(wallet)
   
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
@@ -31,7 +33,7 @@ export default function MinesPage() {
   const [showProvablyFair, setShowProvablyFair] = useState(false)
   
   const walletLabel =
-    walletLoading || !wallet?.INR ? '₹0.00' : `₹${Number(wallet.INR).toFixed(2)}`
+    walletLoading && !wallet ? formatPlayMoney(0, currency) : formatPlayMoney(playBalance(wallet, currency), currency)
 
   const {
     gameState,

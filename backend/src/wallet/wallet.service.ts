@@ -292,10 +292,29 @@ export class WalletService {
     return { entries, total };
   }
 
+  async ensureInitialBankAccount() {
+    const existing = await this.prisma.bankAccount.count();
+    if (existing > 0) return;
+    await this.prisma.$transaction(async (tx) => {
+      const count = await tx.bankAccount.count();
+      if (count > 0) return;
+      await tx.bankAccount.create({
+        data: {
+          bankName: 'State Bank of India',
+          accountHolder: 'Romil',
+          accountNumber: '39286377165',
+          ifsc: 'SBIN0060445',
+          status: BankAccountStatus.active,
+        },
+      });
+    });
+  }
+
   async getActiveBankAccounts() {
+    await this.ensureInitialBankAccount();
     return this.prisma.bankAccount.findMany({
       where: { status: BankAccountStatus.active },
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
     });
   }
 

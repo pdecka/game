@@ -1,5 +1,7 @@
 'use client'
 
+import { getPlayCurrency } from '@/lib/playCurrency'
+
 import { useState, useEffect, useRef, useCallback } from 'react'
 import toast from 'react-hot-toast'
 import api from '@/lib/api'
@@ -95,7 +97,7 @@ export function useHiloGame(): UseHiloGameReturn {
     try {
       const response = await api.post('/games/hilo/start', {
         betAmount,
-        currency: 'INR',
+        currency: getPlayCurrency(),
         clientSeed: Date.now().toString()
       })
       

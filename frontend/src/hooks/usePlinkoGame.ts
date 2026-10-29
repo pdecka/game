@@ -1,5 +1,7 @@
 'use client'
 
+import { getPlayCurrency, playBalance } from '@/lib/playCurrency'
+
 import { useState, useEffect, useCallback, useRef } from 'react'
 import toast from 'react-hot-toast'
 import api from '@/lib/api'
@@ -127,7 +129,7 @@ export function usePlinkoGame(): UsePlinkoGameReturn {
       return
     }
     
-    if (betAmount > Number(wallet?.INR ?? 0)) {
+    if (betAmount > playBalance(wallet)) {
       toast.error('Insufficient balance')
       return
     }
@@ -138,7 +140,7 @@ export function usePlinkoGame(): UsePlinkoGameReturn {
     try {
       const response = await api.post('/games/plinko', {
         betAmount,
-        currency: 'INR',
+        currency: getPlayCurrency(),
         rows,
         risk,
         clientSeed: Date.now().toString(),

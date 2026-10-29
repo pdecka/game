@@ -1,5 +1,7 @@
 'use client'
 
+import { getPlayCurrency, playBalance } from '@/lib/playCurrency'
+
 import { useState, useCallback, useRef } from 'react'
 import toast from 'react-hot-toast'
 import api from '@/lib/api'
@@ -95,7 +97,7 @@ export function useLimboGame(): UseLimboGameReturn {
       return
     }
     
-    if (betAmount > Number(wallet?.INR ?? 0)) {
+    if (betAmount > playBalance(wallet)) {
       toast.error('Insufficient balance')
       return
     }
@@ -114,7 +116,7 @@ export function useLimboGame(): UseLimboGameReturn {
     try {
       const response = await api.post('/games/limbo', {
         betAmount,
-        currency: 'INR',
+        currency: getPlayCurrency(),
         targetMultiplier,
         clientSeed: Date.now().toString(),
       })

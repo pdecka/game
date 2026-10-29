@@ -1,9 +1,10 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import api from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
+import { getPlayCurrency, playBalance, usePlayCurrency } from '@/lib/playCurrency'
 
 export type SportsSlipItem = {
   id: string
@@ -24,6 +25,7 @@ const STORAGE_KEY = 'sports-bet-slip'
 
 export function useSportsBetSlip() {
   const { user, wallet, refreshWallet } = useAuth() as any
+  const { currency } = usePlayCurrency(wallet)
   const [items, setItems] = useState<SportsSlipItem[]>([])
   const [isOpen, setIsOpen] = useState(false)
   const [isPlacing, setIsPlacing] = useState(false)
@@ -48,7 +50,7 @@ export function useSportsBetSlip() {
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(items))
   }, [items, hydrated])
 
-  const balance = Number(wallet?.INR ?? 0)
+  const balance = playBalance(wallet, currency)
 
   const refreshExposure = useCallback(async () => {
     if (!user) {
@@ -60,6 +62,7 @@ export function useSportsBetSlip() {
       const rows = Array.isArray(response.data) ? response.data : []
       const openStake = rows
         .filter((bet) => String(bet?.status || '').toLowerCase() === 'pending')
+        .filter((bet) => String(bet?.currency || 'INR').toUpperCase() === getPlayCurrency())
         .reduce((sum, bet) => sum + Number(bet?.stake || 0), 0)
       setExposure(openStake)
     } catch {
@@ -69,7 +72,19 @@ export function useSportsBetSlip() {
 
   useEffect(() => {
     refreshExposure()
-  }, [refreshExposure, wallet?.INR])
+  }, [refreshExposure, currency, wallet?.INR, wallet?.USDT, wallet?.BTC])
+
+  const refreshWalletRef = useRef(refreshWallet)
+  refreshWalletRef.current = refreshWallet
+
+  useEffect(() => {
+    if (!user || exposure <= 0) return
+    const timer = window.setInterval(() => {
+      void refreshWalletRef.current?.()
+      void refreshExposure()
+    }, 2000)
+    return () => window.clearInterval(timer)
+  }, [user, exposure, refreshExposure])
 
   const toggleOdds = useCallback(
     (item: Omit<SportsSlipItem, 'stake' | 'type'> & { stake?: number }) => {
@@ -125,6 +140,7 @@ export function useSportsBetSlip() {
             bookmaker: item.bookmakerKey || item.bookmaker,
             odds: item.odds,
             ...(item.line != null ? { line: item.line } : {}),
+            currency: getPlayCurrency(),
           })
           placed.push(item.id)
         } catch (error: any) {

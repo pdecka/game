@@ -1,5 +1,9 @@
+'use client'
+
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { useAuth } from '@/context/AuthContext'
+import { formatPlayMoney } from '@/lib/playCurrency'
 
 type WalletModalProps = {
   open: boolean
@@ -8,7 +12,13 @@ type WalletModalProps = {
 }
 
 export function WalletModal({ open, onClose, balanceLabel }: WalletModalProps) {
+  const { wallet } = useAuth() as any
   if (!open) return null
+  const rows = [
+    { code: 'INR' as const, amount: Number(wallet?.INR || 0) },
+    { code: 'USDT' as const, amount: Number(wallet?.USDT || 0) },
+    { code: 'BTC' as const, amount: Number(wallet?.BTC || 0) },
+  ]
 
   return (
     <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/70 p-0 backdrop-blur-sm sm:items-center sm:p-4">
@@ -31,22 +41,12 @@ export function WalletModal({ open, onClose, balanceLabel }: WalletModalProps) {
         </div>
 
         <div className="mb-4 space-y-3 rounded-xl border border-line bg-elevated p-4 text-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-ink-2">BTC</span>
-            <span className="odds-num text-ink-3">0.00000000</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-ink-2">LTC</span>
-            <span className="odds-num text-ink-3">0.00000000</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-ink-2">DOGE</span>
-            <span className="odds-num text-ink-3">0.00000000</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-ink-2">INR</span>
-            <span className="odds-num text-ink">{balanceLabel}</span>
-          </div>
+          {rows.map((row) => (
+            <div key={row.code} className="flex items-center justify-between">
+              <span className="text-ink-2">{row.code}</span>
+              <span className="odds-num text-ink">{formatPlayMoney(row.amount, row.code)}</span>
+            </div>
+          ))}
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">

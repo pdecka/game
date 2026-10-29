@@ -566,6 +566,14 @@ export class EspnScoreboardProvider {
     }
   }
 
+  async fetchCricketSummary(sportKey: string, externalId: string) {
+    const parsed = this.parseEvent(sportKey, externalId)
+    if (!parsed || parsed.sport !== 'cricket') return null
+    return this.fetchJson(
+      `https://site.api.espn.com/apis/site/v2/sports/${encodeURIComponent(parsed.sport)}/${encodeURIComponent(parsed.league)}/summary?event=${encodeURIComponent(parsed.eventId)}`,
+    )
+  }
+
   async fetchCricketContext(sportKey: string, externalId: string) {
     const parsed = this.parseEvent(sportKey, externalId)
     if (!parsed || parsed.sport !== 'cricket') return null

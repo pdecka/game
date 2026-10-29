@@ -6,9 +6,10 @@ interface TableComponentProps {
   columns: string[]
   rows: string[][]
   onEditRow?: (row: string[], rowIndex: number) => void
+  extraAction?: { label: string; onClick: (row: string[]) => void }
 }
 
-export default function TableComponent({ columns, rows, onEditRow }: TableComponentProps) {
+export default function TableComponent({ columns, rows, onEditRow, extraAction }: TableComponentProps) {
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const pageSize = 6
@@ -68,6 +69,15 @@ export default function TableComponent({ columns, rows, onEditRow }: TableCompon
                   ))}
                   <td className="py-3 pr-4 whitespace-nowrap">
                     <div className="flex gap-2">
+                      {extraAction ? (
+                        <button
+                          type="button"
+                          className="rounded-md bg-[#16a34a] px-2 py-1 text-xs text-white transition-all duration-200 hover:opacity-90"
+                          onClick={() => extraAction.onClick(row)}
+                        >
+                          {extraAction.label}
+                        </button>
+                      ) : null}
                       <button className="rounded-md px-2 py-1 bg-[#e2e8f0] hover:opacity-90 text-[#020617] text-xs transition-all duration-200">
                         View
                       </button>

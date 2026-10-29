@@ -71,8 +71,8 @@ export class GamesService {
     if (!setting.enabled) {
       throw new BadRequestException('Game is disabled');
     }
-    if (setting.currency && setting.currency !== currency) {
-      // Keep current endpoint shape; just validate.
+    const playable = currency === Currency.INR || currency === Currency.USDT || currency === Currency.BTC
+    if (setting.currency && setting.currency !== currency && !playable) {
       throw new BadRequestException(`Currency not allowed for this game`);
     }
     const minBet = Number(setting.minBet);

@@ -49,6 +49,52 @@ function tossDone(summary: any) {
   return (summary?.notes || []).some((note: any) => /elected/i.test(String(note?.text || '')))
 }
 
+export function normalizeTossName(name: string) {
+  return String(name || '')
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/\([^)]*\)/g, ' ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .replace(/\s+/g, ' ')
+}
+
+/** 3 = same side, 2 = one name is a whole-word prefix of the other, 0 = different side. */
+export function tossNameScore(team: string, announced: string) {
+  const left = normalizeTossName(team)
+  const right = normalizeTossName(announced)
+  if (!left || !right) return 0
+  if (left === right) return 3
+  const shorter = left.length <= right.length ? left : right
+  const longer = left.length <= right.length ? right : left
+  if (shorter.length >= 4 && (longer === shorter || longer.startsWith(`${shorter} `))) return 2
+  return 0
+}
+
+export function sameTossSide(team: string, announced: string) {
+  return tossNameScore(team, announced) >= 2
+}
+
+export function tossWinnerFromNotes(notes: any[] | undefined, homeTeam: string, awayTeam: string): string | null {
+  const rows = Array.isArray(notes) ? notes : []
+  const note =
+    rows.find((item) => String(item?.type || '').toLowerCase() === 'toss') ||
+    rows.find((item) => /elected|won the toss|toss won by/i.test(String(item?.text || '')))
+  const text = String(note?.text || '').trim()
+  if (!text) return null
+  const wonBy = text.match(/toss won by\s+(.+?)(?:\.|,|$)/i)
+  const before = text.split(/elected|won the toss/i)[0] || ''
+  const announced = String(wonBy?.[1] || before.split(',')[0] || before).trim()
+  const teams = [homeTeam, awayTeam].map((team) => String(team || '').trim()).filter(Boolean)
+  const ranked = teams
+    .map((team) => ({ team, score: Math.max(tossNameScore(team, announced), tossNameScore(team, before)) }))
+    .filter((row) => row.score > 0)
+    .sort((a, b) => b.score - a.score || b.team.length - a.team.length)
+  if (!ranked.length) return null
+  if (ranked.length > 1 && ranked[0].score === ranked[1].score) return null
+  return ranked[0].team
+}
+
 function currentBatters(summary: any): Array<{ name: string; runs: number; out: boolean }> {
   const out: Array<{ name: string; runs: number; out: boolean }> = []
   for (const roster of summary?.rosters || []) {

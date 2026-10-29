@@ -150,10 +150,16 @@ export default function DepositPage() {
           {activeTab === 'INR' ? (
             <div className="space-y-3">
               <p className="text-sm text-ink-2">Transfer externally then submit proof.</p>
-              <p className="text-sm">Bank: <b>{bankDefault?.bankName || inrMethod?.displayName || 'State Bank of India'}</b></p>
-              <p className="text-sm">A/C Holder: <b>{bankDefault?.accountHolder || 'Romil'}</b></p>
-              <p className="text-sm">A/C Number: <b>{bankDefault?.accountNumber || '39286377165'}</b></p>
-              <p className="text-sm">IFSC: <b>{bankDefault?.ifsc || 'SBIN0060445'}</b></p>
+              {bankDefault ? (
+                <>
+                  <p className="text-sm">Bank: <b>{bankDefault.bankName}</b></p>
+                  <p className="text-sm">A/C Holder: <b>{bankDefault.accountHolder}</b></p>
+                  <p className="text-sm">A/C Number: <b>{bankDefault.accountNumber}</b></p>
+                  <p className="text-sm">IFSC: <b>{bankDefault.ifsc}</b></p>
+                </>
+              ) : (
+                <p className="text-sm">Bank account is not active yet. It appears here as soon as an admin saves one.</p>
+              )}
               <div className="flex items-center gap-2">
                 <p className="text-sm">UPI: <b>{bankDefault?.upiId || inrMethod?.upiId || inrMethod?.metadata?.upiId || 'N/A'}</b></p>
                 {(bankDefault?.upiId || inrMethod?.upiId || inrMethod?.metadata?.upiId) ? (

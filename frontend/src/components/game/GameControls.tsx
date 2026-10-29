@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Shuffle, Play, DollarSign, ChevronDown } from 'lucide-react'
+import { formatPlayMoney, usePlayCurrency } from '@/lib/playCurrency'
 
 interface GameControlsProps {
   gameState: 'idle' | 'playing' | 'lost' | 'cashed_out'
@@ -36,6 +37,7 @@ export default function GameControls({
   disabled,
   loading = false
 }: GameControlsProps) {
+  const { currency } = usePlayCurrency()
   const [betMode, setBetMode] = useState<'manual' | 'auto'>('manual')
   const diamondsCount = 25 - minesCount
 
@@ -67,10 +69,10 @@ export default function GameControls({
 
       {/* Bet Amount */}
       <div className="space-y-3">
-        <label className="text-sm font-medium text-ink">Bet Amount (INR)</label>
+        <label className="text-sm font-medium text-ink">Bet Amount ({currency})</label>
         <div className="flex gap-2">
           <div className="relative flex-1">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 font-medium text-ink">₹</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-medium text-ink">{currency === 'INR' ? '₹' : currency}</span>
             <Input
               type="number"
               value={betAmount}
@@ -102,7 +104,7 @@ export default function GameControls({
               disabled={gameState === 'playing' || loading}
               className="border-line px-3 py-1 text-xs text-ink"
             >
-              ₹{amount}
+              {formatPlayMoney(amount, currency)}
             </Button>
           ))}
         </div>
@@ -168,7 +170,7 @@ export default function GameControls({
               ) : (
                 <DollarSign className="h-6 w-6 mr-3" />
               )}
-              {loading ? 'Cashing Out...' : `Cashout ₹${potentialWin.toFixed(2)}`}
+              {loading ? 'Cashing Out...' : `Cashout ${formatPlayMoney(potentialWin, currency)}`}
             </Button>
             
             <Button
@@ -198,7 +200,7 @@ export default function GameControls({
         {gameState === 'cashed_out' && (
           <div className="text-center">
             <p className="mb-1 font-semibold text-brand-2">Cashed Out!</p>
-            <p className="odds-num mb-3 text-lg font-bold text-ink">₹{potentialWin.toFixed(2)}</p>
+            <p className="odds-num mb-3 text-lg font-bold text-ink">{formatPlayMoney(potentialWin, currency)}</p>
             <Button
               onClick={onBet}
               disabled={disabled || !betAmount || parseFloat(betAmount) <= 0}
@@ -225,7 +227,7 @@ export default function GameControls({
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-ink-3">Potential Win:</span>
-              <span className="odds-num text-sm font-medium text-brand-2">₹{potentialWin.toFixed(2)}</span>
+              <span className="odds-num text-sm font-medium text-brand-2">{formatPlayMoney(potentialWin, currency)}</span>
             </div>
           </div>
         </div>

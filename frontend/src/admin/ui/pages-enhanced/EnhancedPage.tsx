@@ -10,6 +10,7 @@ interface EnhancedPageProps {
   rows: string[][]
   ctaLabel: string
   onEditRow?: (row: string[], rowIndex: number) => void
+  extraAction?: { label: string; onClick: (row: string[]) => void }
   onPrimaryAction?: () => void
   showFilters?: boolean
 }
@@ -22,6 +23,7 @@ export default function EnhancedPage({
   rows,
   ctaLabel,
   onEditRow,
+  extraAction,
   onPrimaryAction,
   showFilters = true,
 }: EnhancedPageProps) {
@@ -46,7 +48,7 @@ export default function EnhancedPage({
         onPrimaryAction={onPrimaryAction}
         showFilters={showFilters}
       />
-      <TableComponent columns={columns} rows={rows} onEditRow={onEditRow} />
+      <TableComponent columns={columns} rows={rows} onEditRow={onEditRow} extraAction={extraAction} />
     </section>
   )
 }

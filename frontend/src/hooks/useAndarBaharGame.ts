@@ -1,5 +1,7 @@
 'use client'
 
+import { getPlayCurrency } from '@/lib/playCurrency'
+
 import { useState, useCallback, useRef, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import api from '@/lib/api'
@@ -127,7 +129,7 @@ export function useAndarBaharGame(config: GameConfig = DEFAULT_CONFIG): UseAndar
       try {
         const response = await api.post('/games/andar-bahar', {
           betAmount,
-          currency: 'INR',
+          currency: getPlayCurrency(),
           betOn,
           clientSeed: Date.now().toString()
         })

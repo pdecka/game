@@ -8,6 +8,7 @@ import { SearchOverlay } from './SearchOverlay'
 import { SiteFooter } from './SiteFooter'
 import { SupportWidget } from './SupportWidget'
 import { useAuth } from '@/context/AuthContext'
+import { formatPlayMoney, playBalance, usePlayCurrency } from '@/lib/playCurrency'
 
 type GameLayoutProps = {
   children: React.ReactNode
@@ -23,8 +24,9 @@ export function GameLayout({ children }: GameLayoutProps) {
   const [showBetslip, setShowBetslip] = useState(false)
   
   const { wallet, walletLoading } = useAuth() as any
+  const { currency } = usePlayCurrency(wallet)
   const walletLabel =
-    walletLoading || !wallet?.INR ? '₹0.00' : `₹${Number(wallet.INR).toFixed(2)}`
+    walletLoading && !wallet ? formatPlayMoney(0, currency) : formatPlayMoney(playBalance(wallet, currency), currency)
 
   const handleToggleSidebar = () => {
     setMobileNavOpen((prev) => !prev)

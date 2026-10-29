@@ -1,6 +1,7 @@
 'use client'
 
 import axios from 'axios'
+import type { BetHistoryResponse } from '@/lib/betHistory'
 
 const API_URL =
   typeof window !== 'undefined' ? '/api' : process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
@@ -85,6 +86,17 @@ export const adminAuthService = {
 
   async getUsers(): Promise<AdminUser[]> {
     const response = await adminApi.get('/admin/users')
+    return response.data
+  },
+
+  async getBetHistory(params: {
+    userId?: string
+    page?: number
+    pageSize?: number
+    source?: 'all' | 'sports' | 'game'
+    order?: 'asc' | 'desc'
+  }): Promise<BetHistoryResponse> {
+    const response = await adminApi.get('/admin/bet-history', { params })
     return response.data
   },
 

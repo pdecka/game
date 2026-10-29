@@ -1,5 +1,7 @@
 'use client'
 
+import { getPlayCurrency } from '@/lib/playCurrency'
+
 import { useState, useEffect, useCallback, useRef } from 'react'
 import toast from 'react-hot-toast'
 import api from '@/lib/api'
@@ -81,7 +83,7 @@ export function useSlotsGame(): UseSlotsGameReturn {
     try {
       const response = await api.post('/games/slots', {
         betAmount,
-        currency: 'INR',
+        currency: getPlayCurrency(),
         clientSeed: Date.now().toString()
       })
       session = response.data

@@ -1,5 +1,7 @@
 'use client'
 
+import { getPlayCurrency } from '@/lib/playCurrency'
+
 import { useState, useCallback } from 'react'
 import api from '@/lib/api'
 
@@ -70,7 +72,7 @@ export function useMinesGame() {
     try {
       const response = await api.post('/games/mines/start', {
         betAmount: bet,
-        currency: 'INR',
+        currency: getPlayCurrency(),
         gridSize: 25,
         mines: minesCount,
         positions: [],

@@ -1,5 +1,7 @@
 'use client'
 
+import { getPlayCurrency } from '@/lib/playCurrency'
+
 import { useState, useCallback } from 'react'
 import toast from 'react-hot-toast'
 import api from '@/lib/api'
@@ -150,7 +152,7 @@ export function useBlackjackGame(config: GameConfig = DEFAULT_CONFIG): UseBlackj
     try {
       const response = await api.post('/games/blackjack/start', {
         betAmount,
-        currency: 'INR',
+        currency: getPlayCurrency(),
         clientSeed: Date.now().toString()
       })
       

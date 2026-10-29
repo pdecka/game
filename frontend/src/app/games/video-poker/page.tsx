@@ -6,8 +6,10 @@ import api from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import toast from 'react-hot-toast'
+import { getPlayCurrency, usePlayCurrency } from '@/lib/playCurrency'
 
 export default function VideoPokerPage() {
+  const { currency } = usePlayCurrency()
   const [betAmount, setBetAmount] = useState('')
   const [loading, setLoading] = useState(false)
   const [session, setSession] = useState<any>(null)
@@ -18,7 +20,7 @@ export default function VideoPokerPage() {
     if (!amt || amt <= 0) return toast.error('Please enter a valid bet amount')
     setLoading(true)
     try {
-      const res = await api.post('/games/video-poker/start', { betAmount: amt, currency: 'INR' })
+      const res = await api.post('/games/video-poker/start', { betAmount: amt, currency: getPlayCurrency() })
       setSession(res.data)
       setHold([false, false, false, false, false])
     } catch (e: any) {
@@ -54,7 +56,7 @@ export default function VideoPokerPage() {
 
             <div className="mt-5 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-[#020617] mb-2">Bet Amount (INR)</label>
+                <label className="block text-sm font-medium text-[#020617] mb-2">Bet Amount ({currency})</label>
                 <Input type="number" value={betAmount} onChange={(e) => setBetAmount(e.target.value)} />
               </div>
               <Button onClick={start} disabled={loading} className="w-full bg-[#22c55e] hover:opacity-90 text-white" size="lg">

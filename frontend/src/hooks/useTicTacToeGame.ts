@@ -1,5 +1,7 @@
 'use client'
 
+import { getPlayCurrency } from '@/lib/playCurrency'
+
 import { useState, useCallback, useRef, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import api from '@/lib/api'
@@ -135,7 +137,7 @@ export function useTicTacToeGame(): UseTicTacToeGameReturn {
     try {
       const response = await api.post('/games/tic-tac-toe/start', {
         betAmount: betAmt,
-        currency: 'INR',
+        currency: getPlayCurrency(),
         userSymbol: symbol,
         clientSeed: Date.now().toString(),
       })

@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
+import { formatPlayMoney, usePlayCurrency } from '@/lib/playCurrency'
 
 interface BetSlipItem {
   id: string
@@ -27,9 +28,8 @@ interface BetSlipProps {
   exposure: number
 }
 
-function rupees(value: number) {
-  const amount = Number.isFinite(value) ? value : 0
-  return `₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+function rupees(value: number, currency: 'INR' | 'USDT' | 'BTC') {
+  return formatPlayMoney(value, currency)
 }
 
 function marketLabel(market: string) {
@@ -61,6 +61,7 @@ export default function BetSlip({
   balance,
   exposure,
 }: BetSlipProps) {
+  const { currency } = usePlayCurrency()
   const { spend, returned } = useMemo(() => {
     const spendTotal = items.reduce((sum, item) => sum + Number(item.stake || 0), 0)
     const back = items.reduce((sum, item) => sum + Number(item.stake || 0) * Number(item.odds || 0), 0)
@@ -127,7 +128,7 @@ export default function BetSlip({
                       min="1"
                     />
                     <p className="mt-1 text-[11px] text-ink-2">
-                      Win credits <span className="odds-num font-semibold text-brand-2">{rupees(winReturn)}</span>
+                      Win credits <span className="odds-num font-semibold text-brand-2">{rupees(winReturn, currency)}</span>
                     </p>
                   </div>
                 )
@@ -154,16 +155,16 @@ export default function BetSlip({
             <div className="space-y-1 text-sm">
               <div className="flex justify-between">
                 <span className="text-ink-3">You spend</span>
-                <span className="odds-num font-medium text-ink">{rupees(spend)}</span>
+                <span className="odds-num font-medium text-ink">{rupees(spend, currency)}</span>
               </div>
               <div className="flex justify-between">
                     <span className="text-ink-3">Win credit</span>
-                <span className="odds-num font-medium text-brand-2">{rupees(returned)}</span>
+                <span className="odds-num font-medium text-brand-2">{rupees(returned, currency)}</span>
               </div>
               <div className="flex justify-between border-t border-line pt-2">
                 <span className="text-ink-3">Balance (exposure)</span>
                 <span className="odds-num font-medium text-ink">
-                  {rupees(balance)} ({rupees(nextExposure)})
+                  {rupees(balance, currency)} ({rupees(nextExposure, currency)})
                 </span>
               </div>
             </div>
@@ -174,7 +175,7 @@ export default function BetSlip({
               disabled={isPlacing || spend > balance || spend < 1}
               className="w-full rounded-xl bg-brand py-2.5 text-sm font-semibold text-white transition-all hover:bg-brand-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {isPlacing ? 'Placing...' : `Spend ${rupees(spend)}`}
+              {isPlacing ? 'Placing...' : `Spend ${rupees(spend, currency)}`}
             </button>
           </div>
         )}

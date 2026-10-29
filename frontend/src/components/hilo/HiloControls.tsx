@@ -1,6 +1,7 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
+import { usePlayCurrency } from '@/lib/playCurrency'
 import { TrendingUp, Wallet, Zap } from 'lucide-react'
 
 interface HiloControlsProps {
@@ -26,6 +27,7 @@ export default function HiloControls({
   onLower,
   onCashout
 }: HiloControlsProps) {
+  const { currency } = usePlayCurrency()
   const canBet = gameState === 'idle'
   const canPredict = gameState === 'playing'
   const canCashout = (gameState === 'playing' || gameState === 'won_step') && streak > 0
@@ -46,7 +48,7 @@ export default function HiloControls({
       <div className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-slate-300 mb-2">
-            Bet Amount (INR)
+            Bet Amount ({currency})
           </label>
           <div className="flex gap-2">
             <input

@@ -1,3 +1,5 @@
+import { sameTossSide } from './cricket-markets'
+
 export type Grade = 'won' | 'lost' | 'void' | 'open'
 
 export function gradeBookmakerBet(input: {
@@ -18,6 +20,10 @@ export function gradeBookmakerBet(input: {
   const selection = String(input.selection || '').trim()
   const home = Number(input.homeScore)
   const away = Number(input.awayScore)
+  if (market === 'toss') {
+    if (!input.tossWinner) return 'open'
+    return sameTossSide(selection, input.tossWinner) ? 'won' : 'lost'
+  }
   if (!Number.isFinite(home) || !Number.isFinite(away)) return 'void'
 
   if (market === 'h2h') {
@@ -99,11 +105,6 @@ export function gradeBookmakerBet(input: {
     const goals = input.playerGoals.get(selection.toLowerCase()) ?? 0
     const need = market === 'to_score_3_goals' ? 3 : market === 'to_score_2_goals' ? 2 : 1
     return goals >= need ? 'won' : 'lost'
-  }
-
-  if (market === 'toss') {
-    if (!input.tossWinner) return 'open'
-    return sameTeam(selection, input.tossWinner) ? 'won' : 'lost'
   }
 
   if (market === 'player_fifty') {

@@ -235,7 +235,7 @@ export default function Home() {
               {/* Sports Thumbnail */}
               <div className="min-w-0">
                 <Link href="/sports" className="group relative block overflow-hidden rounded-2xl border border-line bg-white shadow-panel transition-all duration-300 hover:shadow-lift">
-                  <div className="aspect-[4/3] lg:aspect-[5/4]">
+                  <div className="aspect-video lg:aspect-[16/10]">
                     <img 
                       src="/games/sports-thumb.jpeg" 
                       alt="Sports"

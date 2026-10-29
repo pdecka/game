@@ -1,6 +1,7 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
+import { usePlayCurrency } from '@/lib/playCurrency'
 import { Wallet, TrendingUp, Zap } from 'lucide-react'
 import { ROW_OPTIONS, type RiskLevel } from '@/utils/plinkoConfig'
 
@@ -29,6 +30,7 @@ export default function PlinkoControls({
   onRiskChange,
   onDropBall
 }: PlinkoControlsProps) {
+  const { currency } = usePlayCurrency()
   const canPlay = gameState === 'idle'
   const isPlaying = gameState === 'dropping' || gameState === 'animating'
   
@@ -46,7 +48,7 @@ export default function PlinkoControls({
       <div className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-slate-300 mb-2">
-            Bet Amount (INR)
+            Bet Amount ({currency})
           </label>
           <div className="flex gap-2">
             <input

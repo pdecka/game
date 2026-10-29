@@ -1,5 +1,10 @@
-import { Controller, Post, Get, Body, UseGuards, Request, Param, Query, Patch } from '@nestjs/common';
+import { Controller, Post, Get, Body, UseGuards, Request, Param, Query, Patch, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { existsSync, mkdirSync } from 'fs';
+import { extname, join } from 'path';
 import { AdminService } from './admin.service';
+import { AdminReportsService } from './admin-reports.service';
 import { KycService } from '../kyc/kyc.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AdminGuard } from './guards/admin.guard';
@@ -14,6 +19,7 @@ export class AdminController {
   constructor(
     private adminService: AdminService,
     private kycService: KycService,
+    private adminReportsService: AdminReportsService,
   ) {}
 
   @Get('kyc/submissions')
@@ -108,6 +114,37 @@ export class AdminController {
   @Get('bank-accounts')
   async listBankAccounts() {
     return this.adminService.listBankAccounts();
+  }
+
+  @Post('bank-accounts/qr')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: (_req, _file, cb) => {
+          const dir = join(process.cwd(), 'uploads', 'bank-qr');
+          if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+          cb(null, dir);
+        },
+        filename: (_req, file, cb) => {
+          const ext = extname(file.originalname || '').toLowerCase();
+          const safeExt = ext === '.png' || ext === '.jpg' || ext === '.jpeg' ? ext : '.png';
+          cb(null, `qr-${Date.now()}-${Math.random().toString(36).slice(2, 10)}${safeExt}`);
+        },
+      }),
+      limits: { fileSize: 5 * 1024 * 1024 },
+      fileFilter: (_req, file, cb) => {
+        const type = String(file.mimetype || '').toLowerCase();
+        if (type !== 'image/png' && type !== 'image/jpeg' && type !== 'image/jpg') {
+          return cb(new BadRequestException('Upload a PNG or JPG photo'), false);
+        }
+        cb(null, true);
+      },
+    }),
+  )
+  uploadBankQr(@Request() req, @UploadedFile() file?: any) {
+    if (!file) throw new BadRequestException('QR photo is required');
+    const base = `${req.protocol}://${req.get('host')}`;
+    return { url: `${base}/uploads/bank-qr/${file.filename}` };
   }
 
   @Post('bank-accounts')
@@ -332,6 +369,15 @@ export class AdminController {
       body?.reason ?? 'Rejected by admin',
       req.ip || 'unknown',
     );
+  }
+
+  @Get('reports/detail')
+  async getReportDetail(
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+    @Query('username') username?: string,
+  ) {
+    return this.adminReportsService.detail({ from, to, username })
   }
 
   @Get('reports/financial')
