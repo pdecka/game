@@ -8,9 +8,11 @@ import { GameLayout } from '@/components/layout/GameLayout'
 import { PageHeader } from '@/components/ui/page-header'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { useLanguage } from '@/context/LanguageContext'
 
 export default function DashboardPage() {
   const router = useRouter()
+  const { t } = useLanguage()
   const { ready, user, wallet, walletLoading, logout } = useAuth() as {
     ready: boolean
     user: { username?: string } | null
@@ -33,10 +35,10 @@ export default function DashboardPage() {
       <div className="page-wrap">
         <PageHeader
           title="Dashboard"
-          description={`Signed in as ${user?.username ?? 'player'}`}
+          description={`${t('Signed in as')} ${user?.username ?? t('player')}`}
           action={
             <Button variant="outline" size="sm" type="button" onClick={() => logout()}>
-              Logout
+              {t('Logout')}
             </Button>
           }
         />
@@ -59,19 +61,19 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           <Link href="/games/dice" className="block">
             <Card className="h-full transition hover:border-brand/40 hover:shadow-lift">
-              <h3 className="text-lg font-semibold text-ink">Dice</h3>
+              <h3 className="text-lg font-semibold text-ink">{t('Dice')}</h3>
               <p className="mt-1 text-sm text-ink-2">Roll the dice and win big!</p>
             </Card>
           </Link>
           <Link href="/games/crash" className="block">
             <Card className="h-full transition hover:border-brand/40 hover:shadow-lift">
-              <h3 className="text-lg font-semibold text-ink">Crash</h3>
+              <h3 className="text-lg font-semibold text-ink">{t('Crash')}</h3>
               <p className="mt-1 text-sm text-ink-2">Cash out before it crashes!</p>
             </Card>
           </Link>
           <Link href="/games/mines" className="block">
             <Card className="h-full transition hover:border-brand/40 hover:shadow-lift">
-              <h3 className="text-lg font-semibold text-ink">Mines</h3>
+              <h3 className="text-lg font-semibold text-ink">{t('Mines')}</h3>
               <p className="mt-1 text-sm text-ink-2">Find the gems, avoid the mines!</p>
             </Card>
           </Link>

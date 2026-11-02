@@ -12,6 +12,7 @@ import { sportsApi, BoardMatch } from '@/services/sportsApi'
 import { SportHubItem } from '@/lib/sport-hub'
 import { PageHeader } from '@/components/ui/page-header'
 import { formatPlayMoney, usePlayCurrency } from '@/lib/playCurrency'
+import { useLanguage } from '@/context/LanguageContext'
 
 function mapBoardMatch(match: BoardMatch): MatchData {
   return {
@@ -51,6 +52,7 @@ export function SportsBoard({ sport, liveOnly }: SportsBoardProps) {
   const router = useRouter()
   const slip = useSportsBetSlip()
   const { currency } = usePlayCurrency()
+  const { t } = useLanguage()
   const [matches, setMatches] = useState<MatchData[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -161,14 +163,14 @@ export function SportsBoard({ sport, liveOnly }: SportsBoardProps) {
 
   const title = liveOnly ? 'Live' : sport?.name || 'Sports'
   const description = liveOnly
-    ? 'Matches in play right now'
-    : sport?.desc || 'Pick a match, then tap a price to bet'
+    ? t('Matches in play right now')
+    : t(sport?.desc || 'Pick a match, then tap a price to bet')
 
   return (
     <>
       <div className="page-wrap max-w-5xl">
         <Link href="/sports" className="mb-3 inline-block text-sm text-ink-2 hover:text-brand-2">
-          ← All sports
+          ← {t('All sports')}
         </Link>
         <PageHeader
           title={title}
@@ -177,11 +179,11 @@ export function SportsBoard({ sport, liveOnly }: SportsBoardProps) {
 
         {slip.loggedIn ? (
           <p className="mb-4 text-sm text-ink-2">
-            Balance <span className="odds-num font-semibold text-ink">{formatPlayMoney(slip.balance, currency)}</span>
+            {t('Balance')} <span className="odds-num font-semibold text-ink">{formatPlayMoney(slip.balance, currency)}</span>
             <span className="text-ink-3"> ({formatPlayMoney(slip.exposure, currency)})</span>
           </p>
         ) : (
-          <p className="mb-4 text-sm text-ink-3">Log in to place a bet. Prices stay visible either way.</p>
+          <p className="mb-4 text-sm text-ink-3">{t('Log in to place a bet. Prices stay visible either way.')}</p>
         )}
 
         {leagues.length > 2 && (

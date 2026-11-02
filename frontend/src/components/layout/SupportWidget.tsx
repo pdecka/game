@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { ChevronDown, Headphones, X } from 'lucide-react'
+import { useLanguage } from '@/context/LanguageContext'
 
 const FAQS: { q: string; a: string }[] = [
   {
@@ -107,6 +108,7 @@ const FAQS: { q: string; a: string }[] = [
 ]
 
 export function SupportWidget() {
+  const { t } = useLanguage()
   const [open, setOpen] = useState(false)
   const [active, setActive] = useState<number | null>(0)
 
@@ -130,8 +132,8 @@ export function SupportWidget() {
         type="button"
         onClick={() => setOpen(true)}
         className="fixed bottom-5 right-5 z-[70] flex h-14 w-14 items-center justify-center rounded-full border border-brand/40 bg-brand text-white shadow-lift transition hover:bg-brand-2"
-        aria-label="Support"
-        title="Support"
+        aria-label={t('Support')}
+        title={t('Support')}
       >
         <Headphones className="h-6 w-6" />
       </button>
@@ -151,10 +153,10 @@ export function SupportWidget() {
             <div className="flex items-start justify-between gap-3 border-b border-line px-5 py-4">
               <div>
                 <h2 id="support-title" className="text-lg font-semibold text-ink">
-                  Support
+                  {t('Support')}
                 </h2>
                 <p className="mt-1 text-sm text-ink-3">
-                  Common questions. Tap a topic to read the answer.
+                  {t('Common questions. Tap a topic to read the answer.')}
                 </p>
               </div>
               <button type="button" onClick={() => setOpen(false)} className="icon-btn shrink-0" aria-label="Close support">
@@ -173,11 +175,11 @@ export function SupportWidget() {
                       aria-expanded={expanded}
                       onClick={() => setActive(expanded ? null : index)}
                     >
-                      <span>{item.q}</span>
+                      <span>{t(item.q)}</span>
                       <ChevronDown className={`h-4 w-4 shrink-0 text-ink-3 transition ${expanded ? 'rotate-180' : ''}`} />
                     </button>
                     {expanded ? (
-                      <p className="border-t border-line px-4 py-3 text-sm leading-6 text-ink-2">{item.a}</p>
+                      <p className="border-t border-line px-4 py-3 text-sm leading-6 text-ink-2">{t(item.a)}</p>
                     ) : null}
                   </div>
                 )

@@ -15,6 +15,7 @@ import {
   ChevronsRight,
 } from 'lucide-react'
 import { clsx } from 'clsx'
+import { useLanguage } from '@/context/LanguageContext'
 
 type SidebarProps = {
   collapsed: boolean
@@ -41,6 +42,7 @@ function itemClass(active: boolean, collapsed: boolean) {
 
 export function Sidebar({ collapsed, onToggle, mobileOpen = false, onMobileClose }: SidebarProps) {
   const pathname = usePathname()
+  const { t } = useLanguage()
   const pathRef = useRef(pathname)
   const isCollapsed = mobileOpen ? false : collapsed
   const showCloseRail = mobileOpen || !isCollapsed
@@ -120,21 +122,21 @@ export function Sidebar({ collapsed, onToggle, mobileOpen = false, onMobileClose
             'right-0 translate-x-1/2',
             !mobileOpen && 'max-lg:hidden',
           )}
-          aria-label={showCloseRail ? 'Collapse sidebar' : 'Expand sidebar'}
-          title={showCloseRail ? 'Collapse' : 'Expand'}
+          aria-label={showCloseRail ? t('Collapse sidebar') : t('Expand sidebar')}
+          title={showCloseRail ? t('Collapse') : t('Expand')}
         >
           {showCloseRail ? <ChevronsLeft className="h-4 w-4" strokeWidth={2.5} /> : <ChevronsRight className="h-4 w-4" strokeWidth={2.5} />}
         </button>
 
         <div className={clsx('flex-1 overflow-y-auto overflow-x-hidden py-4', isCollapsed ? 'px-2' : 'px-3')}>
           {!isCollapsed && (
-            <p className="mb-2.5 px-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/80">Play</p>
+            <p className="mb-2.5 px-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/80">{t('Play')}</p>
           )}
           <nav className="space-y-2">
             <Link
               href="/casino"
               onClick={handleNavClick}
-              title="Casino"
+              title={t('Casino')}
               className={itemClass(casinoActive, isCollapsed)}
             >
               <span
@@ -145,12 +147,12 @@ export function Sidebar({ collapsed, onToggle, mobileOpen = false, onMobileClose
               >
                 <Dices className="h-4 w-4" />
               </span>
-              {!isCollapsed && <span>Casino</span>}
+              {!isCollapsed && <span>{t('Casino')}</span>}
             </Link>
             <Link
               href="/sports"
               onClick={handleNavClick}
-              title="Sports"
+              title={t('Sports')}
               className={itemClass(sportsActive, isCollapsed)}
             >
               <span
@@ -161,14 +163,14 @@ export function Sidebar({ collapsed, onToggle, mobileOpen = false, onMobileClose
               >
                 <Trophy className="h-4 w-4" />
               </span>
-              {!isCollapsed && <span>Sports</span>}
+              {!isCollapsed && <span>{t('Sports')}</span>}
             </Link>
           </nav>
 
           <div className="my-4 h-px bg-white/25" />
 
           {!isCollapsed && (
-            <p className="mb-2.5 px-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/80">More</p>
+            <p className="mb-2.5 px-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/80">{t('More')}</p>
           )}
           <nav className="space-y-1.5">
             {secondaryItems.map((item) => {
@@ -186,7 +188,7 @@ export function Sidebar({ collapsed, onToggle, mobileOpen = false, onMobileClose
                   </span>
                   {!isCollapsed && (
                     <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
-                      <span className="truncate">{item.label}</span>
+                      <span className="truncate">{t(item.label)}</span>
                       {item.comingSoon ? (
                         <span
                           className={clsx(
@@ -194,7 +196,7 @@ export function Sidebar({ collapsed, onToggle, mobileOpen = false, onMobileClose
                             active ? 'bg-white/20 text-white' : 'bg-brand/10 text-brand-2',
                           )}
                         >
-                          Soon
+                          {t('Soon')}
                         </span>
                       ) : null}
                     </span>

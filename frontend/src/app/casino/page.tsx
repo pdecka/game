@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { GameLayout } from '@/components/layout/GameLayout'
 import { PageHeader } from '@/components/ui/page-header'
+import { useLanguage } from '@/context/LanguageContext'
 
 const GAMES: { name: string; href: string; desc: string; image?: string }[] = [
   { name: 'Crash', href: '/games/crash', desc: 'Real-time style multiplier cashout.', image: '/games/crash-thumb.jpeg' },
@@ -29,6 +30,7 @@ const GAMES: { name: string; href: string; desc: string; image?: string }[] = [
 ]
 
 export default function CasinoPage() {
+  const { t } = useLanguage()
   return (
     <GameLayout>
       <div className="page-wrap">
@@ -46,7 +48,7 @@ export default function CasinoPage() {
                   {g.image ? (
                     <img
                       src={g.image}
-                      alt={g.name}
+                      alt={t(g.name)}
                       className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
                     />
                   ) : (
@@ -58,14 +60,14 @@ export default function CasinoPage() {
                   {/* Always visible on touch; hover-reveal on desktop */}
                   <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-100 transition-opacity duration-300 md:bg-transparent md:opacity-0 md:group-hover:bg-black/20 md:group-hover:opacity-100">
                     <div className="rounded-lg bg-brand px-3 py-2 text-xs font-semibold text-white shadow-lift sm:px-6 sm:py-3 sm:text-sm">
-                      Play Now
+                      {t('Play Now')}
                     </div>
                   </div>
                 </div>
                 
                 <div className="p-3 sm:p-4">
-                  <h3 className="text-sm font-bold text-ink">{g.name}</h3>
-                  <p className="mt-1 line-clamp-2 text-xs text-ink-3">{g.desc}</p>
+                  <h3 className="text-sm font-bold text-ink">{t(g.name)}</h3>
+                  <p className="mt-1 line-clamp-2 text-xs text-ink-3">{t(g.desc)}</p>
                 </div>
               </Link>
             ))}

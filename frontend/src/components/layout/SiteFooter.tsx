@@ -1,4 +1,7 @@
+'use client'
+
 import Link from 'next/link'
+import { useLanguage } from '@/context/LanguageContext'
 
 const LINKS = [
   { href: '/casino', label: 'Casino' },
@@ -12,6 +15,7 @@ const LINKS = [
 const SPONSORS = ['NetEnt', 'Evolution', 'Pragmatic Play', 'Playtech']
 
 export function SiteFooter() {
+  const { t } = useLanguage()
   return (
     <footer className="mt-auto border-t border-line bg-white">
       <div className="mx-auto flex max-w-5xl flex-col items-center gap-6 px-4 py-8">
@@ -19,14 +23,14 @@ export function SiteFooter() {
         <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-ink-2">
           {LINKS.map((link) => (
             <Link key={link.href} href={link.href} className="hover:text-brand-2">
-              {link.label}
+              {t(link.label)}
             </Link>
           ))}
         </nav>
         <p className="text-center text-xs text-ink-3">
-          Sponsors · {SPONSORS.join(' · ')}
+          {t('Sponsors')} · {SPONSORS.join(' · ')}
         </p>
-        <p className="text-center text-xs text-ink-3">© {new Date().getFullYear()} Arena Bet. 18+ only. Play responsibly.</p>
+        <p className="text-center text-xs text-ink-3">© {new Date().getFullYear()} Arena Bet. {t('18+ only. Play responsibly.')}</p>
       </div>
     </footer>
   )

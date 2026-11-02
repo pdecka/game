@@ -8,6 +8,7 @@ import { GameLayout } from '@/components/layout/GameLayout'
 import { PageHeader } from '@/components/ui/page-header'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { useLanguage } from '@/context/LanguageContext'
 
 type MethodSetting = {
   id: string
@@ -23,6 +24,7 @@ type MethodSetting = {
 
 export default function DepositPage() {
   const { ready, user, refreshWallet } = useAuth() as any
+  const { t } = useLanguage()
   const [activeTab, setActiveTab] = useState<'INR' | 'CRYPTO'>('INR')
   const [settings, setSettings] = useState<MethodSetting[]>([])
   const [rows, setRows] = useState<any[]>([])
@@ -143,22 +145,22 @@ export default function DepositPage() {
         />
         <div className="flex gap-2">
           <button type="button" className={`rounded-xl px-4 py-2 text-sm font-medium ${activeTab === 'INR' ? 'bg-brand text-white' : 'border border-line bg-white text-ink-2'}`} onClick={() => setActiveTab('INR')}>INR</button>
-          <button type="button" className={`rounded-xl px-4 py-2 text-sm font-medium ${activeTab === 'CRYPTO' ? 'bg-brand text-white' : 'border border-line bg-white text-ink-2'}`} onClick={() => setActiveTab('CRYPTO')}>Crypto</button>
+          <button type="button" className={`rounded-xl px-4 py-2 text-sm font-medium ${activeTab === 'CRYPTO' ? 'bg-brand text-white' : 'border border-line bg-white text-ink-2'}`} onClick={() => setActiveTab('CRYPTO')}>{t('Crypto')}</button>
         </div>
 
         <section className="rounded-2xl border border-line bg-white p-5 shadow-panel">
           {activeTab === 'INR' ? (
             <div className="space-y-3">
-              <p className="text-sm text-ink-2">Transfer externally then submit proof.</p>
+              <p className="text-sm text-ink-2">{t('Transfer externally then submit proof.')}</p>
               {bankDefault ? (
                 <>
-                  <p className="text-sm">Bank: <b>{bankDefault.bankName}</b></p>
-                  <p className="text-sm">A/C Holder: <b>{bankDefault.accountHolder}</b></p>
-                  <p className="text-sm">A/C Number: <b>{bankDefault.accountNumber}</b></p>
+                  <p className="text-sm">{t('Bank')}: <b>{bankDefault.bankName}</b></p>
+                  <p className="text-sm">{t('A/C Holder')}: <b>{bankDefault.accountHolder}</b></p>
+                  <p className="text-sm">{t('A/C Number')}: <b>{bankDefault.accountNumber}</b></p>
                   <p className="text-sm">IFSC: <b>{bankDefault.ifsc}</b></p>
                 </>
               ) : (
-                <p className="text-sm">Bank account is not active yet. It appears here as soon as an admin saves one.</p>
+                <p className="text-sm">{t('Bank account is not active yet. It appears here as soon as an admin saves one.')}</p>
               )}
               <div className="flex items-center gap-2">
                 <p className="text-sm">UPI: <b>{bankDefault?.upiId || inrMethod?.upiId || inrMethod?.metadata?.upiId || 'N/A'}</b></p>
@@ -171,12 +173,12 @@ export default function DepositPage() {
                       toast.success('UPI copied')
                     }}
                   >
-                    Copy
+                    {t('Copy')}
                   </button>
                 ) : null}
               </div>
               {(bankDefault?.qrImageUrl || inrMethod?.qrImageUrl || inrMethod?.metadata?.qrImageUrl) ? (
-                <a href={String(bankDefault?.qrImageUrl || inrMethod?.qrImageUrl || inrMethod?.metadata?.qrImageUrl)} target="_blank" rel="noreferrer" className="text-sm text-brand-2 hover:underline">View QR</a>
+                <a href={String(bankDefault?.qrImageUrl || inrMethod?.qrImageUrl || inrMethod?.metadata?.qrImageUrl)} target="_blank" rel="noreferrer" className="text-sm text-brand-2 hover:underline">{t('View QR')}</a>
               ) : null}
             </div>
           ) : (
@@ -190,7 +192,7 @@ export default function DepositPage() {
                   <option key={m.id} value={m.method}>{m.displayName || `${m.currency} ${m.network || ''}`}</option>
                 ))}
               </select>
-              <p className="text-sm">Address: <b>{currentCrypto?.depositAddress || currentCrypto?.metadata?.address || 'N/A'}</b></p>
+              <p className="text-sm">{t('Address')}: <b>{currentCrypto?.depositAddress || currentCrypto?.metadata?.address || 'N/A'}</b></p>
               {(currentCrypto?.depositAddress || currentCrypto?.metadata?.address) ? (
                 <button
                   className="text-xs text-brand-2 hover:underline"
@@ -200,28 +202,28 @@ export default function DepositPage() {
                     toast.success('Address copied')
                   }}
                 >
-                  Copy address
+                  {t('Copy address')}
                 </button>
               ) : null}
               {currentCrypto?.qrImageUrl ? (
-                <a href={currentCrypto.qrImageUrl} target="_blank" rel="noreferrer" className="text-sm text-brand-2 hover:underline">View QR</a>
+                <a href={currentCrypto.qrImageUrl} target="_blank" rel="noreferrer" className="text-sm text-brand-2 hover:underline">{t('View QR')}</a>
               ) : null}
             </div>
           )}
 
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-medium text-ink-2">Amount</label>
-              <Input value={amount} onChange={(e) => setAmount(e.target.value)} type="number" placeholder="Amount" />
+              <label className="mb-1 block text-xs font-medium text-ink-2">{t('Amount')}</label>
+              <Input value={amount} onChange={(e) => setAmount(e.target.value)} type="number" placeholder={t('Amount')} />
             </div>
             {activeTab === 'INR' ? (
               <div>
-                <label className="mb-1 block text-xs font-medium text-ink-2">UTR / Reference</label>
+                <label className="mb-1 block text-xs font-medium text-ink-2">{t('UTR / Reference')}</label>
                 <Input value={reference} onChange={(e) => setReference(e.target.value)} placeholder="Bank UTR" />
               </div>
             ) : (
               <div>
-                <label className="mb-1 block text-xs font-medium text-ink-2">Transaction hash</label>
+                <label className="mb-1 block text-xs font-medium text-ink-2">{t('Transaction hash')}</label>
                 <Input value={txHash} onChange={(e) => setTxHash(e.target.value)} placeholder="On-chain hash" />
               </div>
             )}
@@ -246,7 +248,7 @@ export default function DepositPage() {
             <table className="min-w-full text-sm">
               <thead>
                 <tr className="border-b border-line text-left text-ink-2">
-                  <th className="py-2 pr-3">Amount</th>
+                  <th className="py-2 pr-3">{t('Amount')}</th>
                   <th className="py-2 pr-3">Method</th>
                   <th className="py-2 pr-3">UTR / Hash</th>
                   <th className="py-2 pr-3">Screenshot</th>

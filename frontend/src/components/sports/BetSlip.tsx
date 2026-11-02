@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react'
 import { formatPlayMoney, usePlayCurrency } from '@/lib/playCurrency'
+import { useLanguage } from '@/context/LanguageContext'
 
 interface BetSlipItem {
   id: string
@@ -62,6 +63,7 @@ export default function BetSlip({
   exposure,
 }: BetSlipProps) {
   const { currency } = usePlayCurrency()
+  const { t } = useLanguage()
   const { spend, returned } = useMemo(() => {
     const spendTotal = items.reduce((sum, item) => sum + Number(item.stake || 0), 0)
     const back = items.reduce((sum, item) => sum + Number(item.stake || 0) * Number(item.odds || 0), 0)
@@ -77,8 +79,8 @@ export default function BetSlip({
       <div className="flex max-h-[78vh] w-full max-w-sm flex-col rounded-t-2xl border border-line bg-card shadow-panel sm:rounded-2xl">
         <div className="flex items-center justify-between border-b border-line px-4 py-3">
           <div>
-            <h2 className="text-base font-semibold text-ink">Bet</h2>
-            <p className="text-[11px] text-ink-3">Spend becomes exposure until the match settles.</p>
+            <h2 className="text-base font-semibold text-ink">{t('Bet')}</h2>
+            <p className="text-[11px] text-ink-3">{t('Spend becomes exposure until the match settles.')}</p>
           </div>
           <button type="button" onClick={onClose} className="icon-btn h-8 w-8">
             <svg className="h-4 w-4 text-ink-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -90,8 +92,8 @@ export default function BetSlip({
         <div className="flex-1 overflow-y-auto px-4 py-3">
           {items.length === 0 ? (
             <div className="py-8 text-center">
-              <p className="text-ink-2">No bet selected</p>
-              <p className="mt-1 text-xs text-ink-3">Tap a price to choose what you want to bet on</p>
+              <p className="text-ink-2">{t('No bet selected')}</p>
+              <p className="mt-1 text-xs text-ink-3">{t('Tap a price to choose what you want to bet on')}</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -103,9 +105,12 @@ export default function BetSlip({
                     <div className="mb-2 flex items-start justify-between gap-2">
                       <div>
                         <p className="text-xs text-ink-3">{item.matchName}</p>
-                        <p className="text-sm font-medium text-ink">{marketLabel(item.market)}</p>
+                        <p className="text-sm font-medium text-ink">{t(marketLabel(item.market))}</p>
                         <p className="mt-1 text-sm text-ink-2">
-                          {selectionLabel(item)} <span className="odds-num font-semibold text-ink">@ {item.odds.toFixed(2)}</span>
+                          {item.outcome === 'Over' || item.outcome === 'Under'
+                            ? `${t(item.outcome)} ${item.line ?? ''}`.trim()
+                            : selectionLabel(item)}{' '}
+                          <span className="odds-num font-semibold text-ink">@ {item.odds.toFixed(2)}</span>
                         </p>
                       </div>
                       <button
@@ -119,7 +124,7 @@ export default function BetSlip({
                       </button>
                     </div>
 
-                    <label className="text-xs text-ink-3">You spend</label>
+                    <label className="text-xs text-ink-3">{t('You spend')}</label>
                     <input
                       type="number"
                       value={item.stake}
@@ -128,7 +133,7 @@ export default function BetSlip({
                       min="1"
                     />
                     <p className="mt-1 text-[11px] text-ink-2">
-                      Win credits <span className="odds-num font-semibold text-brand-2">{rupees(winReturn, currency)}</span>
+                      {t('Win credits')} <span className="odds-num font-semibold text-brand-2">{rupees(winReturn, currency)}</span>
                     </p>
                   </div>
                 )
@@ -154,15 +159,15 @@ export default function BetSlip({
 
             <div className="space-y-1 text-sm">
               <div className="flex justify-between">
-                <span className="text-ink-3">You spend</span>
+                <span className="text-ink-3">{t('You spend')}</span>
                 <span className="odds-num font-medium text-ink">{rupees(spend, currency)}</span>
               </div>
               <div className="flex justify-between">
-                    <span className="text-ink-3">Win credit</span>
+                    <span className="text-ink-3">{t('Win credit')}</span>
                 <span className="odds-num font-medium text-brand-2">{rupees(returned, currency)}</span>
               </div>
               <div className="flex justify-between border-t border-line pt-2">
-                <span className="text-ink-3">Balance (exposure)</span>
+                <span className="text-ink-3">{t('Balance (exposure)')}</span>
                 <span className="odds-num font-medium text-ink">
                   {rupees(balance, currency)} ({rupees(nextExposure, currency)})
                 </span>
@@ -175,7 +180,7 @@ export default function BetSlip({
               disabled={isPlacing || spend > balance || spend < 1}
               className="w-full rounded-xl bg-brand py-2.5 text-sm font-semibold text-white transition-all hover:bg-brand-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {isPlacing ? 'Placing...' : `Spend ${rupees(spend, currency)}`}
+              {isPlacing ? t('Placing...') : `${t('Spend')} ${rupees(spend, currency)}`}
             </button>
           </div>
         )}

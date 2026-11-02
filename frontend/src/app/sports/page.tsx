@@ -5,8 +5,10 @@ import { GameLayout } from '@/components/layout/GameLayout'
 import { PageHeader } from '@/components/ui/page-header'
 import { SPORT_HUB } from '@/lib/sport-hub'
 import ErrorBoundary from '@/components/sports/ErrorBoundary'
+import { useLanguage } from '@/context/LanguageContext'
 
 export default function SportsHubPage() {
+  const { t } = useLanguage()
   return (
     <ErrorBoundary>
       <GameLayout>
@@ -22,7 +24,7 @@ export default function SportsHubPage() {
                 href="/sports/live"
                 className="inline-flex items-center rounded-full border border-brand/30 bg-brand/10 px-4 py-2 text-sm font-medium text-brand-2 hover:bg-brand/15"
               >
-                Live now
+                {t('Live now')}
               </Link>
             </div>
 
@@ -36,18 +38,18 @@ export default function SportsHubPage() {
                   <div className="relative h-48 overflow-hidden sm:h-64">
                     <img
                       src={sport.image}
-                      alt={sport.name}
+                      alt={t(sport.name)}
                       className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
                     />
                     <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-100 transition-opacity duration-300 md:bg-transparent md:opacity-0 md:group-hover:bg-black/20 md:group-hover:opacity-100">
                       <div className="rounded-lg bg-brand px-3 py-2 text-xs font-semibold text-white shadow-lift sm:px-6 sm:py-3 sm:text-sm">
-                        Open
+                        {t('Open')}
                       </div>
                     </div>
                   </div>
                   <div className="p-3 sm:p-4">
-                    <h3 className="text-sm font-bold text-ink">{sport.name}</h3>
-                    <p className="mt-1 line-clamp-2 text-xs text-ink-3">{sport.desc}</p>
+                    <h3 className="text-sm font-bold text-ink">{t(sport.name)}</h3>
+                    <p className="mt-1 line-clamp-2 text-xs text-ink-3">{t(sport.desc)}</p>
                   </div>
                 </Link>
               ))}
