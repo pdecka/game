@@ -4,6 +4,7 @@ import { UsersService } from '../users/users.service';
 import { WalletService } from '../wallet/wallet.service';
 import { PaymentsService } from '../payments/payments.service';
 import { AdminAction, Currency, PaymentStatus, TransactionType, UserRole, UserStatus } from '@gaming-platform/shared';
+import { KYCStatus } from '@prisma/client';
 import { GameType } from '@gaming-platform/shared';
 import { UpdateGameSettingDto } from './dto';
 import { BankAccountStatus } from './bank-account.enums';
@@ -232,6 +233,15 @@ export class AdminService {
           username: u.username,
           email: u.email || null,
           mobile: u.phone || null,
+          countryCode: u.countryCode || null,
+          firstName: u.firstName || null,
+          lastName: u.lastName || null,
+          dateOfBirth: u.dateOfBirth,
+          address: u.address || null,
+          country: u.country || null,
+          city: u.city || null,
+          postalCode: u.postalCode || null,
+          kycStatus: u.kycStatus,
           balanceINR,
           createdAt: u.createdAt,
           status: u.status,
@@ -282,6 +292,104 @@ export class AdminService {
       id: user.id,
       username: user.username,
       email: user.email || null,
+      status: user.status,
+    };
+  }
+
+  async updatePlayer(
+    userId: string,
+    dto: {
+      username?: string;
+      email?: string | null;
+      password?: string;
+      mobile?: string | null;
+      countryCode?: string | null;
+      firstName?: string | null;
+      lastName?: string | null;
+      dateOfBirth?: string | null;
+      address?: string | null;
+      country?: string | null;
+      city?: string | null;
+      postalCode?: string | null;
+      status?: string;
+      kycStatus?: string;
+    },
+  ) {
+    const current = await this.usersService.findOne(userId);
+    if (current.role !== UserRole.USER) {
+      throw new BadRequestException('Only player accounts can be edited here');
+    }
+
+    const data: Record<string, unknown> = {};
+    const blank = (value: string | null | undefined) => {
+      const text = String(value ?? '').trim();
+      return text ? text : null;
+    };
+
+    if (dto.username !== undefined) {
+      const username = String(dto.username || '').trim();
+      if (username.length < 3) throw new BadRequestException('Username must be at least 3 characters');
+      if (username !== current.username) {
+        const taken = await this.usersService.findByUsername(username);
+        if (taken) throw new BadRequestException('Username already exists');
+      }
+      data.username = username;
+    }
+
+    if (dto.email !== undefined) {
+      const email = String(dto.email || '').trim().toLowerCase();
+      if (email && !email.includes('@')) throw new BadRequestException('A valid email is required');
+      if (email && email !== (current.email || '').toLowerCase()) {
+        const taken = await this.usersService.findByEmail(email);
+        if (taken) throw new BadRequestException('Email already registered');
+      }
+      data.email = email || null;
+    }
+
+    if (dto.password !== undefined && String(dto.password).length > 0) {
+      const password = String(dto.password);
+      if (password.length < 6) throw new BadRequestException('Password must be at least 6 characters');
+      data.password = await bcrypt.hash(password, 10);
+    }
+
+    if (dto.mobile !== undefined) data.phone = blank(dto.mobile);
+    if (dto.countryCode !== undefined) data.countryCode = blank(dto.countryCode);
+    if (dto.firstName !== undefined) data.firstName = blank(dto.firstName);
+    if (dto.lastName !== undefined) data.lastName = blank(dto.lastName);
+    if (dto.address !== undefined) data.address = blank(dto.address);
+    if (dto.country !== undefined) data.country = blank(dto.country);
+    if (dto.city !== undefined) data.city = blank(dto.city);
+    if (dto.postalCode !== undefined) data.postalCode = blank(dto.postalCode);
+
+    if (dto.dateOfBirth !== undefined) {
+      const raw = String(dto.dateOfBirth || '').trim();
+      if (!raw) {
+        data.dateOfBirth = null;
+      } else {
+        const date = new Date(raw);
+        if (Number.isNaN(date.getTime())) throw new BadRequestException('A valid date of birth is required');
+        data.dateOfBirth = date;
+      }
+    }
+
+    if (dto.status !== undefined) {
+      const allowed = Object.values(UserStatus);
+      if (!allowed.includes(dto.status as UserStatus)) throw new BadRequestException('Invalid status');
+      data.status = dto.status;
+    }
+
+    if (dto.kycStatus !== undefined) {
+      const allowed = Object.values(KYCStatus);
+      if (!allowed.includes(dto.kycStatus as KYCStatus)) throw new BadRequestException('Invalid KYC status');
+      data.kycStatus = dto.kycStatus;
+    }
+
+    const user = await this.usersService.update(userId, data as any);
+    return {
+      id: user.id,
+      username: user.username,
+      email: user.email || null,
+      mobile: user.phone || null,
       status: user.status,
     };
   }

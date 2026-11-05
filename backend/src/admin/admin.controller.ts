@@ -67,6 +67,30 @@ export class AdminController {
     return this.adminService.createPlayer(body);
   }
 
+  @Patch('users/:userId')
+  async updatePlayer(
+    @Param('userId') userId: string,
+    @Body()
+    body: {
+      username?: string;
+      email?: string | null;
+      password?: string;
+      mobile?: string | null;
+      countryCode?: string | null;
+      firstName?: string | null;
+      lastName?: string | null;
+      dateOfBirth?: string | null;
+      address?: string | null;
+      country?: string | null;
+      city?: string | null;
+      postalCode?: string | null;
+      status?: string;
+      kycStatus?: string;
+    },
+  ) {
+    return this.adminService.updatePlayer(userId, body);
+  }
+
   @Get('game-settings')
   async getGameSettings() {
     return this.adminService.getGameSettings();

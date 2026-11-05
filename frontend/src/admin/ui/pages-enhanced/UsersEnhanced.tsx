@@ -5,14 +5,17 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import EnhancedPage from './EnhancedPage'
 import CreatePlayerModal from '../components/CreatePlayerModal'
-import { adminAuthService } from '../../services/adminAuthService'
+import EditPlayerModal from '../components/EditPlayerModal'
+import { adminAuthService, type AdminUser } from '../../services/adminAuthService'
 import toast from 'react-hot-toast'
 
 export default function UsersEnhanced() {
   const router = useRouter()
   const [open, setOpen] = useState(false)
-  const [users, setUsers] = useState<any[]>([])
+  const [editing, setEditing] = useState<AdminUser | null>(null)
+  const [users, setUsers] = useState<AdminUser[]>([])
   const [loadingUsers, setLoadingUsers] = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
     let mounted = true
@@ -37,7 +40,7 @@ export default function UsersEnhanced() {
       mounted = false
       window.clearInterval(timer)
     }
-  }, [])
+  }, [reloadKey])
 
   const { cards, columns, rows } = useMemo(() => {
     const total = users.length
@@ -84,6 +87,14 @@ export default function UsersEnhanced() {
         cards={cards}
         columns={columns}
         rows={rows}
+        onEditRow={(row) => {
+          const match = users.find((user) => user.username === row[0])
+          if (!match?.id) {
+            toast.error('Could not open this player')
+            return
+          }
+          setEditing(match)
+        }}
         extraAction={{
           label: 'Bets',
           onClick: (row) => {
@@ -97,6 +108,11 @@ export default function UsersEnhanced() {
         }}
       />
       <CreatePlayerModal open={open} onClose={() => setOpen(false)} />
+      <EditPlayerModal
+        user={editing}
+        onClose={() => setEditing(null)}
+        onSaved={() => setReloadKey((value) => value + 1)}
+      />
     </>
   )
 }

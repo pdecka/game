@@ -18,7 +18,7 @@ const LanguageContext = createContext<LanguageValue | null>(null)
 function readSaved(): Locale | null {
   if (typeof window === 'undefined') return null
   const saved = window.localStorage.getItem(STORAGE_KEY)
-  if (saved === 'pt' || saved === 'es' || saved === 'ar' || saved === 'en') return saved
+  if (saved === 'pt' || saved === 'es' || saved === 'ar' || saved === 'fr' || saved === 'en') return saved
   return null
 }
 
@@ -59,7 +59,8 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const active: Locale = isAdmin ? 'en' : locale
-    document.documentElement.lang = active === 'pt' ? 'pt-BR' : active === 'es' ? 'es-419' : active === 'ar' ? 'ar' : 'en'
+    document.documentElement.lang =
+      active === 'pt' ? 'pt-BR' : active === 'es' ? 'es-419' : active === 'ar' ? 'ar' : active === 'fr' ? 'fr' : 'en'
     document.documentElement.dir = active === 'ar' ? 'rtl' : 'ltr'
   }, [isAdmin, locale])
 

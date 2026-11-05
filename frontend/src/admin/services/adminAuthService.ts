@@ -15,6 +15,15 @@ export interface AdminUser {
   role: string
   status: string
   mobile?: string | null
+  countryCode?: string | null
+  firstName?: string | null
+  lastName?: string | null
+  dateOfBirth?: string | null
+  address?: string | null
+  country?: string | null
+  city?: string | null
+  postalCode?: string | null
+  kycStatus?: string
   balanceINR?: number
   createdAt?: string | Date
 }
@@ -103,6 +112,29 @@ export const adminAuthService = {
   async createPlayer(payload: { username: string; password: string; email?: string }) {
     const response = await adminApi.post('/admin/users', payload)
     return response.data as { id: string; username: string; email: string | null; status: string }
+  },
+
+  async updatePlayer(
+    userId: string,
+    payload: {
+      username: string
+      email?: string | null
+      password?: string
+      mobile?: string | null
+      countryCode?: string | null
+      firstName?: string | null
+      lastName?: string | null
+      dateOfBirth?: string | null
+      address?: string | null
+      country?: string | null
+      city?: string | null
+      postalCode?: string | null
+      status?: string
+      kycStatus?: string
+    },
+  ) {
+    const response = await adminApi.patch(`/admin/users/${userId}`, payload)
+    return response.data
   },
 
   async listBlogs() {
